@@ -35,6 +35,10 @@ struct TestForgeApp: App {
 			MeasureView(viewModel: viewModel.measureViewModel)
 				.environmentObject(viewModel.tutorials)
 		}
+		Window("Docs", id: DocsConstants.windowId) {
+			DocsWindowView(viewModel: viewModel.docsViewModel)
+				.environmentObject(viewModel.tutorials)
+		}
 		Window("Proof", id: TestForgeConstants.Window.proofViewerWindowId) {
 			ProofViewerView(viewModel: viewModel.proofViewerViewModel)
 				.frame(minWidth: TestForgeConstants.ProofViewer.windowMinWidth, minHeight: TestForgeConstants.ProofViewer.windowMinHeight)

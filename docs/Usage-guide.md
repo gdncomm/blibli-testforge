@@ -24,7 +24,8 @@ A how-to for each feature of the Mac app. For the list of everything the app doe
 16. [Updating TestForge](#16-updating-testforge)
 17. [Menu bar item, console and usage bar](#17-menu-bar-item-console-and-usage-bar)
 18. [Tour, tips and demo run](#18-tour-tips-and-demo-run)
-19. [What is out of date in the older docs](#what-is-out-of-date-in-the-older-docs)
+19. [Docs](#19-docs)
+20. [What is out of date in the older docs](#what-is-out-of-date-in-the-older-docs)
 
 ## Ground rules
 
@@ -645,6 +646,39 @@ If it says "Claude usage — nothing reported yet", click **Connect Claude Code 
 - **Welcome tour.** Opens once on first launch. Reopen from Help › Welcome to TestForge or the toolbar ? menu. Pick **QA** or **Developer**; **Next** (Return), **Back**, **Skip tour** (Esc). The Your workflow page lists numbered steps with where each lives in the app and a Claude marker on steps that need it. Page 7 has start buttons: **Open Get ready**, **Watch the demo run**, **Ask Claude**, **Drive QA from your phone**, **Turn on screen tips**.
 - **Screen tips.** A short tip sequence starts the first time you open each section (if **Show tutorials automatically** is on). **Next**, **Skip tutorial**, **Done**. Leaving the screen pauses it; Settings › Tutorials shows "In progress n/N". Replay from the toolbar ? menu or Settings › Tutorials. The Measure tip sequence starts when its first capture loads.
 - **Demo run.** Toolbar ? › **Demo run (about 3 minutes)**, or Settings › Tutorials › **Start demo run**, or the tour's start button. It replays SF-001 and SF-006, then walks you through Results and Reports; **Next: Reports**, **End demo** or **Stop demo**. No Claude is used. It is blocked with "Demo can't start yet" until Get ready is green, and with "The demo replays SF-001, SF-006, which aren't loaded with recorded steps" until the Flash Sale test document is loaded in Tests.
+
+---
+
+## 19. Docs
+
+**What it is for.** Read this guide, the feature list and the TestForge's other docs inside the app, and open any Markdown file someone sends you, such as a test plan or a spec.
+
+**Steps**
+
+1. Press ⌘D, or Help › TestForge Usage Guide (or TestForge Features). The list on the left has **TestForge guides** (the README, this guide and the feature list) and **Your files**. Other repo docs open from their links. The usage guide opens the first time.
+2. Click a document to read it. Type in **Filter documents** to find one by title or path.
+3. To read your own files, drop Markdown files or a folder onto the page, or press **Open…** (⌘O, also File › Open Markdown…). They join **Your files** and the first one opens.
+4. Click a link: `#heading` links scroll on the page; a link to another `.md` opens it here at its heading, and **Back** returns. Web links open in your browser; other files open in their own app.
+5. Use the **Outline** button for the page's headings, and click one to jump.
+6. Pick **Half** (list beside the page) or **Full** (the page takes the window; the sidebar and console come back when you leave Docs or pick Half).
+7. **Window** opens the page in its own window: **Open in a window**, **Left half**, **Right half** or **Full screen**. The window's own buttons move it again.
+8. **More** has Show in Finder, Open in Default App and Copy Path. **Reload** re-reads the list and the page after a file changed.
+
+**What you see.** A tinted border and "Drop to read" while you drag files over the page. A notice line says how many files were added. The list, the page and your choice of Half or Full and the outline are kept for next time.
+
+**What can go wrong**
+
+- "Only Markdown files (.md, .markdown, .txt) can be read here.": the drop had no Markdown. A mixed drop adds the Markdown and says how many files it skipped.
+- "That link points to `<file>`, which isn't on this Mac.": the link's target is missing; the page stays.
+- "`<file>` isn't there any more. It was moved or deleted.": a file under Your files is gone. Remove it from its right-click menu.
+- "`docs/Features.md` isn't in this TestForge checkout. Update TestForge to get it.": the checkout is older than the guides.
+- "The Docs window didn't open, so it couldn't be moved. Try again."
+
+**Tips**
+
+- Put the Docs window on one half of the screen and the Simulator or Xcode on the other.
+- The list is read from your checkout each time, so Update brings new docs with it.
+- Inline HTML and search inside a page are not supported yet.
 
 ---
 

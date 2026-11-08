@@ -59,9 +59,32 @@ struct TestForgeCommands: Commands {
 			.disabled(viewModel.isSetupNeeded || updates.activity.isBusy)
 			.accessibilityIdentifier(UpdateConstants.Accessibility.menuItem)
 		}
+		CommandGroup(after: .newItem) {
+			Button("Open Markdown…") {
+				openWindow(id: TestForgeConstants.Window.mainWindowId)
+				viewModel.openMarkdownFiles()
+			}
+			.keyboardShortcut("o", modifiers: .command)
+			.disabled(viewModel.isSetupNeeded)
+			.accessibilityIdentifier(DocsConstants.Accessibility.openMenuItem)
+			Button("Docs Window") {
+				openWindow(id: DocsConstants.windowId)
+			}
+			.disabled(viewModel.isSetupNeeded)
+		}
 		CommandGroup(before: .help) {
 			Button("Welcome to TestForge") {
 				viewModel.onboardingViewModel.present()
+			}
+			.disabled(viewModel.isSetupNeeded)
+			Button("TestForge Usage Guide") {
+				openWindow(id: TestForgeConstants.Window.mainWindowId)
+				viewModel.showDoc(atRepoPath: DocsCatalog.usageGuidePath)
+			}
+			.disabled(viewModel.isSetupNeeded)
+			Button("TestForge Features") {
+				openWindow(id: TestForgeConstants.Window.mainWindowId)
+				viewModel.showDoc(atRepoPath: DocsCatalog.featuresPath)
 			}
 			.disabled(viewModel.isSetupNeeded)
 		}

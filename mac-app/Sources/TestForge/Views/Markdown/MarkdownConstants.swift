@@ -5,6 +5,9 @@ enum MarkdownConstants {
 	static let blockSpacing: CGFloat = 12
 	static let listItemSpacing: CGFloat = 4
 	static let bulletWidth: CGFloat = 18
+	static let wideBulletWidth: CGFloat = 26
+	static let listIndent: CGFloat = 20
+	static let scrollAnimation: Double = 0.25
 	static let quoteBarWidth: CGFloat = 3
 	static let codeCornerRadius: CGFloat = 6
 	static let tableCellPadding: CGFloat = 6

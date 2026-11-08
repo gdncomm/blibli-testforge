@@ -18,4 +18,14 @@ extension View {
 	func tutorialAnchor(_ anchor: TutorialAnchor) -> some View {
 		modifier(TutorialAnchorModifier(anchor: anchor))
 	}
+
+	/// For a view shown in two places: only the copy that `isActive` carries the anchor, so a tip shows once.
+	@ViewBuilder
+	func tutorialAnchor(_ anchor: TutorialAnchor, isActive: Bool) -> some View {
+		if isActive {
+			modifier(TutorialAnchorModifier(anchor: anchor))
+		} else {
+			self
+		}
+	}
 }

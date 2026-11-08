@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Sidebar destinations; Simulator (R4d) and Build (R4e) come after Advanced; Claude (D-133) sits under Get ready.
+/// Sidebar destinations; Simulator (R4d) and Build (R4e) come after Advanced; Claude (D-133) sits under Get ready;
+/// Docs (D-218) comes last.
 enum TestForgeSection: String, CaseIterable, Identifiable {
 	case getReady
 	case claude
@@ -12,6 +13,7 @@ enum TestForgeSection: String, CaseIterable, Identifiable {
 	case network
 	case simulator
 	case build
+	case docs
 
 	var id: String { rawValue }
 
@@ -37,6 +39,8 @@ enum TestForgeSection: String, CaseIterable, Identifiable {
 				return "Simulator"
 			case .build:
 				return "Build"
+			case .docs:
+				return "Docs"
 		}
 	}
 
@@ -62,10 +66,12 @@ enum TestForgeSection: String, CaseIterable, Identifiable {
 				return "iphone.gen3"
 			case .build:
 				return "hammer"
+			case .docs:
+				return "book"
 		}
 	}
 
-	/// ⌘1–⌘8 match Xcode's navigator shortcuts; Network and Claude (added after them) take ⌘9 and ⌘0.
+	/// ⌘1–⌘8 match Xcode's navigator shortcuts; Network and Claude (added after them) take ⌘9 and ⌘0; Docs takes ⌘D.
 	var shortcutKey: KeyEquivalent {
 		switch self {
 			case .getReady:
@@ -88,6 +94,8 @@ enum TestForgeSection: String, CaseIterable, Identifiable {
 				return "7"
 			case .build:
 				return "8"
+			case .docs:
+				return "d"
 		}
 	}
 
@@ -114,6 +122,8 @@ enum TestForgeSection: String, CaseIterable, Identifiable {
 				return .red
 			case .build:
 				return .brown
+			case .docs:
+				return .mint
 		}
 	}
 }

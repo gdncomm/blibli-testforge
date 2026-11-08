@@ -11,10 +11,8 @@ struct MarkdownBlockView: View {
 					.padding(.top, level <= 2 ? MarkdownConstants.blockSpacing : 0)
 			case .paragraph(let text):
 				MarkdownInlineText(text: text)
-			case .bulletList(let items):
-				listView(items: items) { _ in "•" }
-			case .orderedList(let items):
-				listView(items: items) { index in "\(index + 1)." }
+			case .list(let items):
+				listView(items: items)
 			case .quote(let text):
 				quoteView(text: text)
 			case .code(let code):
@@ -37,17 +35,41 @@ struct MarkdownBlockView: View {
 		RoundedRectangle(cornerRadius: MarkdownConstants.codeCornerRadius)
 	}
 
-	private func listView(items: [String], marker: @escaping (Int) -> String) -> some View {
+	private func listView(items: [MarkdownListItem]) -> some View {
 		VStack(alignment: .leading, spacing: MarkdownConstants.listItemSpacing) {
-			ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+			ForEach(Array(items.enumerated()), id: \.offset) { _, item in
 				HStack(alignment: .firstTextBaseline, spacing: 0) {
-					Text(marker(index))
+					marker(for: item)
 						.foregroundStyle(.secondary)
-						.frame(width: MarkdownConstants.bulletWidth, alignment: .leading)
-					MarkdownInlineText(text: item)
+						.frame(width: markerWidth(for: item), alignment: .leading)
+					MarkdownInlineText(text: item.text)
 				}
+				.padding(.leading, CGFloat(item.depth) * MarkdownConstants.listIndent)
 			}
 		}
+	}
+
+	@ViewBuilder
+	private func marker(for item: MarkdownListItem) -> some View {
+		if let isChecked = item.isChecked {
+			Image(systemName: isChecked ? "checkmark.square" : "square")
+				.accessibilityLabel(isChecked ? Text("Done") : Text("Not done"))
+		} else {
+			switch item.marker {
+				case .bullet:
+					Text(item.depth == 0 ? "•" : "◦")
+				case .number(let number):
+					Text("\(number).")
+						.monospacedDigit()
+			}
+		}
+	}
+
+	private func markerWidth(for item: MarkdownListItem) -> CGFloat {
+		if case .number(let number) = item.marker, number >= 10, item.isChecked == nil {
+			return MarkdownConstants.wideBulletWidth
+		}
+		return MarkdownConstants.bulletWidth
 	}
 
 	private func quoteView(text: String) -> some View {

@@ -58,6 +58,12 @@ enum TutorialAnchor: String {
 	case reportsBranchList
 	case reportsPickerBar
 	case reportsComparison
+	case docsList
+	case docsOpenButton
+	case docsPage
+	case docsOutlineToggle
+	case docsModePicker
+	case docsWindowButton
 	case advancedPanelPicker
 	case fakeDataMasterSwitch
 	case fakeDataRuleList

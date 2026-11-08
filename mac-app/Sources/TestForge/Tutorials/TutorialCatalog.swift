@@ -40,6 +40,8 @@ enum TutorialCatalog {
 				return network
 			case .claude:
 				return claude
+			case .docs:
+				return docsSteps
 		}
 	}
 

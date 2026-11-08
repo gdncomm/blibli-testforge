@@ -4372,3 +4372,33 @@ SSH runs with `BatchMode=yes` so a hidden passphrase prompt cannot hang the app.
 rebuilt bundle (`SetupSystem.relaunch(at:)`); if the pull works but the build fails, this copy keeps running and the
 last lines of the build log show under the button. Not done: updating from a release download (no signed releases yet),
 and blocking an update while a test run is in progress.
+
+## D-218 — Docs section and in-app Markdown viewer (2026-11-06)
+
+**Problem:** the usage guide and feature list (`docs/Usage-guide.md`, `docs/Features.md`) and the other repo docs could
+only be read in an editor or on GitHub, and test plans or specs people receive as Markdown had nowhere to open in the
+app. **User decision:** a full docs browser where anyone can drop files and read them, and a Docs section that lists
+the app's usage and feature docs and shows them in place, with half and full screen options. **Decision:** a Docs
+sidebar section (⌘D, last in the list) built on the D-176 viewer. Its list has three groups: **TestForge guides**
+(the two guides, first), **Project docs** (top-level READMEs, `CONTRIBUTING.md`, `CHANGELOG.md`, and every `.md`
+directly in `docs/` and `server/docs/`), read from the checkout at runtime so an Update brings new docs, and **Your
+files** (dropped or opened, kept as paths in the app's defaults, newest first, 30 at most, missing files dropped).
+Drop files or folders anywhere on the section or the window; a folder adds its Markdown up to 3 levels and 200 files;
+anything else is refused with a reason. "Half" shows the list beside the page; "Full" hides the docs list, the app
+sidebar and the console while Docs is on screen and puts them back on leaving or switching to Half
+(`DocsFullLayout`). A separate **Docs** window shows the same page and can be put on the left or right half of its
+screen or into macOS full screen (`DocsWindowArranger`, found by its scene id). Links: `#anchor` scrolls to the
+heading (GitHub-style slugs, repeats get `-1`); a relative `.md` link opens in place at its anchor, with Back;
+another local file opens in its app; a web link opens in the browser. The parser gains nested and task lists,
+item continuation lines, dropped HTML comments and relative image paths; `bulletList`/`orderedList` became one
+`list` case. Not done: search inside a page, rendering inline HTML, editing, watching files for changes (Reload
+re-reads), and bundling the guides into the app for an install without a checkout.
+
+## D-219 — Docs list shows only the README and the two guides (2026-11-06)
+
+**Problem:** the D-218 **Project docs** group listed every `.md` in `docs/` and `server/docs/` (design notes,
+decision log, old walkthroughs), a long list most readers do not need, with out-of-date docs next to current ones.
+**User decision:** list only `README.md`, the feature list and the usage guide by default. **Decision:** the
+**Project docs** group is removed; **TestForge guides** lists `README.md`, `docs/Usage-guide.md` and
+`docs/Features.md`, in that order, and **Your files** is unchanged. Other repo docs are still reachable: a link in a
+listed doc opens them in place, and they can be dropped or opened like any file.

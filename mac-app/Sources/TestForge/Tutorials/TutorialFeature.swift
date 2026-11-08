@@ -17,6 +17,7 @@ enum TutorialFeature: String, CaseIterable, Identifiable {
 	case build
 	case network
 	case claude
+	case docs
 
 	var id: String { rawValue }
 
@@ -52,6 +53,8 @@ enum TutorialFeature: String, CaseIterable, Identifiable {
 				return "The network console"
 			case .claude:
 				return "Claude in the TestForge"
+			case .docs:
+				return "Reading the docs"
 		}
 	}
 
@@ -78,6 +81,8 @@ enum TutorialFeature: String, CaseIterable, Identifiable {
 				return [.simulatorControl, .console]
 			case .build:
 				return [.build, .console]
+			case .docs:
+				return [.docs]
 		}
 	}
 }

@@ -447,3 +447,16 @@ Tour: QA step 14 "Re-check results after a new build".
 - Onboarding: QA workflow step 23 and developer workflow step 15 "Update TestForge itself" name the menu item
   (TestForge menu › Check for Updates…, which reads "Update TestForge… (n new)" when one is waiting) and Settings › Project.
 - Settings opens on the last tab used; the menu item opens it on Project and starts a check.
+
+### Revision R40 (D-218, 2026-11-06) — Docs section and Markdown viewer
+
+- New tutorial **Reading the docs** (`TutorialCatalog+Docs.swift`), 6 tips, auto-starts on the first visit to Docs:
+  **The guides, right here** (`docsList`), **Read any Markdown file** (`docsOpenButton`), **Links work in place**
+  (`docsPage`), **Jump to a heading** (`docsOutlineToggle`), **Half or Full** (`docsModePicker`), **Its own window**
+  (`docsWindowButton`). The ? menu on Docs lists only this tutorial; the console tips don't apply.
+- The Docs window shows the same page with no tips: its copy of the page and header passes `showsTips: false`, so each
+  tip has one anchor.
+- Onboarding: QA workflow step 24 "Read the guides in the app" (Docs · ⌘D · Help › TestForge Usage Guide) and
+  developer workflow step 16 "Read docs beside your code" (Docs · ⌘D · File › Open Markdown… (⌘O)). Neither needs Claude.
+- Help menu gains **TestForge Usage Guide** and **TestForge Features**, which open Docs on `docs/Usage-guide.md` and
+  `docs/Features.md`.
