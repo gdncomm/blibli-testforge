@@ -76,7 +76,7 @@ fastlane/test_output
 # Mac app (Swift package)
 .build/
 .swiftpm/
-build/
+/mac-app/build/
 *.dmg
 *.app/
 
