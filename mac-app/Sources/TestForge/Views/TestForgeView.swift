@@ -125,6 +125,8 @@ struct TestForgeView: View {
 				SimulatorControlSectionView(viewModel: viewModel.simulatorControlViewModel)
 			case .build:
 				BuildSectionView(viewModel: viewModel.buildViewModel, resetViewModel: viewModel.resetViewModel)
+			case .docs:
+				DocsSectionView(viewModel: viewModel.docsViewModel)
 		}
 	}
 

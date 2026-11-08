@@ -120,6 +120,11 @@ final class TestForgeViewModel: ObservableObject {
 	let setupViewModel: SetupViewModel
 	let updateViewModel: UpdateViewModel
 	let claudeViewModel: ClaudeSectionViewModel
+	let docsViewModel: DocsViewModel
+
+	/// The sidebar and console as they were before the Docs page went Full, put back when it leaves (D-218).
+	var layoutBeforeDocsFull: DocsFullLayout.Saved?
+	var docsCancellables = Set<AnyCancellable>()
 	private(set) lazy var usageBarViewModel = UsageBarViewModel(store: services.store, service: services.usageTap)
 	private(set) lazy var remoteControlViewModel = RemoteControlViewModel(
 		store: services.store,
@@ -227,6 +232,7 @@ final class TestForgeViewModel: ObservableObject {
 		buildViewModel = buildSectionViewModel
 		resetViewModel = Self.makeResetViewModel(services: services, buildViewModel: buildSectionViewModel)
 		claudeViewModel = ClaudeSectionViewModel(service: services.claudeSession)
+		docsViewModel = Self.makeDocsViewModel(services: services)
 		setupViewModel = Self.makeSetupViewModel(services: services)
 		updateViewModel = UpdateViewModel(service: services.update, system: services.setup.system)
 		consoleViewModel = ConsoleSectionViewModel(log: services.consoleLog) { desktop.copy(text: $0) }
@@ -239,6 +245,7 @@ final class TestForgeViewModel: ObservableObject {
 			self?.selectedSection = .results
 		}
 		connectNavigators()
+		observeDocsLayout()
 	}
 
 	deinit {

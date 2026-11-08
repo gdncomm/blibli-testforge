@@ -27,9 +27,10 @@ After a case has passed once with Claude, its recording replays on the driver wi
 | Feature | What it is | For | Claude |
 |---|---|---|---|
 | Setup | First-run screen. Choose the TestForge checkout and the iOS app clone, and check Xcode, Node.js, Claude Code and the Claude sign-in. | Both | Checks only |
-| Main window | Sidebar of 10 sections, the section's page, a console at the bottom and the usage bar. | Both | No |
+| Main window | Sidebar of 11 sections, the section's page, a console at the bottom and the usage bar. | Both | No |
 | Measure window | Sizes and spacing of the Simulator's screen. See [Measure](#measure-window). | Both | No |
 | Proof window | Opens a case's screenshot or video full size. See [Proof](#proof-window). | Both | No |
+| Docs window | The open document in its own window, on the left or right half of the screen or full screen. See [Docs](#docs-d--both--claude-no). | Both | No |
 | Settings (⌘,) | Seven tabs. See [Settings](#settings). | Both | No |
 | Menu bar item | Run progress, Stop and Continue while the window is hidden. See [Menu bar item](#menu-bar-item). | Both | No |
 
@@ -38,11 +39,12 @@ After a case has passed once with Claude, its recording replays on the driver wi
 | Menu | Items |
 |---|---|
 | TestForge (app menu) | **Check for Updates…**, which reads **Update TestForge… (N new)** when an update is waiting. Pulls the latest `master` of your checkout, rebuilds and reopens the app. Disabled during Setup and while an update runs. |
-| View | Show or Hide Console (⇧⌘Y). Show Claude Usage (⌥⌘U). A jump to each section: Get ready ⌘1, Tests ⌘2, Scan ⌘3, Results ⌘4, Reports ⌘5, Advanced ⌘6, Simulator ⌘7, Build ⌘8, Network ⌘9, Claude ⌘0. |
+| View | Show or Hide Console (⇧⌘Y). Show Claude Usage (⌥⌘U). A jump to each section: Get ready ⌘1, Tests ⌘2, Scan ⌘3, Results ⌘4, Reports ⌘5, Advanced ⌘6, Simulator ⌘7, Build ⌘8, Network ⌘9, Claude ⌘0, Docs ⌘D. |
+| File | Open Markdown… (⌘O): opens Docs and asks for Markdown files or a folder. Docs Window. |
 | Test | Run Selected Case (⌘R). Stop Run (⌘.). Load Test Document…. |
 | Simulator | Outline Steps (⌥⌘O). Measure (⌥⌘M). |
 | Server | Reconnect Live Updates. Restart Server. |
-| Help | Welcome to TestForge (reopens the tour; disabled during Setup). |
+| Help | Welcome to TestForge (reopens the tour). TestForge Usage Guide and TestForge Features (open those docs in Docs). All disabled during Setup. |
 
 ## Sidebar sections
 
@@ -175,6 +177,21 @@ A segmented picker with three panels.
 | Breakpoints | Hold a call's request or response, edit its status or body or fail it, then Continue. Show or hide the in-app bubble. |
 | Trackers | Check that analytics (TRMS) events fired. Optional payload contract. Copy or save the report as Markdown. |
 
+### Docs (⌘D) · Both · Claude: No
+
+Read the app's guides and any Markdown file in place.
+
+| Feature | What it does |
+|---|---|
+| Document list | **TestForge guides** (the checkout's `README.md`, the usage guide and this feature list) and **Your files**. Other repo docs open in place from their links. Filter by title or path. |
+| Drop or open files | Drop Markdown files or folders anywhere on the page, or Open… (⌘O). They stay under Your files between launches; remove one from its right-click menu. |
+| Reader | Headings, nested and task lists, tables, code, quotes and images next to the file. |
+| Links | A `#heading` link scrolls there; a link to another `.md` opens it in place, with Back; web links open in the browser. |
+| Outline | The page's headings; click one to jump. |
+| Half and Full | Half: the list beside the page. Full: the page takes the window, hiding the sidebar and console until you leave Docs or pick Half. |
+| Docs window | Open the page in its own window: as is, left half, right half or full screen. |
+| More | Show in Finder, Open in Default App, Copy Path. Reload re-reads files changed on disk. |
+
 ## Test Batches
 
 The toolbar pill files every run and its proof into the active Test Batch. Start, Pause (set aside to switch work), Resume, End (writes the report), Reopen, Change proof folder. Tests cannot run until a batch is active. For QA, Claude: No.
@@ -213,13 +230,13 @@ Open with ⌘,. The window remembers its last tab.
 | General | Show in menu bar. Notify when a run finishes. Outline steps on the Simulator. Explanation language (English or Bahasa Indonesia). Appearance (Match the system, Light, Dark). |
 | Project | The QA server folder, **Change checkout…**, and **Updates** (Check now, Update and restart). |
 | Logins | Test accounts kept in the macOS Keychain, by environment and profile. Add, update or remove. Static OTP for uatb. Production OTP: link Outlook to read email codes. |
-| Tutorials | Show tutorials automatically. Replay one of 15 tutorials. Start demo run. Reset all tutorials. |
+| Tutorials | Show tutorials automatically. Replay one of 16 tutorials. Start demo run. Reset all tutorials. |
 | Phone, Claude, Advanced | Placeholders. They show "These settings arrive in a later release." |
 
 ## Welcome tour and tips
 
 - **Welcome tour**: opens once on first launch; reopen from Help › Welcome to TestForge or the ? menu. Pick a role (QA or Developer). Seven pages: Welcome, Why it exists, How it works, Your workflow, What you gain, What it never does, Start. The workflow page lists numbered steps and marks those that need Claude. The Start page can open Get ready, start the demo run, open Claude, open Remote Control or turn on screen tips.
-- **Screen tips**: each section's tutorial starts the first time you open it (when Show tutorials automatically is on). Next, Skip tutorial. The ? menu in the toolbar replays the section's tutorials, the welcome tour and the demo run. There are 15 tutorials, one per feature.
+- **Screen tips**: each section's tutorial starts the first time you open it (when Show tutorials automatically is on). Next, Skip tutorial. The ? menu in the toolbar replays the section's tutorials, the welcome tour and the demo run. There are 16 tutorials, one per feature.
 - **Demo run**: about 3 minutes, no Claude. Replays the recorded Flash Sale cases SF-001 and SF-006, then points you to Results and Reports. Needs Get ready green and the Flash Sale test document loaded.
 
 ## Claude usage bar

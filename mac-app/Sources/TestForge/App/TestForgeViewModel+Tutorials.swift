@@ -88,6 +88,9 @@ extension TestForgeViewModel {
 				networkConsoleViewModel.selectedTab = .traffic
 			case .claude:
 				show(section: .claude)
+			case .docs:
+				show(section: .docs)
+				docsViewModel.readingMode = .half
 		}
 	}
 

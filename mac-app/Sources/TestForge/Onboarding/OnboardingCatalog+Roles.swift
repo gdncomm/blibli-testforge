@@ -208,6 +208,16 @@ extension OnboardingCatalog {
 					"""),
 				needsClaude: false
 			),
+			OnboardingFlowStep(
+				number: 24,
+				title: String(localized: "Read the guides in the app"),
+				place: String(localized: "Docs · ⌘D · Help › TestForge Usage Guide"),
+				text: String(localized: """
+					The usage guide and the feature list, read in place: Half beside the list, Full for the whole window, \
+					or its own window on half the screen. Drop any Markdown file, such as a test plan, to read it there too.
+					"""),
+				needsClaude: false
+			),
 		]
 	)
 
@@ -325,6 +335,16 @@ extension OnboardingCatalog {
 				text: String(localized: """
 					Pulls the latest master of your TestForge checkout, rebuilds the app and reopens it. The menu item says \
 					when an update is waiting. It stops, and says why, on another branch or with local changes.
+					"""),
+				needsClaude: false
+			),
+			OnboardingFlowStep(
+				number: 16,
+				title: String(localized: "Read docs beside your code"),
+				place: String(localized: "Docs · ⌘D · File › Open Markdown… (⌘O)"),
+				text: String(localized: """
+					The README, the usage guide and the feature list, plus any Markdown you drop in, such as a README or a spec. \
+					Links between docs open in place; open one in its own window on half the screen next to Xcode.
 					"""),
 				needsClaude: false
 			),
