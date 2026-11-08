@@ -49,3 +49,32 @@ test("case setup: the recording's start screen and needs, in words", async () =>
 	assert.equal(caseSetup({}), null);
 	assert.equal(caseSetup(undefined), null);
 });
+
+test("D-220: replay status per case, case ids matched in any case, follow-up turns ignored", () => {
+	const lowerCases = [{ id: "sf-001", scenario: "Open" }, { id: "SF-002", scenario: "Range" }, { id: "SF-003", scenario: "None" }];
+	const linked = [
+		{ id: "mc_A", name: "Open", testCases: ["SF-001"], replayProblem: null },
+		{ id: "mc_B", name: "Range", testCases: ["SF-002"], replayProblem: "routine mc_X not found" },
+	];
+	const runs = [
+		{ caseId: "sf-001", mode: "triage", verdict: "DONE", recordedAt: "2026-11-07T12:00:00.000Z" },
+		{ caseId: "SF-001", macroId: "mc_A", mode: "replay", verdict: "PASS", recordedAt: "2026-11-07T11:00:00.000Z" },
+	];
+	const view = testcaseView({ cases: lowerCases, macros: linked, runs });
+	assert.equal(view.cases[0].macro.id, "mc_A");
+	assert.equal(view.cases[0].replay.kind, "free");
+	assert.equal(view.cases[0].lastRun.verdict, "PASS", "the triage turn is not the case's result");
+	assert.equal(view.cases[1].replay.kind, "broken");
+	assert.equal(view.cases[2].replay.kind, "claude");
+});
+
+test("D-220: a Claude pass shows UNCONFIRMED until a replay of the recording passes", () => {
+	const linked = [{ id: "mc_A", name: "Open", testCases: ["SF-001"] }];
+	const claudeOnly = testcaseView({ cases, macros: linked, runs: [{ caseId: "SF-001", mode: "run", verdict: "PASS", recordedAt: "2026-11-07T10:00:00.000Z" }] });
+	assert.deepEqual([claudeOnly.cases[0].lastRun.verdict, claudeOnly.cases[0].lastRun.claudeVerdict, claudeOnly.cases[0].replay.kind], ["UNCONFIRMED", "PASS", "unconfirmed"]);
+	const proven = testcaseView({ cases, macros: linked, runs: [
+		{ caseId: "SF-001", macroId: "mc_A", mode: "replay", verdict: "PASS", recordedAt: "2026-11-07T10:05:00.000Z" },
+		{ caseId: "SF-001", mode: "run", verdict: "PASS", recordedAt: "2026-11-07T10:00:00.000Z" },
+	] });
+	assert.deepEqual([proven.cases[0].lastRun.verdict, proven.cases[0].replay.kind], ["PASS", "free"]);
+});

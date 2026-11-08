@@ -5,8 +5,9 @@ enum TestsSectionMapper {
 	private static let prepHistoryLimit = 6
 
 	static func header(for document: TestCaseDocument) -> TestDocumentHeader {
-		let recordedCount = document.cases.filter { $0.recording != nil }.count
-		let caseCountText = String(localized: "\(document.cases.count) cases · \(recordedCount) recorded")
+		let freeCount = document.cases.filter { $0.replay.kind == .free }.count
+		let claudeCount = document.cases.filter { $0.replay.kind == .claude || $0.replay.kind == .broken }.count
+		let caseCountText = String(localized: "\(document.cases.count) cases · \(freeCount) free replays · \(claudeCount) need Claude")
 		let title = document.title ?? document.source ?? String(localized: "Test document")
 		return TestDocumentHeader(
 			title: title,
@@ -32,7 +33,7 @@ enum TestsSectionMapper {
 					scenario: scenario,
 					verdictText: verdictText,
 					verdictTone: verdictTone,
-					hasRecording: testCase.recording != nil,
+					replayBadge: TestCaseReplayBadge(status: testCase.replay),
 					isEditedLocally: testCase.localEdit != nil,
 					proofBadges: proofBadges(for: testCase),
 					staleHelpText: testCase.lastRun?.stale.map { String(localized: "Stale: \($0.reason)") }
@@ -91,6 +92,8 @@ enum TestsSectionMapper {
 			recordingName: testCase.recording?.name,
 			recordingId: testCase.recording?.id,
 			hasExplanations: testCase.recording?.hasDemoNotes ?? false,
+			replayBadge: TestCaseReplayBadge(status: testCase.replay),
+			unconfirmedText: unconfirmedText(for: testCase),
 			lastRunText: lastRunText,
 			lastRunTone: lastRunTone,
 			editNotice: localEdit.map { editNotice(for: $0) },
@@ -101,6 +104,20 @@ enum TestsSectionMapper {
 			ticketsText: testCase.tickets.isEmpty ? nil : String(localized: "Jira: \(testCase.tickets.map(\.key).joined(separator: ", "))"),
 			hasResult: testCase.lastRun?.verdict != nil
 		)
+	}
+
+	/// D-220: a Claude pass counts once a replay of the saved recording passes; until then it says what is missing.
+	static func unconfirmedText(for testCase: TestCaseSummary) -> String? {
+		guard testCase.lastRun?.resultOverride == nil,
+			let claudeVerdict = testCase.lastRun?.claudeVerdict
+		else {
+			return nil
+		}
+		let shownVerdict = claudeVerdict.split(separator: " ").first.map(String.init) ?? claudeVerdict
+		guard testCase.recording != nil else {
+			return String(localized: "Claude said \(shownVerdict), but no recording was saved. It counts as passed once Claude saves a recording and its replay passes: Run with Claude again.")
+		}
+		return String(localized: "Claude said \(shownVerdict). It counts as passed once a replay of the recording passes: press Replay.")
 	}
 
 	static func setupText(for setup: TestCaseSetup) -> String? {
@@ -209,7 +226,9 @@ enum TestsSectionMapper {
 			case .all:
 				return true
 			case .recorded:
-				return testCase.recording != nil
+				return testCase.replay.kind == .free
+			case .needsClaude:
+				return testCase.replay.kind == .claude || testCase.replay.kind == .broken
 			case .failedLast:
 				return tone(for: testCase.lastRun?.verdict) == .failed
 			case .stale:

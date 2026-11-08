@@ -146,3 +146,19 @@ test("a usage-limit stop requeues the case and pauses; resume runs it again", as
 	assert.deepEqual(result.items.map((item) => [item.caseId, item.verdict]), [["A", "PASS"], ["B", "PASS"], ["C", "PASS"]]);
 	assert.deepEqual(started, ["A", "B", "B", "C"]);
 });
+
+test("a usage limit in the follow-up keeps the result, drops the flag and pauses the batch (D-220)", async () => {
+	const starter = fakeStarter({ A: "PASS", B: "PASS" });
+	const followUp = async (item) => (item.caseId === "A" ? { claudeVerdict: item.verdict, verdict: "UNCONFIRMED", usageLimit: "You've hit your 5-hour limit" } : null);
+	const batch = new RunBatch({ items: items("A", "B"), deps: { start: starter.start, followUp } });
+	const running = batch.run();
+	for (let wait = 0; wait < 50 && batch.status !== "paused"; wait++) await tick();
+	assert.equal(batch.status, "paused");
+	assert.match(batch.pauseReason, /usage limit stopped the follow-up for A/);
+	const snapshot = batch.snapshot();
+	assert.deepEqual([snapshot.items[0].verdict, snapshot.items[0].claudeVerdict, snapshot.items[0].usageLimit], ["UNCONFIRMED", "PASS", undefined]);
+	assert.equal(snapshot.items[1].status, "queued", "the next case waits for the resume");
+	batch.resume();
+	const result = await running;
+	assert.equal(result.items[1].verdict, "PASS");
+});

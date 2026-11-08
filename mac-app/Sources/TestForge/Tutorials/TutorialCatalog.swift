@@ -114,17 +114,21 @@ enum TutorialCatalog {
 				"""
 		),
 		TutorialStep(
-			anchor: .testsReplayButton,
-			title: "Replay recorded steps",
-			message: "Replay runs the saved steps on the phone. It needs no Claude and uses no Claude usage."
+			anchor: .testsReplayStatus,
+			title: "Free replay or Claude",
+			message: """
+				The icon by each case says what a run costs. ⚡ green: free replay, its last replay passed. ⚡ orange: \
+				recorded but not confirmed, replay it once. ⚠︎ red: the recording needs Claude to repair it. ✨: no \
+				recording, only Claude can run it. A Claude pass shows UNCONFIRMED until a replay of its saved recording passes.
+				"""
 		),
 		TutorialStep(
-			anchor: .testsExplainMenu,
-			title: "Replays anyone can follow",
+			anchor: .testsReplayButton,
+			title: "Replay recorded steps",
 			message: """
-				Replay with explanations shows what the test checks, then a pointer on each step's element and a subtitle \
-				placed next to it, tail and line aimed at it, over the Simulator. Getting the phone ready shows only here. \
-				Record demo video saves it in English and Bahasa. Explanations are written once with Claude.
+				Click Replay to run the saved steps on the phone, with no Claude usage. Press and hold it for Replay with \
+				explanations (subtitles and pointers over the Simulator), Record demo video in English and Bahasa, and \
+				writing the explanations once with Claude (✨). Replay is off when the recording can't run without Claude.
 				"""
 		),
 	] + buildSteps + inputSteps + verifySteps + [

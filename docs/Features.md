@@ -20,7 +20,7 @@ Everything works without Claude except the items marked **Yes** or **Partly**:
 - Loading test cases from Confluence.
 - The Set up Claude Code fix, the Prerequisites plugin check, and the Claude usage bar.
 
-After a case has passed once with Claude, its recording replays on the driver with no Claude.
+After a case has passed once with Claude, its recording replays on the driver with no Claude. A Claude pass shows UNCONFIRMED until a replay of the saved recording passes. Each case's icon says which kind it is: ⚡ free replay, ✨ needs Claude.
 
 ## Windows and menus
 
@@ -81,11 +81,12 @@ One checklist that says whether tests can run. Green means ready. Only checks th
 | Feature | What it does | Claude |
 |---|---|---|
 | Load test document | From a Confluence link, or a Markdown or CSV file. The page is only read. | Confluence: Yes. File: No |
-| Case list and filter | Search by id or words. Show All, Recorded, Failed last, Stale or Never run. Each row shows the verdict, whether it has a recording or a local edit, and a proof badge (screenshots, video, or evidence only). | No |
-| Replay | Runs a case's saved steps on the phone. About 30 s. | No |
+| Case list and filter | Search by id or words. Show All, Free replay, Needs Claude, Failed last, Stale or Never run. Each row shows the verdict, a replay icon, a local edit, and a proof badge (screenshots, video, or evidence only). | No |
+| Replay icon | ⚡ green free replay (last replay passed), ⚡ orange recorded but not confirmed, ⚠ red recording needs repair, ✨ needs Claude (no recording). The header counts free replays and cases that need Claude. | No |
+| Replay | Runs a case's saved steps on the phone. About 30 s. Press and hold for explained replays and demo videos. Off when the recording needs repair. | No |
 | Run with Claude | First run of a case. Claude reads the test, drives the phone and saves the steps. Auto, Haiku, Sonnet or Opus. Asks first. | Yes |
 | Live steps | Each step in plain words as it runs, with System prep above. Stop with ⌘.. | No (a Claude run adds its session) |
-| Explain | Replay with explanations, over the Simulator. Record demo video in English and Bahasa. | Replay and video: No. Writing the explanations: Yes |
+| Explained replays (hold Replay) | Replay with explanations, over the Simulator. Record demo video in English and Bahasa. | Replay and video: No. Writing the explanations: Yes |
 | Edit case text | Fix a case's steps or expected result on this Mac. The document is untouched. Revert to document. | No |
 | Override result | Set a verdict yourself with a required reason. Save and rerun has Claude run it again. | Save: No. Save and rerun: Yes |
 | Starts on / Needs | The screen and state a replay brings the phone to before step 1. | No |
@@ -114,7 +115,7 @@ One checklist that says whether tests can run. Green means ready. Only checks th
 |---|---|---|
 | Run list and detail | Every run with its proof, newest first. Header shows the code, simulator, server, time and Passed, Failed and Flaky counts. | No |
 | Case review | Accept, Override with a reason, or mark Needs re-run. Proof, mocks that answered, what the run said and the steps. | No |
-| Re-run failed | Runs the failures again once. A case that then passes is marked flaky. | Cases with no recording only |
+| Re-run failed | Runs the failures again once, planned again so a case recorded since replays. A case that then passes is marked flaky. | Cases with no recording only |
 | Export report, Copy report | The run as Markdown. | No |
 | Export bundle | The run as one file: cases, recordings, mocks and verdicts. | No |
 | Import bundle | Open someone's bundle and replay its recorded cases with no Claude, next to their verdicts. Import keeps your items where they differ; Replace mine and import uses the bundle's. | Cases needing judgement only |

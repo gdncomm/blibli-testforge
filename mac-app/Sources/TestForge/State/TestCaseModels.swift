@@ -47,6 +47,10 @@ struct TestCaseSummary: Decodable, Equatable, Identifiable {
 	let api: String?
 	let localEdit: TestCaseLocalEdit?
 	let recording: TestCaseRecording?
+
+	/// D-220: free replay, not confirmed, needs repair, or needs Claude.
+	let replay: TestCaseReplayStatus
+
 	let lastRun: TestCaseLastRun?
 
 	/// D-180: every result change a person made, oldest first.
@@ -67,6 +71,7 @@ struct TestCaseSummary: Decodable, Equatable, Identifiable {
 		case api
 		case localEdit
 		case recording = "macro"
+		case replay
 		case lastRun
 		case resultOverrides
 		case proof
@@ -83,6 +88,8 @@ struct TestCaseSummary: Decodable, Equatable, Identifiable {
 		api = try? container.decodeIfPresent(String.self, forKey: .api)
 		localEdit = try? container.decodeIfPresent(TestCaseLocalEdit.self, forKey: .localEdit)
 		recording = try? container.decodeIfPresent(TestCaseRecording.self, forKey: .recording)
+		let decodedReplay = try? container.decodeIfPresent(TestCaseReplayStatus.self, forKey: .replay)
+		replay = decodedReplay ?? .fallback(hasRecording: recording != nil)
 		lastRun = try? container.decodeIfPresent(TestCaseLastRun.self, forKey: .lastRun)
 		resultOverrides = (try? container.decodeIfPresent([TestCaseResultOverride].self, forKey: .resultOverrides)) ?? []
 		proof = try? container.decodeIfPresent(TestCaseProof.self, forKey: .proof)
@@ -170,6 +177,10 @@ struct TestCaseSetup: Decodable, Equatable {
 
 struct TestCaseLastRun: Decodable, Equatable {
 	let verdict: String?
+
+	/// D-220: Claude's own verdict when `verdict` is UNCONFIRMED, until a replay of the saved recording passes.
+	let claudeVerdict: String?
+
 	/// `replay` for a recording, `run` for a Claude run.
 	let mode: String?
 
@@ -187,6 +198,7 @@ struct TestCaseLastRun: Decodable, Equatable {
 
 	private enum CodingKeys: String, CodingKey {
 		case verdict
+		case claudeVerdict
 		case mode
 		case finishedAt = "at"
 		case durationMs
@@ -198,6 +210,7 @@ struct TestCaseLastRun: Decodable, Equatable {
 	init(from decoder: Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
 		verdict = try? container.decodeIfPresent(String.self, forKey: .verdict)
+		claudeVerdict = try? container.decodeIfPresent(String.self, forKey: .claudeVerdict)
 		mode = try? container.decodeIfPresent(String.self, forKey: .mode)
 		let finishedText = try? container.decodeIfPresent(String.self, forKey: .finishedAt)
 		finishedAt = finishedText.flatMap { ServerDate.parse(text: $0) }

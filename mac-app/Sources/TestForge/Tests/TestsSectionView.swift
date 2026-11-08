@@ -165,7 +165,7 @@ struct TestsSectionView: View {
 				overrideResult: { viewModel.beginOverrideSelected() },
 				revertEdit: { viewModel.requestRevertSelected() },
 				postToJira: { companions.jiraPost.begin(caseId: detail.id) },
-				explain: explainActions
+				replayMenu: replayMenuActions
 			)
 			let panels = TestCaseDetailPanels(media: viewModel.media, inputs: companions.caseInputs)
 			TestCaseDetailView(detail: detail, actions: actions, panels: panels)
@@ -232,13 +232,14 @@ struct TestsSectionView: View {
 		Text("That didn't work")
 	}
 
-	private var explainActions: TestCaseExplainActions {
+	private var replayMenuActions: TestCaseReplayActions {
 		let viewModel = viewModel
-		return TestCaseExplainActions(
+		return TestCaseReplayActions(
 			canReplay: viewModel.canReplaySelected,
 			isWriting: viewModel.isWritingExplanations,
 			canWrite: viewModel.canRunSelected,
 			busyAction: viewModel.busyAction,
+			replay: { viewModel.replaySelectedCase() },
 			replayExplained: { viewModel.replaySelectedWithExplanations() },
 			recordDemo: { viewModel.recordSelectedDemo() },
 			writeExplanations: { viewModel.requestExplanationWrite() }

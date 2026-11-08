@@ -19,7 +19,7 @@ extension OnboardingCatalog {
 				number: 2,
 				title: String(localized: "Run the cases"),
 				place: String(localized: "Tests · ⌘2"),
-				text: String(localized: "Load cases (Confluence or a file). Replay recorded ones; Run with Claude asks first, and Auto picks the model."),
+				text: String(localized: "Load cases (Confluence or a file). ⚡ green cases replay free; ✨ ones need Claude, which asks first. A Claude pass counts once its recording replays."),
 				needsClaude: true,
 				claudeNote: String(localized: "Only to load cases from Confluence and to Run with Claude — replays don't")
 			),
@@ -77,8 +77,8 @@ extension OnboardingCatalog {
 			OnboardingFlowStep(
 				number: 10,
 				title: String(localized: "Show anyone what a test checks"),
-				place: String(localized: "Test Cases › Explain"),
-				text: String(localized: "Replay with plain-words subtitles and pointers over the Simulator, or record a demo video in English or Bahasa."),
+				place: String(localized: "Test Cases › hold Replay"),
+				text: String(localized: "Press and hold Replay: replay with plain-words subtitles and pointers over the Simulator, or record a demo video in English or Bahasa."),
 				needsClaude: false
 			),
 			OnboardingFlowStep(
@@ -238,7 +238,7 @@ extension OnboardingCatalog {
 				number: 2,
 				title: String(localized: "Replay what you touched"),
 				place: String(localized: "Tests · ⌘2"),
-				text: String(localized: "Replay the cases for your feature. A failure comes with Claude's call: app bug, broken recording or environment."),
+				text: String(localized: "Replay the ⚡ cases for your feature, free. A failure comes with Claude's call: app bug, broken recording or environment."),
 				claudeNote: String(localized: "When you're signed in, Claude explains a failure")
 			),
 			OnboardingFlowStep(

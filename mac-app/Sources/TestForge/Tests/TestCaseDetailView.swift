@@ -16,7 +16,7 @@ struct TestCaseDetailActions {
 	let overrideResult: () -> Void
 	let revertEdit: () -> Void
 	let postToJira: () -> Void
-	let explain: TestCaseExplainActions
+	let replayMenu: TestCaseReplayActions
 }
 
 /// The panels under a case's fields, each observing its own model.
@@ -69,17 +69,7 @@ struct TestCaseDetailView: View {
 	private var actionBar: some View {
 		HStack(spacing: TestForgeConstants.Spacing.medium) {
 			if let recordingName = detail.recordingName {
-				Button {
-					actions.replay()
-				} label: {
-					BusyActionLabel(title: String(localized: "Replay"), systemImage: "play.fill", busyTitle: busyTitle(for: [.replay]))
-				}
-				.buttonStyle(.borderedProminent)
-				.disabled(!actions.canReplay)
-				.help("Replay “\(recordingName)” — no Claude usage (⌘R)")
-				.accessibilityIdentifier(TestForgeConstants.Accessibility.testsReplayButton)
-				.tutorialAnchor(.testsReplayButton)
-				TestCaseExplainMenuView(hasExplanations: detail.hasExplanations, actions: actions.explain)
+				TestCaseReplayMenuView(recordingName: recordingName, hasExplanations: detail.hasExplanations, actions: actions.replayMenu)
 			}
 			let runWithClaudeBusyTitle = busyTitle(for: [.runWithClaude, .overrideAndRerun])
 			Button {
@@ -88,7 +78,7 @@ struct TestCaseDetailView: View {
 				BusyActionLabel(title: String(localized: "Run with Claude…"), systemImage: "sparkles", busyTitle: runWithClaudeBusyTitle)
 			}
 			.disabled(!actions.canRunWithClaude)
-			.help("Claude explores the app and judges the case")
+			.help("Claude explores the app and judges the case. A pass counts once a replay of its saved recording passes too.")
 			.accessibilityIdentifier(TestForgeConstants.Accessibility.testsRunClaudeButton)
 			.tutorialAnchor(.testsRunClaudeButton)
 			Button {
@@ -131,10 +121,18 @@ struct TestCaseDetailView: View {
 
 	private var lastRunSection: some View {
 		VStack(alignment: .leading, spacing: TestForgeConstants.Spacing.small) {
+			TestCaseReplayStatusView(badge: detail.replayBadge)
 			Text("Last run")
 				.font(.headline)
 			HStack(spacing: TestForgeConstants.Spacing.medium) {
 				VerdictBadgeView(text: detail.lastRunText, tone: detail.lastRunTone)
+			}
+			if let unconfirmedText = detail.unconfirmedText {
+				Label(unconfirmedText, systemImage: "bolt.badge.clock")
+					.font(.callout)
+					.foregroundStyle(.orange)
+					.fixedSize(horizontal: false, vertical: true)
+					.accessibilityIdentifier(TestForgeConstants.Accessibility.testsUnconfirmedText)
 			}
 			if let staleText = detail.staleText {
 				Label(staleText, systemImage: "clock.arrow.circlepath")

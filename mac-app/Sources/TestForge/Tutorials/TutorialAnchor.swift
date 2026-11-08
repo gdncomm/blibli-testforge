@@ -43,7 +43,7 @@ enum TutorialAnchor: String {
 	case resultsRerunFailedButton
 	case resultsExportBundleButton
 	case resultsImportBundleButton
-	case testsExplainMenu
+	case testsReplayStatus
 	case testsEditButton
 	case testsOverrideButton
 	case testsMediaPanel

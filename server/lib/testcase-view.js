@@ -4,6 +4,7 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { effectiveResult } from "./result-overrides.js";
 import { coverageOf } from "./staleness.js";
+import { confirmedVerdict, FOLLOW_UP_MODES, replayStatus, UNCONFIRMED } from "./replay-status.js";
 
 const SUMMARY_FIELDS = ["id", "scenario", "precondition", "steps", "expected", "api", "evidence", "iosStatus"];
 
@@ -13,19 +14,39 @@ const SUMMARY_FIELDS = ["id", "scenario", "precondition", "steps", "expected", "
  * `staleFor(run, covers)` (F1, D-188) says why that run no longer speaks for the build under test, or null.
  */
 export function testcaseView({ title = null, source = null, cases = [], macros = [], runs = [], proof = {}, isLoading = false, staleFor = () => null, ticketsOf = () => [] }) {
+	// Case ids match the way a batch plans them (`caseLinks` upper-cases), so the icon and the batch agree (D-220).
 	const macroByCase = new Map();
+	const problemOf = new Map();
 	for (const macro of macros) {
-		for (const caseId of macro.testCases ?? []) if (!macroByCase.has(caseId)) macroByCase.set(caseId, { id: macro.id, name: macro.name, usesMocks: Boolean(macro.usesMocks), hasDemoNotes: Boolean(macro.hasDemoNotes), setup: caseSetup(macro.requires), covers: coverageOf(macro) });
+		problemOf.set(macro.id, macro.replayProblem ?? null);
+		for (const caseId of macro.testCases ?? []) {
+			const key = String(caseId).toUpperCase();
+			if (!macroByCase.has(key)) macroByCase.set(key, { id: macro.id, name: macro.name, usesMocks: Boolean(macro.usesMocks), hasDemoNotes: Boolean(macro.hasDemoNotes), setup: caseSetup(macro.requires), covers: coverageOf(macro) });
+		}
 	}
+	// Saving a case as a macro and triaging a failed replay are follow-ups, not results of the case.
+	const results = runs.filter((run) => !FOLLOW_UP_MODES.has(run.mode));
 	const latestRun = new Map();
-	for (const run of runs) {
+	const latestReplay = new Map();
+	for (const run of results) {
 		for (const key of [run.caseId, run.macroId].filter(Boolean)) if (!latestRun.has(key)) latestRun.set(key, run);
+		const replayed = run.mode === "replay" ? run.macroId ?? run.caseId : null;
+		if (replayed && !latestReplay.has(replayed)) latestReplay.set(replayed, run);
 	}
 	const lastRunFor = (caseId, macro) => {
 		const candidates = [latestRun.get(caseId), macro && latestRun.get(macro.id)].filter(Boolean);
 		const run = candidates.sort((first, second) => Date.parse(second.recordedAt ?? 0) - Date.parse(first.recordedAt ?? 0))[0];
 		if (!run) return null;
-		return { verdict: run.verdict ?? null, mode: run.mode ?? null, at: run.recordedAt ?? null, durationMs: run.durationMs ?? null, build: buildLabel(run.build), stale: staleFor(run, macro?.covers ?? null) };
+		const verdict = confirmedVerdict(run);
+		return {
+			verdict,
+			mode: run.mode ?? null,
+			at: run.recordedAt ?? null,
+			durationMs: run.durationMs ?? null,
+			build: buildLabel(run.build),
+			stale: staleFor(run, macro?.covers ?? null),
+			...(verdict === UNCONFIRMED && { claudeVerdict: run.verdict }),
+		};
 	};
 	return {
 		title,
@@ -33,14 +54,15 @@ export function testcaseView({ title = null, source = null, cases = [], macros =
 		isLoading,
 		cases: cases.map((testCase) => {
 			const summary = Object.fromEntries(SUMMARY_FIELDS.map((field) => [field, testCase[field] ?? null]));
-			const macro = macroByCase.get(testCase.id) ?? null;
+			const macro = macroByCase.get(String(testCase.id).toUpperCase()) ?? null;
 			// D-180: a person's override counts until a newer run; its history goes along for the detail view.
 			const history = testCase.resultOverrides ?? [];
 			const run = lastRunFor(testCase.id, macro);
 			const { verdict, current } = effectiveResult(history, run);
 			const lastRun = current ? { ...(run ?? { mode: null, at: null, durationMs: null }), verdict, override: current } : run;
 			// D-182: screenshots and videos filed for the case in the active test batch folder.
-			return { ...summary, localEdit: testCase.localEdit ?? null, macro, lastRun, resultOverrides: history, proof: proof[testCase.id] ?? null, tickets: ticketsOf(testCase.id) };
+			const replay = replayStatus({ macro, problem: macro && problemOf.get(macro.id), lastReplay: macro && latestReplay.get(macro.id) });
+			return { ...summary, localEdit: testCase.localEdit ?? null, macro, replay, lastRun, resultOverrides: history, proof: proof[testCase.id] ?? null, tickets: ticketsOf(testCase.id) };
 		}),
 	};
 }

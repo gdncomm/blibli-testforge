@@ -1,6 +1,7 @@
 import SwiftUI
 
-struct TestCaseExplainActions {
+struct TestCaseReplayActions {
+	/// The recording runs without Claude (D-220) and nothing else is running.
 	let canReplay: Bool
 
 	/// Claude is writing the explanations right now; the menu waits for it.
@@ -9,18 +10,21 @@ struct TestCaseExplainActions {
 	/// False while a run starts or runs.
 	let canWrite: Bool
 
-	/// D-213: the request in flight; the menu's label shows it while an explained replay or a demo video starts.
+	/// D-213: the request in flight; a spinner beside the button shows it while the replay starts.
 	let busyAction: TestCaseAction?
 
+	let replay: () -> Void
 	let replayExplained: () -> Void
 	let recordDemo: () -> Void
 	let writeExplanations: () -> Void
 }
 
-/// D-165: replays anyone can follow — subtitles and pointers over the Simulator, or a demo video with them burned in.
-struct TestCaseExplainMenuView: View {
+/// D-220: one Replay button. A click replays; press and hold (or the arrow) lists the other replays (D-165) and,
+/// last and marked with sparkles, the one choice that uses Claude.
+struct TestCaseReplayMenuView: View {
+	let recordingName: String
 	let hasExplanations: Bool
-	let actions: TestCaseExplainActions
+	let actions: TestCaseReplayActions
 
 	var body: some View {
 		// A menu label can't show a spinner on macOS, so it sits beside the menu while the menu's work starts.
@@ -36,6 +40,13 @@ struct TestCaseExplainMenuView: View {
 
 	private var menu: some View {
 		Menu {
+			Button {
+				actions.replay()
+			} label: {
+				Label("Replay", systemImage: "play.fill")
+			}
+			.disabled(!actions.canReplay)
+			.accessibilityIdentifier(TestForgeConstants.Accessibility.testsReplayMenuReplay)
 			Button {
 				actions.replayExplained()
 			} label: {
@@ -59,17 +70,23 @@ struct TestCaseExplainMenuView: View {
 			.disabled(actions.isWriting || !actions.canWrite)
 			.accessibilityIdentifier(TestForgeConstants.Accessibility.testsWriteExplanationsButton)
 		} label: {
-			Label(busyTitle ?? String(localized: "Explain"), systemImage: "captions.bubble")
+			Label(busyTitle ?? String(localized: "Replay"), systemImage: "play.fill")
+		} primaryAction: {
+			actions.replay()
 		}
+		.menuStyle(.button)
+		.buttonStyle(.borderedProminent)
 		.fixedSize()
-		.disabled(!actions.canReplay && !actions.canWrite)
-		.help(hasExplanations ? "Replays anyone can follow, in English or Bahasa Indonesia" : "No explanations yet — write them once with Claude")
-		.accessibilityIdentifier(TestForgeConstants.Accessibility.testsExplainMenu)
-		.tutorialAnchor(.testsExplainMenu)
+		.disabled(!actions.canReplay)
+		.help("Replay “\(recordingName)” with no Claude usage (⌘R). Press and hold for explained replays and demo videos.")
+		.accessibilityIdentifier(TestForgeConstants.Accessibility.testsReplayButton)
+		.tutorialAnchor(.testsReplayButton)
 	}
 
 	private var busyTitle: String? {
 		switch actions.busyAction {
+			case .replay:
+				return String(localized: "Starting replay…")
 			case .replayWithExplanations:
 				return String(localized: "Starting explained replay…")
 			case .recordDemo:

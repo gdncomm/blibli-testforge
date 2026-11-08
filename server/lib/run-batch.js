@@ -95,7 +95,12 @@ export class RunBatch extends EventEmitter {
 				this.#changed();
 			};
 			const next = await this.deps.followUp(item, { attach, isStopped }).catch((error) => ({ followUpError: error.message }));
-			if (next && !isStopped()) Object.assign(item, next);
+			if (next && !isStopped()) {
+				const { usageLimit, ...result } = next;
+				Object.assign(item, result);
+				// D-220: the limit stopped saving or triaging, not the case; its result stands and the batch holds.
+				if (usageLimit) this.requestPause(`Claude's usage limit stopped the follow-up for ${item.caseId}: ${usageLimit}. Resume when it resets.`);
+			}
 			delete item.phase;
 		}
 		const wasSkipped = item.status === "skipping";

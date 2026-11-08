@@ -160,7 +160,20 @@ Confluence is read through Claude; a file needs no Claude. The page is never cha
 
 ### Find and filter
 
-Search by id or words. The **Show** menu offers All, Recorded, Failed last, Stale, Never run. Row icons show: has a recording, edited locally, and proof (screenshots with a count, a screen recording, or "Evidence only: no pass or fail, check the screenshots by eye").
+Search by id or words. The **Show** menu offers All, Free replay, Needs Claude, Failed last, Stale, Never run. Row icons show whether the case runs without Claude (below), edited locally, and proof (screenshots with a count, a screen recording, or "Evidence only: no pass or fail, check the screenshots by eye").
+
+### Free replay or Claude
+
+Every case has one icon beside its id, and the selected case says it in words above **Last run**. The header counts them: "N cases · N free replays · N need Claude".
+
+| Icon | Meaning | Replay |
+|---|---|---|
+| ⚡ green (bolt) | **Free replay**: its recording's last replay passed. Replays and batches use no Claude. | On |
+| ⚡ orange (bolt with a clock) | **Replay not confirmed**: recorded, but no replay has passed yet, or the last one did not. Replay it to confirm. In a batch, a failed replay asks Claude to triage. | On |
+| ⚠ red (bolt with a warning) | **Recording needs repair**: a routine or element it uses is missing, so it cannot run without Claude. Run with Claude repairs it. | Off |
+| ✨ purple (sparkles) | **Needs Claude**: no recording yet. Only Run with Claude can run it. | Off |
+
+**When a case counts as passed.** A Claude run that passes shows **UNCONFIRMED** until its steps are saved as a recording and a replay of that recording passes. Run with Claude and Run all do both for you: Claude saves the recording, then the driver replays it. If saving fails (for example the Claude usage limit is reached), the case stays UNCONFIRMED and its detail says what to do: press Replay when a recording exists, or Run with Claude again when none was saved. A batch pauses when the usage limit stops saving a recording or triaging a failure; Resume after the limit resets.
 
 ### Replay a recorded case (no Claude)
 
@@ -168,13 +181,15 @@ Search by id or words. The **Show** menu offers All, Recorded, Failed last, Stal
 2. Click **Replay** or press ⌘R. Live steps (right pane) show each step with its time and result, with **System prep** above while the phone gets ready.
 3. Stop with the stop button or ⌘..
 
-If the case has no recording, ⌘R opens **Run with Claude?** instead.
+Press and hold **Replay** (or click its arrow) for **Replay**, **Replay with explanations**, **Record demo video** and, marked ✨, **Write explanations with Claude…** (see [Explained replays](#explained-replays)).
+
+Replay is off for a recording that needs repair ("The recording can't replay: …"). If the case has no recording, ⌘R opens **Run with Claude?** instead.
 
 ### First run with Claude
 
 1. Select a case with no recording and click **Run with Claude…**.
 2. Read the dialog: it uses your Claude plan and can take several minutes. Pick a model: **Auto** (cheapest that fits, moves up if stuck), Haiku, Sonnet or Opus.
-3. Confirm. Claude reads the case, drives the phone and saves the steps; a replay must pass before the recording is kept.
+3. Confirm. Claude reads the case, drives the phone and saves the steps; a replay must pass before the recording is kept. Until that replay passes the case shows UNCONFIRMED, not PASS.
 4. Use **Claude session** in Live steps to watch or steer it.
 
 Failures are sorted for you: app bug, broken recording (Claude repairs it, shown as "Recording repaired"), or environment.
@@ -197,9 +212,9 @@ The QA build must contain the changes: build first if it does not.
 
 A result turns stale when a newer build changes the code behind a case. **Replay stale (N)** appears in the header and replays those recordings on the current build with no Claude.
 
-### Explain
+### Explained replays
 
-1. Select a recorded case, open **Explain**.
+1. Select a recorded case, press and hold **Replay**.
 2. **Replay with explanations**: a slow replay over the Simulator with an intro card, a pointer and subtitle per step, and a result card. No Claude.
 3. **Record demo video**: renders English and Bahasa Indonesia videos with burned-in subtitles. They appear in Reports › Demos.
 4. **Write explanations with Claude…** (or **Rewrite**) asks first, then Claude writes the subtitles once for the case; later replays and videos reuse them.
@@ -315,7 +330,7 @@ While a scan runs the phone is kept for you, so tests wait. "Only the top of thi
 3. Pick a case. Its inspector shows **Proof**, **Video proof**, **Mocks that answered**, **What the run said** and **Steps**. Click a screenshot or video to open the [Proof window](#14-proof-window).
 4. Use **Accept** (the verdict is right), **Override…** (choose PASS or FAIL, write why; it shows in the report) or **Needs re-run**.
 
-**Re-run failed.** Click **Re-run failed…**. Confirm. Recorded cases replay with no Claude; cases without a recording run through Claude. A case that then passes is marked FLAKY.
+**Re-run failed.** Click **Re-run failed…**. Confirm. Each case is planned again: a case that has a recording now replays with no Claude, even if it went through Claude the first time; cases without a recording run through Claude. A case that then passes is marked FLAKY.
 
 **Hand on a run.**
 
@@ -361,7 +376,7 @@ While a scan runs the phone is kept for you, so tests wait. "Only the top of thi
 2. Click a demo, choose **English** or **Bahasa Indonesia**, press the play overlay (or Space).
 3. Hover the video and press ⤢ for full screen (Esc leaves). Switching language carries on from the same moment.
 
-**What can go wrong.** "No demos yet": in Tests pick a recorded case and choose Explain › Record demo video. "This demo has no `<lang>` version; playing `<other>`".
+**What can go wrong.** "No demos yet": in Tests pick a recorded case, press and hold Replay and choose Record demo video. "This demo has no `<lang>` version; playing `<other>`".
 
 ---
 

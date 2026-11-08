@@ -5,6 +5,8 @@ Format: [Keep a Changelog](https://keepachangelog.com). Versions follow [CONTRIB
 ## [Unreleased]
 
 ### Added
+- Mac app: each test case shows whether it replays without Claude: ⚡ free replay, ⚡ not confirmed, ⚠ recording needs repair, ✨ needs Claude. Free replay and Needs Claude filters; the header counts both (D-220).
+- Mac app: one Replay button. Click to replay; press and hold for Replay with explanations, Record demo video and Write explanations with Claude (D-220).
 - Mac app: Docs section (⌘D) that lists the README, the usage guide and the feature list and shows them in place, with Half and Full layouts, an outline, links that open in place, and a separate Docs window for the left or right half of the screen or full screen. Drop Markdown files or folders, or use File › Open Markdown… (⌘O), to read your own (D-218).
 - Mac app: Help › TestForge Usage Guide and TestForge Features open those docs in the app.
 - Mac app: the Markdown viewer reads nested and task lists, heading links, and images next to the document.
@@ -18,6 +20,9 @@ Format: [Keep a Changelog](https://keepachangelog.com). Versions follow [CONTRIB
 - Mac app test target with `RepoFolderResolver` tests (`swift test` in `mac-app/`).
 
 ### Fixed
+- A Claude pass now shows UNCONFIRMED until a replay of its saved recording passes, so a case whose recording was never saved no longer looks passed and quietly goes back to Claude. A single Run with Claude saves and replays the recording too (D-220).
+- The Claude usage limit during saving a recording or triaging a failure now pauses the batch instead of leaving the case unrecorded. Re-run failed replays cases that have a recording now (D-220).
+- Replay is off, and the server refuses it, for a recording whose routine or element is missing.
 - `setup.sh` and `update-app.command` clear the macOS quarantine flag a Git app such as Sourcetree puts on pulled scripts, so double-clicking them works.
 - An app built inside the checkout skipped Setup and started the server without `QA_PROJECT_DIR`, so the server exited. Setup now shows until an iOS clone is chosen.
 

@@ -69,6 +69,7 @@ import { driverHost } from "./lib/driver-host.js";
 import { activeJobs, appendLine, cancelJob, createJob, finishJob, getJob, jobEvents } from "./lib/jobs.js";
 import { narrator } from "./lib/narration.js";
 import { usageFeed } from "./lib/usage.js";
+import { replayProblem, UNCONFIRMED } from "./lib/replay-status.js";
 import { installTap } from "./lib/usage-tap.js";
 import { listCliSessions } from "./lib/claude-cli-sessions.js";
 import { RemoteControl } from "./lib/remote-control.js";
@@ -983,14 +984,19 @@ app.put("/api/testcases/:id/result", async (req, res) => {
 	applyLocalEdits();
 	stateHub.poke("testcases");
 	const updated = loadedCases.find((item) => item.id === testCase.id);
-	const run = rerun ? enqueueQaRun(updated, { model: req.body.model }) : null;
+	const run = rerun ? confirmAfterPass(updated, enqueueQaRun(updated, { model: req.body.model })) : null;
 	res.json({ ok: true, override: entry, case: updated, ...(run && { jobId: run.job.id, taskId: run.task.id }) });
 });
 
 app.get("/api/macros", async (_req, res) => {
 	const [v1, v2, registry] = await Promise.all([listMacros(), listMacrosV2(), loadRegistry().catch(() => ({ elements: {} }))]);
+	// D-220: a recording that can't replay (missing routine, unknown element) is not a free replay.
+	const byId = new Map(v2.map((macro) => [macro.id, macro]));
+	// An unreadable registry says nothing about a recording, so its element check is skipped, not failed.
+	const registryRead = await loadRegistry().catch(() => null);
+	const problems = await Promise.all(v2.map((macro) => replayProblem(macro, { loadMacro: async (id) => byId.get(id) ?? null, registry: registryRead })));
 	const macros = [
-		...v2.map((macro) => ({ id: macro.id, name: macro.name, kind: macro.kind, links: macro.links, testCases: caseLinks(macro), aliases: macro.aliases, requires: macro.requires, covers: macro.covers, usesMocks: usesMocks(macro), hasDemoNotes: Boolean(macro.demo), path: macro.path, schemaVersion: 2, anchors: anchorSummary(macro, registry) })),
+		...v2.map((macro, index) => ({ id: macro.id, name: macro.name, kind: macro.kind, links: macro.links, testCases: caseLinks(macro), aliases: macro.aliases, requires: macro.requires, covers: macro.covers, usesMocks: usesMocks(macro), hasDemoNotes: Boolean(macro.demo), path: macro.path, schemaVersion: 2, anchors: anchorSummary(macro, registry), replayProblem: problems[index] })),
 		// macro_cli.py lists every file under macros/, v2 ones and references included; those are shown once, above.
 		...(v1.macros ?? []).filter((macro) => !v2.some((entry) => macro.file?.endsWith(entry.path)) && !String(macro.file ?? "").endsWith(".ref.json")).map((macro) => ({ ...macro, schemaVersion: 1 })),
 	];
@@ -1390,6 +1396,9 @@ app.post("/api/macros/v2/:id/replay", async (req, res) => {
 	const macro = await findMacroV2(req.params.id);
 	if (!macro) return res.status(404).json({ error: "no such macro" });
 	if (refuseWhileTesting(res)) return;
+	// D-220: Replay is only offered for a recording that can run without Claude.
+	const problem = await replayProblem(macro, { loadMacro: (id) => findMacroV2(id), registry: await loadRegistry().catch(() => null) });
+	if (problem) return res.status(409).json({ error: `The recording can't replay: ${problem}. Run with Claude to repair it.` });
 	if (await refuseUnlessReady(res)) return;
 	// D-165: `explain` replays slowly with the live overlay's cards, subtitles and pointers over the Simulator.
 	const { job, task } = enqueueReplay(macro, { explain: req.body?.explain === true });
@@ -1915,7 +1924,7 @@ app.post("/api/testcases/:id/run", async (req, res) => {
 	if (refuseWhileTesting(res)) return;
 	if (await refuseUnlessReady(res, { needsClaude: true })) return;
 
-	const { job, task } = enqueueQaRun(testCase, { techDocPath, model: req.body.model });
+	const { job, task } = confirmAfterPass(testCase, enqueueQaRun(testCase, { techDocPath, model: req.body.model }));
 	res.json({ ok: true, jobId: job.id, taskId: task.id });
 });
 
@@ -1974,6 +1983,21 @@ function enqueueQaRun(testCase, { techDocPath, approval, videoNote = "", model }
 	return enqueueClaudeTurn({ caseId: testCase.id, scenario: testCase.scenario, prompt, title: `▶ Run ${testCase.id}`, approval, model });
 }
 
+/**
+ * D-220: a single Claude run that passes is confirmed the way a batch confirms it — a case with a recording replays
+ * it; one without is saved as a macro and proven by a replay. Until a replay passes, the case shows UNCONFIRMED.
+ */
+function confirmAfterPass(testCase, enqueued, { approval } = {}) {
+	jobDone(enqueued.job).then(async (outcome) => {
+		if (!String(outcome.verdict ?? "").startsWith("PASS") || outcome.usageLimit) return;
+		const macro = (await listMacrosV2()).find((entry) => caseLinks(entry).includes(String(testCase.id).toUpperCase()));
+		if (macro) return enqueueReplay(macro);
+		const item = { caseId: testCase.id, scenario: testCase.scenario, verdict: outcome.verdict, jobId: enqueued.job.id };
+		return learnMacro(item, { attach: () => {}, isStopped: () => false, approval });
+	}).catch((error) => console.error(`confirming ${testCase.id} failed:`, error));
+	return enqueued;
+}
+
 /** One Claude turn in the device lane: a new session, or the next turn of `sessionId` (D-064). */
 function enqueueClaudeTurn({ caseId, scenario, prompt, title, approval, sessionId = null, purpose = "run", model }) {
 	const job = jobForTask({ kind: purpose, caseId }, title);
@@ -2002,6 +2026,8 @@ async function triageFailure(item, { attach, isStopped, approval }) {
 	attach(handleFor(turn.job, "triage"));
 	await jobDone(turn.job);
 	if (isStopped()) return null;
+	// D-220: no triage happened; the failed replay's verdict stands and the batch pauses.
+	if (turn.job.meta.usageLimit) return { triage: { kind: "NOT_RUN", summary: "Claude's usage limit stopped the triage" }, usageLimit: turn.job.meta.usageLimit };
 	const triage = { ...parseTriage(turn.job.meta.finalText || turn.job.lines.slice(-20).join("\n")), sessionId: turn.job.meta.sessionId, costUsd: await taskCost(turn.task.id), changedFiles: changedFiles(before, await snapshotMacroFiles(root)) };
 	if (triage.kind === "MACRO_BROKEN" && triage.changedFiles.length) {
 		const repaired = await findMacroV2(item.macroId);
@@ -2032,9 +2058,12 @@ async function learnMacro(item, { attach, isStopped, approval }) {
 	if (isStopped()) return null;
 	const changed = changedFiles(before, await snapshotMacroFiles(root));
 	const costUsd = await taskCost(turn.task.id);
+	// D-220: Claude's pass counts only once a replay of the saved recording passes; until then it is UNCONFIRMED.
+	const unconfirmed = (reason, extra = {}) => ({ claudeVerdict: item.verdict, verdict: UNCONFIRMED, learned: { ok: false, reason, changedFiles: changed, costUsd, ...extra } });
+	if (turn.job.meta.usageLimit) return { ...unconfirmed("Claude's usage limit stopped saving the recording"), usageLimit: turn.job.meta.usageLimit };
 	const named = parseLearnedMacroId(turn.job.meta.finalText);
 	const learned = (await listMacrosV2(root)).find((macro) => macro.id === named || caseLinks(macro).includes(String(item.caseId).toUpperCase()));
-	if (!learned) return { learned: { ok: false, reason: "Claude didn't save a macro linked to the case", changedFiles: changed, costUsd } };
+	if (!learned) return unconfirmed("Claude didn't save a macro linked to the case");
 	const replay = enqueueReplay(learned);
 	attach(handleFor(replay.job, "proving the macro"));
 	const outcome = await jobDone(replay.job);
@@ -2047,7 +2076,9 @@ async function learnMacro(item, { attach, isStopped, approval }) {
 		const { path: _path, aliases: _aliases, ...content } = JSON.parse(await readFile(file, "utf8"));
 		await writeFile(file, `${JSON.stringify(content, null, 2)}\n`);
 	}
-	return { learned: { ok: isProven, macroId: learned.id, macroName: learned.name, path: learned.path, replayVerdict: outcome.verdict, removed: !isProven && isNew, changedFiles: changed, costUsd } };
+	const learnedResult = { macroId: learned.id, macroName: learned.name, path: learned.path, replayVerdict: outcome.verdict, removed: !isProven && isNew, changedFiles: changed, costUsd };
+	if (!isProven) return { claudeVerdict: item.verdict, verdict: UNCONFIRMED, learned: { ok: false, reason: `the saved recording's replay ended ${outcome.verdict ?? "without a verdict"}`, ...learnedResult } };
+	return { learned: { ok: true, ...learnedResult } };
 }
 
 app.post("/api/testcases/:id/replay", async (req, res) => {
@@ -2713,7 +2744,9 @@ app.post("/api/results/:id/rerun-failed", async (req, res) => {
 	const picks = rerunCandidates(run);
 	if (picks.length === 0) return res.status(400).json({ error: "nothing to re-run — every case passed or was already re-run" });
 	if (refuseWhileTesting(res)) return;
-	const items = picks.map(({ item, index }) => ({ caseId: item.caseId, scenario: item.scenario, mode: item.mode, macroId: item.macroId, macroName: item.macroName, rerunIndex: index }));
+	// D-220: planned again, so a case that has a recording now replays instead of going back to Claude.
+	const replanned = planItems(picks.map(({ item }) => loadedCases.find((entry) => entry.id === item.caseId) ?? { id: item.caseId, scenario: item.scenario }), await listMacrosV2());
+	const items = picks.map(({ index }, position) => ({ ...replanned[position], rerunIndex: index }));
 	if (items.some((item) => item.mode === "claude" && !loadedCases.some((entry) => entry.id === item.caseId))) {
 		return res.status(409).json({ error: "load the test document again — a case to re-run runs through Claude and needs it" });
 	}

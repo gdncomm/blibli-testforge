@@ -4,6 +4,7 @@ import Foundation
 enum TestCaseFilter: String, CaseIterable, Identifiable {
 	case all
 	case recorded
+	case needsClaude
 	case failedLast
 	case stale
 	case neverRun
@@ -15,7 +16,9 @@ enum TestCaseFilter: String, CaseIterable, Identifiable {
 			case .all:
 				return "All"
 			case .recorded:
-				return "Recorded"
+				return "Free replay"
+			case .needsClaude:
+				return "Needs Claude"
 			case .failedLast:
 				return "Failed last"
 			case .stale:
@@ -38,7 +41,7 @@ struct TestCaseRowModel: Equatable, Identifiable {
 	let scenario: String
 	let verdictText: String
 	let verdictTone: VerdictTone
-	let hasRecording: Bool
+	let replayBadge: TestCaseReplayBadge
 	let isEditedLocally: Bool
 	let proofBadges: [TestCaseProofBadge]
 
@@ -67,6 +70,12 @@ struct TestCaseDetailModel: Equatable {
 
 	/// Explanations exist, so an explained replay or demo video has subtitles in plain words.
 	let hasExplanations: Bool
+
+	/// D-220: free replay, not confirmed, needs repair, or needs Claude.
+	let replayBadge: TestCaseReplayBadge
+
+	/// Why a Claude pass shows as unconfirmed; nil otherwise.
+	let unconfirmedText: String?
 
 	let lastRunText: String
 	let lastRunTone: VerdictTone
@@ -269,7 +278,7 @@ final class TestsSectionViewModel: ObservableObject {
 	}
 
 	var canReplaySelected: Bool {
-		canRunSelected && detail?.recordingName != nil
+		canRunSelected && detail?.recordingName != nil && detail?.replayBadge.canReplay == true
 	}
 
 	init(store: StateStore, service: TestCaseActing, media: TestCaseMediaViewModel) {

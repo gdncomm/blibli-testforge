@@ -11,7 +11,12 @@ extension TestForgeConstants.Tests {
 }
 
 extension TestForgeConstants.Accessibility {
-		static let testsExplainMenu = "QAW_Tests_ExplainMenu"
+		static let testsReplayMenuReplay = "QAW_Tests_ReplayMenu_ReplayButton"
+		static let testsReplayBadgePrefix = "QAW_Tests_ReplayBadge_"
+		static let testsReplayStatus = "QAW_Tests_ReplayStatus"
+		static let testsReplayStatusTitle = "QAW_Tests_ReplayStatus_Title"
+		static let testsReplayStatusText = "QAW_Tests_ReplayStatus_Text"
+		static let testsUnconfirmedText = "QAW_Tests_UnconfirmedText"
 		static let testsExplainedReplayButton = "QAW_Tests_ExplainedReplayButton"
 		static let testsRecordDemoButton = "QAW_Tests_RecordDemoButton"
 		static let testsWriteExplanationsButton = "QAW_Tests_WriteExplanationsButton"

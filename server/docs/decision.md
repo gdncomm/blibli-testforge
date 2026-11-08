@@ -4402,3 +4402,28 @@ decision log, old walkthroughs), a long list most readers do not need, with out-
 **Project docs** group is removed; **TestForge guides** lists `README.md`, `docs/Usage-guide.md` and
 `docs/Features.md`, in that order, and **Your files** is unchanged. Other repo docs are still reachable: a link in a
 listed doc opens them in place, and they can be dropped or opened like any file.
+
+## D-220 — Free replays are marked, gated, and confirm a Claude pass (2026-11-07)
+
+**Problem:** a batch whose cases had passed still sent some of them to Claude, and when the Claude usage limit was
+reached it stalled. A case that Claude passed was saved as a recording in a second Claude turn; when that turn
+failed (the usage limit, or Claude not saving), the case still showed PASS but had no recording, so every later run
+of it went to Claude. The usage limit was handled only for a case's own run, not for the save or the triage after
+it. Re-run failed reused each case's first plan, so a case recorded since still went to Claude. The Tests list
+showed only "has a recording", not whether that recording could actually run without Claude. **User decision:**
+mark every case as a free replay or Claude-driven with AI icons; a case counts as passed only when a replay confirms
+it and it is saved as a macro; offer Replay only when it can run without Claude; merge Replay and Explain into one
+button (click replays, press and hold for the rest); keep triage. **Decision:** the server gives each case a replay
+status in the `testcases` slice (`lib/replay-status.js`): `free` (a recording whose last replay passed),
+`unconfirmed` (recorded, no passing replay yet or the last one failed), `broken` (a routine or element the recording
+uses is missing, read from the files without running anything; `/api/macros` lists it as `replayProblem`), and
+`claude` (no recording). The Mac app shows them as ⚡ green, ⚡ orange with a clock, ⚠ red and ✨ purple (sparkles,
+Apple's AI symbol, only where Claude is involved), adds Free replay / Needs Claude filters and header counts, and
+enables Replay only for `free` and `unconfirmed`; the server refuses a replay of a `broken` recording (409) too. A
+Claude run's PASS is shown as `UNCONFIRMED` (with `claudeVerdict` kept) until a replay of the case's recording
+passes later; in a batch, a failed save or a failed proving replay sets the item's verdict to `UNCONFIRMED`. A single
+Run with Claude now confirms itself like a batch: a pass replays the case's recording, or saves one and replays it.
+Saving and triage turns are no longer counted as the case's last run. A usage limit during saving or triage keeps
+the result and pauses the batch. Re-run failed plans each case again. Case ids match recordings without regard to
+case, as a batch already did. **Not done:** a "replays only" batch option, and a button to save a recording for an
+UNCONFIRMED case without running it with Claude again.

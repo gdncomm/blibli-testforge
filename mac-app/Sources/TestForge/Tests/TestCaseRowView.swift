@@ -9,12 +9,7 @@ struct TestCaseRowView: View {
 				HStack(spacing: TestForgeConstants.Spacing.small) {
 					Text(row.id)
 						.font(.body.monospaced().weight(.semibold))
-					if row.hasRecording {
-						Image(systemName: "record.circle")
-							.foregroundStyle(.secondary)
-							.help("Has a recording")
-							.accessibilityLabel("Has a recording")
-					}
+					TestCaseReplayBadgeView(badge: row.replayBadge)
 					if row.isEditedLocally {
 						Image(systemName: "pencil")
 							.foregroundStyle(.secondary)
