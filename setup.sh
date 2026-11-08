@@ -59,6 +59,11 @@ echo "Installing the server's dependencies"
 (cd "$ROOT/server" && npm install --no-audit --no-fund)
 
 echo
+echo "Clearing the download flag macOS puts on files a Git app pulled"
+# Sourcetree marks files it pulls as downloaded, and macOS then refuses to open the scripts on double-click.
+xattr -d com.apple.quarantine "$ROOT"/*.command "$ROOT"/*.sh "$ROOT"/mac-app/scripts/*.sh "$ROOT"/server/start.sh 2>/dev/null || true
+
+echo
 echo "Enabling the git hook that refuses a push to master"
 git -C "$ROOT" config core.hooksPath .githooks
 

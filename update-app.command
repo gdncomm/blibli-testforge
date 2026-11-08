@@ -35,5 +35,8 @@ else
 	git log --oneline "$before..$after"
 fi
 
+# Sourcetree marks files it pulls as downloaded, and macOS then refuses to open the scripts on double-click.
+xattr -d com.apple.quarantine "$ROOT"/*.command "$ROOT"/*.sh "$ROOT"/mac-app/scripts/*.sh "$ROOT"/server/start.sh 2>/dev/null || true
+
 echo
 exec "$ROOT/build-app.command"
