@@ -5,6 +5,8 @@ Format: [Keep a Changelog](https://keepachangelog.com). Versions follow [CONTRIB
 ## [Unreleased]
 
 ### Added
+- `docs/Features.md`: every feature of the Mac app, by sidebar section, with who it is for and whether it needs Claude.
+- `docs/Usage-guide.md`: a how-to for each feature, with notes on what is out of date in `server/docs/usage.md` and `walkthrough-v4.md`.
 - Mac app: Settings › Project › Updates and a TestForge menu item that pull the latest master, rebuild and reopen the app (D-217).
 - `build-app.command`: double-click to build the Mac app and open it.
 - `update-app.command`: double-click to pull the latest master, rebuild and open the app.

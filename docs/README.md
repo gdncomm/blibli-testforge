@@ -4,6 +4,8 @@ The documents sit next to the code they describe. This page is the map.
 
 | Read | For |
 |---|---|
+| [Features.md](Features.md) | Every feature of the Mac app, by sidebar section, with who it is for and whether it needs Claude |
+| [Usage-guide.md](Usage-guide.md) | How to use each feature: steps, what you see, what can go wrong, tips; notes on what is out of date in the older docs |
 | [server/docs/design.md](../server/docs/design.md) | How the parts fit together |
 | [server/docs/decision.md](../server/docs/decision.md) | Every design decision, `D-NNN`, append only |
 | [server/docs/tutorials.md](../server/docs/tutorials.md) | The in-app tips and tour scripts, with a revision `R<n>` per feature |
