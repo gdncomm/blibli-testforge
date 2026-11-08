@@ -18,6 +18,7 @@ Format: [Keep a Changelog](https://keepachangelog.com). Versions follow [CONTRIB
 - Mac app test target with `RepoFolderResolver` tests (`swift test` in `mac-app/`).
 
 ### Fixed
+- `setup.sh` and `update-app.command` clear the macOS quarantine flag a Git app such as Sourcetree puts on pulled scripts, so double-clicking them works.
 - An app built inside the checkout skipped Setup and started the server without `QA_PROJECT_DIR`, so the server exited. Setup now shows until an iOS clone is chosen.
 
 ### Changed
