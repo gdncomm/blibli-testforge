@@ -38,18 +38,18 @@ struct ReadinessFixService: ReadinessFixing {
 
 	func action(forFixId fixId: String) -> FixAction? {
 		switch fixId {
-			case "qa-sim-create":
+			case "test-forge-sim-create":
 				return FixAction(
 					title: "Create QA simulator",
-					route: .post(path: "api/qa-sim/create", jsonBody: "{}"),
-					confirmation: "The simulator you test with shuts down for about a minute and is cloned as “QA · <name>”. Your own simulator stays untouched."
+					route: .post(path: "api/test-forge-sim/create", jsonBody: "{}"),
+					confirmation: "The simulator you test with shuts down for about a minute and is cloned as “TestForge · <name>”. Your own simulator stays untouched."
 				)
-			case "qa-sim-boot":
-				return FixAction(title: "Boot QA simulator", route: .post(path: "api/qa-sim/boot", jsonBody: "{}"), confirmation: nil)
-			case "qa-sim-solo":
+			case "test-forge-sim-boot":
+				return FixAction(title: "Boot QA simulator", route: .post(path: "api/test-forge-sim/boot", jsonBody: "{}"), confirmation: nil)
+			case "test-forge-sim-solo":
 				return FixAction(
 					title: "Shut down the others",
-					route: .post(path: "api/qa-sim/solo", jsonBody: "{}"),
+					route: .post(path: "api/test-forge-sim/solo", jsonBody: "{}"),
 					confirmation: "Shut down every other booted simulator? QA runs need the QA simulator alone."
 				)
 			case "build-qa":
@@ -64,7 +64,7 @@ struct ReadinessFixService: ReadinessFixing {
 				return FixAction(
 					title: "Free disk space",
 					route: .post(path: "api/code/free-space", jsonBody: "{\"olderThanDays\":14}"),
-					confirmation: "Remove QA copies and build output not used for 14 days? Only ~/.testforge/ is touched."
+					confirmation: "Remove QA copies and build output not used for 14 days? Only ~/.test-forge/ is touched."
 				)
 			case "choose-proof-folder":
 				return FixAction(title: "Choose folder…", route: .chooseProofFolder, confirmation: nil)

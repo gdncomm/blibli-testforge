@@ -47,9 +47,9 @@ test("three failed steps in a row, or a spent time budget, move the run up one t
 	let clock = 0;
 	const switches = [];
 	const watch = watchForEscalation(session, { model: "haiku", now: () => clock, tick: 5, escalate: async (next) => switches.push(next) });
-	session.emit("tool-result", { name: "mcp__qa-driver__qa_tap", text: "element not found" });
+	session.emit("tool-result", { name: "mcp__test-forge-driver__test_forge_tap", text: "element not found" });
 	session.emit("tool-result", { name: "Read", text: "ok" });
-	for (let index = 0; index < 3; index++) session.emit("tool-result", { name: "mcp__qa-driver__qa_tap", isError: true });
+	for (let index = 0; index < 3; index++) session.emit("tool-result", { name: "mcp__test-forge-driver__test_forge_tap", isError: true });
 	await new Promise((resolve) => setTimeout(resolve, 20));
 	assert.deepEqual(switches, ["sonnet"]);
 	clock = 13 * 60_000;

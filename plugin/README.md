@@ -13,7 +13,7 @@ app did.
 /plugin install test-flow-recorder --marketplace gdncomm/blibli-testforge
 ```
 
-Or from a local clone: `claude plugin marketplace add <path-to-blibli-testforge>`, then `claude plugin install test-flow-recorder@testforge`.
+Or from a local clone: `claude plugin marketplace add <path-to-blibli-testforge>`, then `claude plugin install test-flow-recorder@test-forge`.
 
 ## What it needs
 
@@ -37,29 +37,29 @@ screen plane works without it; fixtures, mocking and the proof-of-mock gate do n
 Then, once per project:
 
 ```
-/qa-init --bundle-id <your app's bundle id>
+/test-forge-init --bundle-id <your app's bundle id>
 ```
 
-That attaches the `QADriverKit` product to your UI test target, writes a four-line subclass, and
-generates `QADriver.xcscheme` and `QADriver.xctestplan` using your project's own identifiers. It is
+That attaches the `TestForgeDriverKit` product to your UI test target, writes a four-line subclass, and
+generates `TestForgeDriver.xcscheme` and `TestForgeDriver.xctestplan` using your project's own identifiers. It is
 additive only, and it verifies that the pbxproj diff has zero deleted lines before it finishes.
 
 Build the harness once (slow, may need VPN for dependency resolution), then:
 
 ```
-/qa-harness ensure
-/qa-run <test case page> <tech doc>
+/test-forge-harness ensure
+/test-forge-run <test case page> <tech doc>
 ```
 
 ## Commands
 
 | Command | Does |
 |---|---|
-| `/qa-init` | wire an Xcode project to the harness, one time |
-| `/qa-harness` | status, start, restart, stop, logs |
-| `/qa-run` | run the workflow against a test case document |
-| `/qa-scan` | walk the app by hand and record each screen's accessibility surface; no cases run |
-| `/qa-fix` | apply what a completed run proposed, re-run those cases, keep only what passed |
+| `/test-forge-init` | wire an Xcode project to the harness, one time |
+| `/test-forge-harness` | status, start, restart, stop, logs |
+| `/test-forge-run` | run the workflow against a test case document |
+| `/test-forge-scan` | walk the app by hand and record each screen's accessibility surface; no cases run |
+| `/test-forge-fix` | apply what a completed run proposed, re-run those cases, keep only what passed |
 
 ## What ends up in the app binary
 
@@ -67,7 +67,7 @@ Almost nothing, and the one exception is worth reading before the first integrat
 
 | Component | In a shipped app? |
 |---|---|
-| `QADriverKit` | **No.** A `.static` product attached to the UI test target's `packageProductDependencies` only, and it lives outside the host package's `Sources/` glob so a dynamic framework cannot absorb XCTest by accident |
+| `TestForgeDriverKit` | **No.** A `.static` product attached to the UI test target's `packageProductDependencies` only, and it lives outside the host package's `Sources/` glob so a dynamic framework cannot absorb XCTest by accident |
 | skill, scripts, MCP servers, fixtures, journals, mock rules | **No.** Host-side or simulator-container-side. Never compiled |
 | a mock made permanent in Swift | **No**, behind a `#if DEBUG` seam |
 | retrofitted accessibility identifiers | **Yes**, and correctly so — a string literal and a modifier call per element |
@@ -92,14 +92,14 @@ configs:
 The umbrella module links both the real implementation and an inert mirror and compiles one away;
 the dead one is dead-stripped in practice. Where a release binary must **provably** contain none of
 the tool, link the `NetworkLensNoOp` product in the shipping configurations instead of the
-`NetworkLens` umbrella. `/qa-init` does this as its own step and reports which configurations it
+`NetworkLens` umbrella. `/test-forge-init` does this as its own step and reports which configurations it
 guarded.
 
 ## Nothing here knows which app it is driving
 
 A default that happens to be right for one app is worse than a missing one: it makes the tool appear
 to work while pointing at the wrong place. So the Swift takes its bundle id, launch arguments and
-media root from `QADriverConfiguration`; the scripts require `--bundle-id` rather than defaulting;
+media root from `TestForgeDriverConfiguration`; the scripts require `--bundle-id` rather than defaulting;
 and the MCP servers report the bundle id as unset rather than guessing.
 
 Read `skills/test-flow-recorder/usage.md` for what a run actually looks like, `SKILL.md` for the

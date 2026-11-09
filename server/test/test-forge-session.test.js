@@ -1,7 +1,7 @@
 // D-133: the TestForge resumes its own session per project; fresh closes it and starts another.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openTestForgeSession, pickTestForgeSession } from "../lib/testforge-session.js";
+import { openTestForgeSession, pickTestForgeSession } from "../lib/test-forge-session.js";
 
 function fakeSessions() {
 	const records = new Map();

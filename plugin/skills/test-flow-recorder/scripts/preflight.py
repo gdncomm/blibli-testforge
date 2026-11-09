@@ -83,7 +83,7 @@ def post_command(base: str, command: dict[str, Any], timeout: float) -> dict[str
 def gate_driver(report: Report, base: str, timeout: float) -> None:
     """A real command, never the attach flag.
 
-    `qa_status` tracks queue polls and goes stale: a live harness reports "never polled" right after
+    `test_forge_status` tracks queue polls and goes stale: a live harness reports "never polled" right after
     a restart while its own log says it is listening. A screenshot is the cheapest command that can
     only succeed if the collector is actually pumping the queue.
     """
@@ -91,7 +91,7 @@ def gate_driver(report: Report, base: str, timeout: float) -> None:
         result = post_command(base, {"kind": "screenshot", "label": "preflight"}, timeout)
     except (urllib.error.URLError, TimeoutError, OSError) as error:
         report.add("driver", "FAIL", f"no response from {base}: {error}. Start the harness "
-                                     "(QADriver scheme, Debug) and re-run.")
+                                     "(TestForgeDriver scheme, Debug) and re-run.")
         return
     path = result.get("path")
     if not path:
@@ -103,14 +103,14 @@ def gate_driver(report: Report, base: str, timeout: float) -> None:
 def gate_media(report: Report, screenshot: str | None, claimed: str | None) -> None:
     """The stills and the video have to land in the same folder, and two processes decide that.
 
-    Screenshots are written inside the runner, from the **test plan's** `QA_MEDIA_ROOT`; recordings
+    Screenshots are written inside the runner, from the **test plan's** `TEST_FORGE_MEDIA_ROOT`; recordings
     are written host-side by the driver MCP, from **its own** environment. Nothing makes those agree,
     and when they disagree neither side errors: a case ends with its screenshots under one root and
     its recording under another, and the report cites a file the reviewer cannot find beside the rest.
     Seen live on 2026-09-06 — stills under `Bazaar-QA`, clips under `Blibli-Test` — which is what
     running one project's cases from another project's directory produces.
 
-    `claimed` is the media root `qa_status` prints. Pass it every time, the same way `--mcp-container`
+    `claimed` is the media root `test_forge_status` prints. Pass it every time, the same way `--mcp-container`
     turns the container gate from a heuristic into a comparison.
     """
     if not screenshot:
@@ -120,21 +120,21 @@ def gate_media(report: Report, screenshot: str | None, claimed: str | None) -> N
     runner_root = Path(screenshot).parent.parent
     if not claimed:
         report.add("media", "WARN", f"runner writes under {runner_root}; pass --mcp-media-root "
-                                    "(from qa_status) to prove the driver agrees")
+                                    "(from test_forge_status) to prove the driver agrees")
         return
     if Path(claimed).expanduser().resolve() == runner_root.resolve():
         report.add("media", "PASS", f"screenshots and recordings share {runner_root}")
         return
     report.add("media", "FAIL",
                f"split evidence: the runner writes screenshots under {runner_root} while the driver "
-               f"records video under {claimed}. Set QA_MEDIA_ROOT to the same value in the test plan "
+               f"records video under {claimed}. Set TEST_FORGE_MEDIA_ROOT to the same value in the test plan "
                "and in the driver MCP's environment, then restart both.")
 
 
 def gate_skill_audit(report: Report, project_root: Path, platform: str) -> None:
     """The platform's governing view-code skill, re-checked cheaply against the fingerprint
-    `/qa-init` step 8 recorded — catches the skill having been deleted or renamed since setup, which
-    `/qa-init` running once has no way to know about. A platform that declares no requirement
+    `/test-forge-init` step 8 recorded — catches the skill having been deleted or renamed since setup, which
+    `/test-forge-init` running once has no way to know about. A platform that declares no requirement
     (`platforms/<platform>.md`'s "Host-project skills required") has nothing to check here.
     """
     platforms_dir = Path(__file__).parent.parent / "platforms"
@@ -146,18 +146,18 @@ def gate_skill_audit(report: Report, project_root: Path, platform: str) -> None:
     recorded = load_recorded_fingerprint(project_root, platform)
     if recorded is None:
         report.add("skill-audit", "FAIL", f"no recorded skill audit for {platform} — "
-                                          "run /qa-init step 8 before any run")
+                                          "run /test-forge-init step 8 before any run")
         return
 
     result = audit(project_root, platform, platforms_dir)
     if result.status == "missing_blocking":
         report.add("skill-audit", "FAIL", f"{platform} has no governing skill anymore — "
-                                          "re-run /qa-init step 8")
+                                          "re-run /test-forge-init step 8")
         return
     if result.fingerprint != recorded:
-        report.add("skill-audit", "WARN", f"skill audit state changed since /qa-init (recorded "
+        report.add("skill-audit", "WARN", f"skill audit state changed since /test-forge-init (recorded "
                                           f"{recorded}, now {result.fingerprint}) — consider "
-                                          "re-running /qa-init step 8")
+                                          "re-running /test-forge-init step 8")
         return
     report.add("skill-audit", "PASS", f"{platform} governing skill present ({result.fingerprint})")
 
@@ -169,7 +169,7 @@ def gate_devices(report: Report) -> None:
     `simctl io recordVideo`, `simctl openurl`, `get_app_container` — takes a device argument, and
     `booted` silently resolves to whichever one simctl picks. On 2026-09-06 that put ten recordings
     on an idle second simulator: same app, same screen, no error, and only the frame dimensions gave
-    it away. Pin `QA_DEVICE_UDID`, or shut the extra device down.
+    it away. Pin `TEST_FORGE_DEVICE_UDID`, or shut the extra device down.
     """
     try:
         listing = subprocess.run(["xcrun", "simctl", "list", "devices", "booted", "-j"],
@@ -184,12 +184,12 @@ def gate_devices(report: Report) -> None:
     if len(devices) == 1:
         report.add("devices", "PASS", f"one booted simulator: {devices[0]['name']} ({devices[0]['udid']})")
         return
-    if os.environ.get("QA_DEVICE_UDID"):
-        report.add("devices", "PASS", f"{len(devices)} booted, pinned by QA_DEVICE_UDID="
-                                      f"{os.environ['QA_DEVICE_UDID']}")
+    if os.environ.get("TEST_FORGE_DEVICE_UDID"):
+        report.add("devices", "PASS", f"{len(devices)} booted, pinned by TEST_FORGE_DEVICE_UDID="
+                                      f"{os.environ['TEST_FORGE_DEVICE_UDID']}")
         return
     names = ", ".join(f"{device['name']} ({device['udid'][:8]})" for device in devices)
-    report.add("devices", "FAIL", f"{len(devices)} simulators booted with no QA_DEVICE_UDID: {names}. "
+    report.add("devices", "FAIL", f"{len(devices)} simulators booted with no TEST_FORGE_DEVICE_UDID: {names}. "
                                   "Host-side commands resolve `booted` to whichever simctl picks, so a "
                                   "recording can land on the wrong device with nothing reporting it.")
 
@@ -392,7 +392,7 @@ def main() -> int:
     parser.add_argument("--endpoint", action="append", default=[],
                         help="Endpoint that should be answering from a mock. Repeatable.")
     parser.add_argument("--mcp-container", help="Container path the data channel reports, for comparison.")
-    parser.add_argument("--mcp-media-root", help="Media root qa_status reports, for comparison against "
+    parser.add_argument("--mcp-media-root", help="Media root test_forge_status reports, for comparison against "
                                                  "where the runner actually writes screenshots.")
     parser.add_argument("--rule", type=Path, help="Candidate rule (or rule array) to validate before installing.")
     parser.add_argument("--manifest", type=Path)

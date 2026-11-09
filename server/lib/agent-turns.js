@@ -8,7 +8,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
 const SKIPPED_DIRS = new Set(["node_modules", ".git", "DerivedData", "build"]);
-const SCHEMA_DOC = "tools/qa-dashboard/docs/feasibility-macros.md §4.1–4.2";
+const SCHEMA_DOC = "tools/test-forge-server/docs/feasibility-macros.md §4.1–4.2";
 
 /** Content hash of every macro, reference, registry and mock-pack file under the UI-test root. */
 export async function snapshotMacroFiles(root) {
@@ -18,7 +18,7 @@ export async function snapshotMacroFiles(root) {
 			if (SKIPPED_DIRS.has(entry.name)) continue;
 			const path = join(dir, entry.name);
 			if (entry.isDirectory()) await walk(path);
-			else if (entry.name.endsWith(".json") && (/\/macros\//.test(path) || /\/QAMacros\//.test(path))) {
+			else if (entry.name.endsWith(".json") && (/\/macros\//.test(path) || /\/TestForgeMacros\//.test(path))) {
 				files.set(relative(root, path), createHash("sha1").update(await readFile(path)).digest("hex"));
 			}
 		}
@@ -57,7 +57,7 @@ export function triagePrompt({ item, macro, root, log, screenshot }) {
 		`Case: ${item.caseId}${item.scenario ? ` — ${item.scenario}` : ""}`,
 		`Verdict: ${item.verdict}`,
 		`Macro: “${macro.name}” (${macro.id}), file ${join(root, macro.path)}`,
-		`Element registry: ${join(root, "QAMacros", "elements.json")} — steps name elements by \`el_…\` id; fix a changed identifier or label there once and every macro gets it.`,
+		`Element registry: ${join(root, "TestForgeMacros", "elements.json")} — steps name elements by \`el_…\` id; fix a changed identifier or label there once and every macro gets it.`,
 		`Macro format: ${SCHEMA_DOC}. Routines are other macros run by id (\`{"do":"run","macro":"mc_…"}\`) — fix the routine, not a copy.`,
 		screenshot ? `What the simulator showed when it stopped: ${screenshot} (read it).` : "",
 		"",
@@ -67,11 +67,11 @@ export function triagePrompt({ item, macro, root, log, screenshot }) {
 		"```",
 		"",
 		"How:",
-		"1. Read the screenshot, the macro and the registry entries of the failing step. The app is still where the replay stopped: look with qa_dump_tree / qa_screenshot. Tap only to confirm a theory.",
+		"1. Read the screenshot, the macro and the registry entries of the failing step. The app is still where the replay stopped: look with test_forge_dump_tree / test_forge_screenshot. Tap only to confirm a theory.",
 		"2. Decide:",
 		"   - APP_BUG — the app misbehaves (what the test exists to catch). Change nothing.",
 		"   - MACRO_BROKEN — the app is fine but the macro or registry is stale: renamed identifier, changed label, a new sheet or screen in the way, timing. Make the smallest fix, only in",
-		`     ${root}/**/macros/*.json and ${join(root, "QAMacros", "elements.json")}. Keep every id. Never weaken or remove a check of the expected result to make it pass.`,
+		`     ${root}/**/macros/*.json and ${join(root, "TestForgeMacros", "elements.json")}. Keep every id. Never weaken or remove a check of the expected result to make it pass.`,
 		"   - ENVIRONMENT — backend down, network, simulator or harness, account or login state. Change nothing.",
 		"3. If you navigated, leave the app on Home.",
 		"",
@@ -92,7 +92,7 @@ export function learnPrompt({ item, root, routines, example }) {
 		"- Set \"covers\" to the repo-relative app folders whose code renders and drives this case (e.g. [\"BlibliMobile-iOS/BlibliMobile-iOS/CustomerExperience/Engagement/Promotions\"]), the narrowest that holds every screen the steps touch. A newer build that changes these marks the case's result stale.",
 		"- Reuse routines by id instead of copying their steps. Routines:",
 		...routines.map((routine) => `    ${routine.id}  ${routine.name}`),
-		`- Reuse elements from ${join(root, "QAMacros", "elements.json")}; add new ones there (identifier first; English and Bahasa label fallbacks when there is no identifier). New ids: \`mc_\` / \`el_\` / \`st_\` + 10 characters from 0-9A-Z (no I, L, O, U).`,
+		`- Reuse elements from ${join(root, "TestForgeMacros", "elements.json")}; add new ones there (identifier first; English and Bahasa label fallbacks when there is no identifier). New ids: \`mc_\` / \`el_\` / \`st_\` + 10 characters from 0-9A-Z (no I, L, O, U).`,
 		"- If you mocked an API, arm it with `mock` steps and switch it back in `cleanup`.",
 		"- Check the expected result with `assert` / `waitFor` steps, and end with a `screenshot` step.",
 		"- Don't replay it — the dashboard replays it right after you finish, and keeps it only if that replay passes.",

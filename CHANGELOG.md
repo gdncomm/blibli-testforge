@@ -27,6 +27,7 @@ Format: [Keep a Changelog](https://keepachangelog.com). Versions follow [CONTRIB
 - An app built inside the checkout skipped Setup and started the server without `QA_PROJECT_DIR`, so the server exited. Setup now shows until an iOS clone is chosen.
 
 ### Changed
+- Every `qa`, `qaw`, `qa-mocker`, `qa-dashboard` and `testforge` machine name is now `test-forge` (`test_forge_`, `TEST_FORGE_`, `TestForge`): CLI `test-forge`, MCP server `test-forge-driver` and tools `test_forge_*`, plugin marketplace `test-forge`, `TestForgeDriverKit`, `~/.test-forge`, bundle id `com.blibli.test-forge`, accessibility IDs `TestForge_*`, test simulator `TestForge · <model>` (D-221).
 - Setup asks for two folders: this checkout and the iOS app clone (`QA_PROJECT_DIR`).
 - Settings › Project: the row is now "TestForge checkout" (it never changed the iOS clone).
 

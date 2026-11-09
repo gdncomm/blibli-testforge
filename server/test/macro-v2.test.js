@@ -242,7 +242,7 @@ test("map, anchor summary and storage round-trip", async () => {
 	assert.deepEqual(anchorSummary(sf084, registry), { anchored: 2, targeted: 3 });
 	assert.match(newId("el"), /^el_[0-9A-Z]{10}$/);
 
-	const root = await mkdtemp(join(tmpdir(), "qa-macros-"));
+	const root = await mkdtemp(join(tmpdir(), "test-forge-macros-"));
 	await saveRegistry(registry, root);
 	assert.deepEqual((await loadRegistry(root)).elements.el_share, registry.elements.el_share);
 	const { path } = await saveMacroV2(sf084, { module: "Engagement", submodule: "FlashSale", root });
@@ -315,7 +315,7 @@ test("relaunch ifNeeded: skipped while Home shows; forced once when an atLaunch 
 });
 
 test("one macro, N names: a reference in another module points by id; lint keeps ids unique", async () => {
-	const root = await mkdtemp(join(tmpdir(), "qa-macros-"));
+	const root = await mkdtemp(join(tmpdir(), "test-forge-macros-"));
 	await saveMacroV2({ ...sf084, links: { testCase: "SF-084" } }, { module: "Engagement", submodule: "FlashSale", root });
 	const { path } = await saveMacroRef({ ref: "mc_test", name: "Home · Flash Sale tomorrow tab", links: { testCases: ["HM-012"] }, module: "Engagement", submodule: "Home", root });
 	assert.equal(path, "Engagement/Home/macros/home-flash-sale-tomorrow-tab.ref.json");

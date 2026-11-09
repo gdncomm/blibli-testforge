@@ -83,13 +83,13 @@ struct SimulatorDeviceSectionView: View {
 				.foregroundStyle(Color.accentColor)
 				.help("Tests, Measure's default and the test runner use this simulator")
 				.accessibilityIdentifier(TestForgeConstants.Accessibility.simulatorTestDeviceBadge)
-			if viewModel.canUseQACloneForTests {
-				Button(action: viewModel.useQACloneForTests) {
+			if viewModel.canUseTestForgeCloneForTests {
+				Button(action: viewModel.useTestForgeCloneForTests) {
 					SimulatorActionLabel(title: "Back to the QA clone", systemImage: "arrow.uturn.backward", isBusy: viewModel.isRunning(.useForTests))
 				}
 				.buttonStyle(.borderless)
 				.disabled(viewModel.isLocked || viewModel.runningActionTitle != nil)
-				.accessibilityIdentifier(TestForgeConstants.Accessibility.simulatorUseQACloneButton)
+				.accessibilityIdentifier(TestForgeConstants.Accessibility.simulatorUseTestForgeCloneButton)
 			}
 		} else if viewModel.selectedDevice != nil {
 			Button(action: viewModel.useSelectedForTests) {

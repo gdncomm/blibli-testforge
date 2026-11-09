@@ -21,7 +21,7 @@ struct ProjectSettingsView<Setup: SetupPresenting, Updates: UpdatePresenting>: V
 					.font(.callout)
 					.foregroundStyle(.red)
 			}
-			Text("TestForge reopens with the checkout you choose. QA_DASHBOARD_DIR and QA_PROJECT_DIR, when set, still win.")
+			Text("TestForge reopens with the checkout you choose. TEST_FORGE_SERVER_DIR and TEST_FORGE_PROJECT_DIR, when set, still win.")
 				.font(.callout)
 				.foregroundStyle(.secondary)
 			UpdateSettingsSectionView(viewModel: updates)

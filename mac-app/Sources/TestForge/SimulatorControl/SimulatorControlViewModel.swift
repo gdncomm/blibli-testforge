@@ -108,7 +108,7 @@ final class SimulatorControlViewModel: ObservableObject {
 	}
 
 	/// "Back to the QA clone" only makes sense while another simulator was chosen for tests.
-	var canUseQACloneForTests: Bool {
+	var canUseTestForgeCloneForTests: Bool {
 		isSelectedTestDevice && testDevice?.isChosen == true
 	}
 
@@ -144,7 +144,7 @@ final class SimulatorControlViewModel: ObservableObject {
 		changeTestDevice(to: udid)
 	}
 
-	func useQACloneForTests() {
+	func useTestForgeCloneForTests() {
 		changeTestDevice(to: nil)
 	}
 

@@ -1,5 +1,5 @@
 // P2 — Build the QA copy (workflow-plan §4 ③, D-054). `build-for-testing` runs inside the QA copy,
-// into its own DerivedData under ~/.testforge/derived/, for the QA simulator; every build is
+// into its own DerivedData under ~/.test-forge/derived/, for the QA simulator; every build is
 // recorded as build id → code id (commit SHA or local snapshot id), so a run can tell whether the
 // app it would test was built from the code that was prepared. Only ever started by a confirmed
 // click (hard constraint): nothing here builds on its own.
@@ -9,12 +9,12 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative } from "node:path";
 import { promisify } from "node:util";
-import { TESTFORGE_HOME } from "./qa-copy.js";
+import { TEST_FORGE_HOME } from "./test-forge-copy.js";
 import { findTestBundle } from "./readiness.js";
 
 const run = promisify(execFile);
-const BUILDS_PATH = join(TESTFORGE_HOME, "builds.json");
-const PROFILES_PATH = join(TESTFORGE_HOME, "profiles.json");
+const BUILDS_PATH = join(TEST_FORGE_HOME, "builds.json");
+const PROFILES_PATH = join(TEST_FORGE_HOME, "profiles.json");
 const KEEP_BUILDS = 50;
 
 async function readJson(path, fallback) {
@@ -58,9 +58,9 @@ export async function profileFor(manifest) {
 	const found = await findWorkspace(manifest.path);
 	if (!found) throw new Error(`no .xcworkspace in the QA copy at ${manifest.path}`);
 	return {
-		scheme: process.env.QA_SCHEME || "BlibliMobile-iOS-PerfTest",
-		configuration: process.env.QA_CONFIGURATION || "PerformanceTest",
-		runnerTarget: process.env.QA_UITEST_TARGET || null,
+		scheme: process.env.TEST_FORGE_SCHEME || "BlibliMobile-iOS-PerfTest",
+		configuration: process.env.TEST_FORGE_CONFIGURATION || "PerformanceTest",
+		runnerTarget: process.env.TEST_FORGE_UITEST_TARGET || null,
 		...saved,
 		projectDir: found.projectDir,
 		workspace: found.workspace,
@@ -75,7 +75,7 @@ export async function saveProfile(repo, { scheme, configuration, runnerTarget })
 	return profiles[repo];
 }
 
-export const derivedDataFor = (manifest) => join(TESTFORGE_HOME, "derived", basename(manifest.path));
+export const derivedDataFor = (manifest) => join(TEST_FORGE_HOME, "derived", basename(manifest.path));
 
 // --- Build records ------------------------------------------------------------------
 
@@ -225,7 +225,7 @@ async function runXcodebuild(profile, args, onLine, signal) {
 }
 
 /** Builds the QA copy; resolves with the build record (succeeded or failed), rejects only on cancel. */
-export async function buildQaCopy({ manifest, udid, onLine = () => {}, signal }) {
+export async function buildTestForgeCopy({ manifest, udid, onLine = () => {}, signal }) {
 	const profile = await profileFor(manifest);
 	const derivedData = derivedDataFor(manifest);
 	await resetStalePackages(profile, derivedData, onLine);
@@ -273,11 +273,11 @@ export async function buildQaCopy({ manifest, udid, onLine = () => {}, signal })
 /** Env for harness.py so the runner starts from this build on the QA simulator. */
 export function harnessEnvFor(build) {
 	return {
-		QA_PROJECT_DIR: build.projectDir,
-		QA_DERIVED_DATA: build.derivedData,
-		QA_SCHEME: build.scheme,
-		QA_CONFIGURATION: build.configuration,
-		QA_SIMULATOR_UDID: build.simulatorUdid,
+		TEST_FORGE_PROJECT_DIR: build.projectDir,
+		TEST_FORGE_DERIVED_DATA: build.derivedData,
+		TEST_FORGE_SCHEME: build.scheme,
+		TEST_FORGE_CONFIGURATION: build.configuration,
+		TEST_FORGE_SIMULATOR_UDID: build.simulatorUdid,
 	};
 }
 

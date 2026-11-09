@@ -76,7 +76,7 @@ protocol SimulatorLocating: Sendable {
 	/// Left of Screen); returns whether one was pressed. The Simulator must be the active app for its items to enable.
 	func pressMenuItem(anyOf paths: [[String]]) -> Bool
 
-	/// Titles of the open device windows ("QA · iPhone 12 Pro Max"), in the Simulator's window order.
+	/// Titles of the open device windows ("TestForge · iPhone 12 Pro Max"), in the Simulator's window order.
 	func deviceWindowTitles() -> [String]
 
 	/// Walks the whole device tree (~10 ms per element over IPC), so call it off the main actor.

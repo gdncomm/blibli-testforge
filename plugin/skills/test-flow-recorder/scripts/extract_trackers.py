@@ -11,7 +11,7 @@ the MCP reader uses. Without that a replayed or edited request counts twice.
 Ported from upstream NetworkInterceptor's `tools/networklens/extract_trackers.py`, unchanged except
 for trace resolution: `resolve_trace` now goes through `scripts/dataplane.py`'s shared resolver
 (same seam `preflight.py`/`capture_baseline.py` use) instead of its own inline `simctl` call, so this
-script resolves the trace the same way every other script does for the active `QA_DATA_PLANE`.
+script resolves the trace the same way every other script does for the active `TEST_FORGE_DATA_PLANE`.
 That also closes a gap the original had: it read one hardcoded `trace.ndjson` and never saw a
 rotated generation. `load_exchanges` is now rotation-aware for the same reason `dataplane.py`'s own
 `exchanges()` is.
@@ -416,7 +416,7 @@ def write_report(text, out_path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--trace", help="directory holding trace*.ndjson; defaults to the active "
-                        "QA_DATA_PLANE's resolved trace dir")
+                        "TEST_FORGE_DATA_PLANE's resolved trace dir")
     parser.add_argument("--bundle-id", default=BUNDLE_ID,
                         help="app bundle id, when the data plane needs one to resolve a trace dir "
                         "(default: %(default)s, or $NETWORKLENS_BUNDLE_ID)")

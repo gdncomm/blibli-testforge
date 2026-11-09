@@ -7,11 +7,11 @@ extension TestForgeConstants.Results {
 }
 
 extension TestForgeConstants.Accessibility {
-	static let resultsExportBundleButton = "QAW_Results_ExportBundleButton"
-	static let resultsImportBundleButton = "QAW_Results_ImportBundleButton"
-	static let resultsBundleSheet = "QAW_Results_BundleSheet"
-	static let resultsBundleImportButton = "QAW_Results_BundleImportButton"
-	static let resultsBundleReplayButton = "QAW_Results_BundleReplayButton"
-	static let resultsBundleMockList = "QAW_Results_BundleMockList"
-	static let resultsBundleArmPrefix = "QAW_Results_BundleArm_"
+	static let resultsExportBundleButton = "TestForge_Results_ExportBundleButton"
+	static let resultsImportBundleButton = "TestForge_Results_ImportBundleButton"
+	static let resultsBundleSheet = "TestForge_Results_BundleSheet"
+	static let resultsBundleImportButton = "TestForge_Results_BundleImportButton"
+	static let resultsBundleReplayButton = "TestForge_Results_BundleReplayButton"
+	static let resultsBundleMockList = "TestForge_Results_BundleMockList"
+	static let resultsBundleArmPrefix = "TestForge_Results_BundleArm_"
 }

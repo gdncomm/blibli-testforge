@@ -51,7 +51,7 @@ export class PromptHub extends EventEmitter {
 
 /** A macOS banner, so a person in another window notices the run is waiting. Never carries a value. */
 function notifyMac(title, text) {
-	if (process.platform !== "darwin" || process.env.QA_NO_NOTIFY) return;
+	if (process.platform !== "darwin" || process.env.TEST_FORGE_NO_NOTIFY) return;
 	const script = `display notification ${JSON.stringify(String(text ?? "").slice(0, 200))} with title "TestForge" subtitle ${JSON.stringify(String(title ?? ""))}`;
 	execFile("osascript", ["-e", script], () => {});
 }

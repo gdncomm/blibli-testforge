@@ -1,13 +1,13 @@
 import SwiftUI
 
 /// The app and tests built from the prepared code for the QA simulator: state, Build for testing and Stop.
-struct BuildQASectionView: View {
+struct BuildTestForgeSectionView: View {
 	@ObservedObject var viewModel: BuildSectionViewModel
 
 	var body: some View {
 		Section {
 			stateRow
-				.tutorialAnchor(.buildQASection)
+				.tutorialAnchor(.buildTestForgeSection)
 			if let code = viewModel.preparedCodeText {
 				LabeledContent("Code", value: code)
 					.textSelection(.enabled)

@@ -18,9 +18,9 @@ import { loadMockNotes, mergeMockNotes } from "./demo.js";
 
 const run = promisify(execFile);
 
-export const BUNDLE_FORMAT = "testforge-bundle";
+export const BUNDLE_FORMAT = "test-forge-bundle";
 export const BUNDLE_VERSION = 1;
-export const BUNDLE_SUFFIX = ".qawbundle.json";
+export const BUNDLE_SUFFIX = ".test-forge-bundle.json";
 const THUMB_MAX_PX = 720;
 const MAX_ROUTINE_DEPTH = 5;
 
@@ -103,7 +103,7 @@ async function credentialNames(macro, loadMacro) {
 async function proofThumbnail(item) {
 	const shot = (item.evidence?.screenshots ?? []).filter((path) => !isProbeShot(path)).at(-1);
 	if (!shot) return null;
-	const out = join(tmpdir(), `qaw-thumb-${process.pid}-${Date.now()}.jpg`);
+	const out = join(tmpdir(), `test-forge-thumb-${process.pid}-${Date.now()}.jpg`);
 	try {
 		await run("sips", ["-Z", String(THUMB_MAX_PX), "-s", "format", "jpeg", "-s", "formatOptions", "60", shot, "--out", out], { timeout: 20_000 });
 		return (await readFile(out)).toString("base64");
@@ -360,4 +360,4 @@ export function bundleSummary(bundle) {
 	};
 }
 
-export const bundleFileName = (bundle) => `${String(bundle.title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "qa-run"}-${bundle.createdAt.slice(0, 10)}${BUNDLE_SUFFIX}`;
+export const bundleFileName = (bundle) => `${String(bundle.title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "test-forge-run"}-${bundle.createdAt.slice(0, 10)}${BUNDLE_SUFFIX}`;

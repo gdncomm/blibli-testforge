@@ -10,7 +10,7 @@ import { postOnce } from "../lib/driver-queue.js";
 import { replayMacroV2 } from "../lib/macro-v2.js";
 import { startFakeRunner } from "./fake-runner.js";
 
-process.env.QA_NO_NOTIFY = "1";
+process.env.TEST_FORGE_NO_NOTIFY = "1";
 
 function memoryKeychain() {
 	const items = new Map();
@@ -23,7 +23,7 @@ function memoryKeychain() {
 }
 
 test("UATB keeps its static OTP; the index holds no secret", async () => {
-	const home = await mkdtemp(join(tmpdir(), "qa-creds-"));
+	const home = await mkdtemp(join(tmpdir(), "test-forge-creds-"));
 	const store = memoryKeychain();
 	await saveCredential({ env: "uatb", profile: "internal", email: "tester@example.com", password: "s3cret!", otp: "123456" }, { store, home });
 	const index = await readFile(join(home, "credentials-index.json"), "utf8");
@@ -36,7 +36,7 @@ test("UATB keeps its static OTP; the index holds no secret", async () => {
 });
 
 test("production refuses a stored OTP; a missing one reads as null (asked live)", async () => {
-	const home = await mkdtemp(join(tmpdir(), "qa-creds-"));
+	const home = await mkdtemp(join(tmpdir(), "test-forge-creds-"));
 	const store = memoryKeychain();
 	await assert.rejects(saveCredential({ env: "prod", profile: "internal", email: "a@b.c", password: "x", otp: "1" }, { store, home }), /real OTPs/);
 	await saveCredential({ env: "prod", profile: "internal", email: "a@b.c", password: "x" }, { store, home });

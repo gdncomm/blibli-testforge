@@ -1,6 +1,6 @@
 // D-129 (phase E of docs/networklens-console.md): tracker (TRMS ID) fires from the trace, checked against an optional
 // expected-payload contract. A JS port of the test-flow-recorder `extract_trackers.py` the networklens MCP shells out to —
-// same collapse, same contract rules, same DA markdown — so the console and `qaw-lens` need neither Python nor the plugin.
+// same collapse, same contract rules, same DA markdown — so the console and `test-forge-lens` need neither Python nor the plugin.
 // Pure: works on the records `Trace.entries()` returns (already collapsed by exchange id, last line wins).
 import { decodeBody, statusOf } from "./trace.js";
 

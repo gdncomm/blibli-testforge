@@ -1,5 +1,5 @@
-// One simulator, one driver: anything that drives the device (a /qa-run, a replay, a chat turn that
-// calls a QADriver tool, a Driver Console click) must hold this lock. Waiters are served FIFO.
+// One simulator, one driver: anything that drives the device (a /test-forge-run, a replay, a chat turn that
+// calls a TestForgeDriver tool, a Driver Console click) must hold this lock. Waiters are served FIFO.
 import { EventEmitter } from "node:events";
 
 class DeviceLock extends EventEmitter {

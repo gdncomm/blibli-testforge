@@ -1,6 +1,6 @@
 ---
 name: test-flow-recorder
-description: Runs a manual QA test case live against a booted device by driving both the screen and the network layer over MCP, from a code reference (screen/component/controller file) plus a test-case document. Also known as "qa-mocker". Use for "qa-mocker", "run this test case", "automate this manual test case", "drive the simulator", "QA automation for this flow", "automate this Confluence test case", "build a QA test from this test case", "regression test for X screen", "sanity test suite for X screen", "screenshot-verify this flow", "generate UI test coverage", "generate an e2e test", "write an XCUITest for X screen", "turn this test case into an automated test", "tap/scroll/assert on the simulator". Accepts pasted plain-English steps or a linked Confluence page as the test-case source. Drives screen actions through `mcp__qa-driver__*` (a persistent XCUITest harness, built once) and mock state through `mcp__networklens__*` (including importing existing `.networklens-pack.json` scenario packs), so a new test case costs a command plan rather than a rebuild. Produces per-step screenshots and a run report under a `Module/Submodule` folder in the project's UI test root. Never writes `session.json` itself — a rule a pack does not already cover is authored through `mcp__networklens__lens_mock_endpoint` and validated by `preflight.py`'s rule-schema gate before install. Also validates analytics trackers against the same trace a run reasons about (`scripts/extract_trackers.py` — see "Tracker validation" below), absorbed rather than delegated. Distinct from `networklens-setup` (installs/repairs the NetworkLens interceptor itself) — do not reach for this skill for that; route it there instead.
+description: Runs a manual QA test case live against a booted device by driving both the screen and the network layer over MCP, from a code reference (screen/component/controller file) plus a test-case document. Also known as "test-forge". Use for "test-forge", "run this test case", "automate this manual test case", "drive the simulator", "QA automation for this flow", "automate this Confluence test case", "build a QA test from this test case", "regression test for X screen", "sanity test suite for X screen", "screenshot-verify this flow", "generate UI test coverage", "generate an e2e test", "write an XCUITest for X screen", "turn this test case into an automated test", "tap/scroll/assert on the simulator". Accepts pasted plain-English steps or a linked Confluence page as the test-case source. Drives screen actions through `mcp__test-forge-driver__*` (a persistent XCUITest harness, built once) and mock state through `mcp__networklens__*` (including importing existing `.networklens-pack.json` scenario packs), so a new test case costs a command plan rather than a rebuild. Produces per-step screenshots and a run report under a `Module/Submodule` folder in the project's UI test root. Never writes `session.json` itself — a rule a pack does not already cover is authored through `mcp__networklens__lens_mock_endpoint` and validated by `preflight.py`'s rule-schema gate before install. Also validates analytics trackers against the same trace a run reasons about (`scripts/extract_trackers.py` — see "Tracker validation" below), absorbed rather than delegated. Distinct from `networklens-setup` (installs/repairs the NetworkLens interceptor itself) — do not reach for this skill for that; route it there instead.
 argument-hint: [code-reference file path] [test-case: pasted steps or Confluence URL]
 ---
 
@@ -46,10 +46,10 @@ exactly like "mocking is broken".
 
 | Gate | Check | On failure |
 |---|---|---|
-| Governing skill still present | `scripts/audit_platform_skills.py --platform <platform> --check-only` against the fingerprint `/qa-init` step 8 recorded, for a platform that declares the requirement (iOS today — see `platforms/ios.md`'s "Host-project skills required") | stop; re-run `/qa-init` step 8 — a skill that existed at setup and is gone now is not something this stage guesses around |
-| Device is unambiguous | exactly one booted simulator, or `QA_DEVICE_UDID` pins one among several — checked directly against `simctl list devices booted`, not an MCP tool | stop and confirm the target with the developer before any case runs |
+| Governing skill still present | `scripts/audit_platform_skills.py --platform <platform> --check-only` against the fingerprint `/test-forge-init` step 8 recorded, for a platform that declares the requirement (iOS today — see `platforms/ios.md`'s "Host-project skills required") | stop; re-run `/test-forge-init` step 8 — a skill that existed at setup and is gone now is not something this stage guesses around |
+| Device is unambiguous | exactly one booted simulator, or `TEST_FORGE_DEVICE_UDID` pins one among several — checked directly against `simctl list devices booted`, not an MCP tool | stop and confirm the target with the developer before any case runs |
 | Driver reachable | send one cheap real command (a screenshot). A status flag can read "never polled" while the harness is fine | restart the harness, then escalate |
-| Media roots agree | the runner's screenshot root and the driver MCP's recording root are the same folder | set `QA_MEDIA_ROOT` to the same value in both places and restart both |
+| Media roots agree | the runner's screenshot root and the driver MCP's recording root are the same folder | set `TEST_FORGE_MEDIA_ROOT` to the same value in both places and restart both |
 | Data channel | the session file the app last wrote holds `isMockingEnabled` and at least one enabled rule. This is the file, not a live read of what the running app currently holds — see the informational row below | relaunch the app so it writes a fresh session file, or enable mocking / arm a rule before re-running |
 | Container freshness | the data channel's resolved path matches the platform's current app container | reconnect the MCP; a stale path breaks reads *and* writes while the live channel keeps saying "on" |
 | Rule schema | validate any authored rule against one the app itself wrote before installing it | refuse the write and name the offending field |
@@ -105,7 +105,7 @@ Two required inputs:
 Before doing anything else, check whether this screen already has a report from an earlier run:
 
 ```bash
-find <UITestRoot> \( -iname "*QARun.md" -o -iname "*QATest.tracking.md" \) | xargs grep -l "<screen or flow name>" 2>/dev/null
+find <UITestRoot> \( -iname "*TestForgeRun.md" -o -iname "*TestForgeTest.tracking.md" \) | xargs grep -l "<screen or flow name>" 2>/dev/null
 ```
 
 - **Found** → this is a **re-run**. Read its identifier map and step table first, so unchanged
@@ -142,8 +142,8 @@ That maps onto the report layout:
 
 | Source | Layout | Output |
 |---|---|---|
-| Single page | `--layout single` | one `<Feature>-qa-run.md`, one `evidence.html` (Confluence storage format), one `attachments.txt` |
-| Group of pages | `--layout multi` | `<Screen>QARun/` — `README.md` (bird's-eye), `pages/<page>.md` per source page, `html/` bodies, `media/<page>/` |
+| Single page | `--layout single` | one `<Feature>-test-forge-run.md`, one `evidence.html` (Confluence storage format), one `attachments.txt` |
+| Group of pages | `--layout multi` | `<Screen>TestForgeRun/` — `README.md` (bird's-eye), `pages/<page>.md` per source page, `html/` bodies, `media/<page>/` |
 
 `--layout auto` (the default) picks `multi` the moment the case set spans more than one page, which
 is the right answer often enough that the flag is mostly there to force the other one.
@@ -261,7 +261,7 @@ restructuring, and the diff reviewed as its own change rather than folded into t
 If `parse_test_cases.py` found any `trmsIds` on the parsed cases, ask where their saved TRMS
 snapshots live (`<TRMS-ID>.webarchive`/`.html`, one per id — a Safari/Chrome page save of
 `https://tracker-management-system.gdn-app.com/tracker-detail/<TRMS-ID>`, **not** a live URL fetch,
-which returns only the unrendered SPA shell). Default lookup is `$QA_MEDIA_ROOT/trms/`; pass
+which returns only the unrendered SPA shell). Default lookup is `$TEST_FORGE_MEDIA_ROOT/trms/`; pass
 `--snapshot-dir` to `check_tracker_validation.py` (Stage 6) to point elsewhere. A missing snapshot is
 not a blocker — the gate reports `contractError` for that id and the run continues.
 
@@ -300,7 +300,7 @@ never mark a gated case `BLOCKED` before asking.
 
 #### Before the pause: the harness must already be healthy
 
-**Never ask for a sign-in the harness is about to throw away.** `QADriverRunner.runLiveSession()`
+**Never ask for a sign-in the harness is about to throw away.** `TestForgeDriverRunner.runLiveSession()`
 calls `app.launch()` unconditionally at the top, and `XCUIApplication.launch()` terminates any
 running instance first. So a harness start — or restart, after an idle expiry or a crash — relaunches
 the app under test. Ask before that and the sign-in is spent on a process that no longer exists.
@@ -308,7 +308,7 @@ the app under test. Ask before that and the sign-in is spent on a process that n
 So the order is fixed, and it is not a matter of judgement:
 
 1. Prove the harness is collecting, with a real command rather than the attach flag
-   (`scripts/preflight.py`'s `driver` gate, or one `qa_screenshot`).
+   (`scripts/preflight.py`'s `driver` gate, or one `test_forge_screenshot`).
 2. Read the current auth state off the screen.
 3. *Only then* raise the pause.
 
@@ -323,12 +323,12 @@ much freedom the gated batch has:
 
 | Where the token lives | A relaunch… | Consequence for the batch |
 |---|---|---|
-| Keychain, or `UserDefaults` — **the normal production case** | keeps the session | `qa_relaunch_app` stays available between cases, the way it is for guest cases |
+| Keychain, or `UserDefaults` — **the normal production case** | keeps the session | `test_forge_relaunch_app` stays available between cases, the way it is for guest cases |
 | In memory only — a `@Published` property, an actor, a plain `var` | drops the session | **no relaunch anywhere in the gated batch**; plan every case to reach its state by navigation |
 
 Most real apps persist. A sign-in survives a relaunch, and often survives a reinstall-free rebuild,
 so the pause is a once-per-device cost rather than a once-per-restart one. Do not assume the harder
-case and strip `qa_relaunch_app` out of a plan that does not need it.
+case and strip `test_forge_relaunch_app` out of a plan that does not need it.
 
 Both questions are one command, and the pause is raised **only** when it exits 0:
 
@@ -369,11 +369,11 @@ discrete outcomes, and the developer is being asked to act on the device, not to
 
 ## Stage 3 — Translate the test case into a command plan
 
-The plan is **data**, not a compiled artifact: an ordered list of `mcp__qa-driver__*` calls
+The plan is **data**, not a compiled artifact: an ordered list of `mcp__test-forge-driver__*` calls
 (screen) interleaved with `mcp__networklens__*` calls (data), one group per test-case step. Nothing
 is written to disk in this step and nothing is built.
 
-Before planning, confirm the harness is up with `mcp__qa-driver__qa_status`. If it reports no
+Before planning, confirm the harness is up with `mcp__test-forge-driver__test_forge_status`. If it reports no
 harness, stop and hand back the one-time bring-up instead of planning a run — see `platforms/ios.md`.
 
 **Sort out what this instrument cannot answer before planning around it.** A case about an easing
@@ -396,21 +396,21 @@ Rules for the plan itself:
   forms. Nor is there necessarily one enum to read — a project may hold many, including file-private
   ones with colliding names, reached through several different accessor spellings. The scanner
   resolves all of that; the plan consumes its output.
-- **Where no static value exists, resolve at plan time from `qa_dump_tree`.** An identifier built by
+- **Where no static value exists, resolve at plan time from `test_forge_dump_tree`.** An identifier built by
   interpolation, one that is a localized string, and one passed through a generic wrapper each have
   no literal in the source to read. The inventory marks them as such rather than inventing a value,
   and the tree is what supplies the concrete string.
-- **Leave `elementType` off by default.** `qa-driver` matches on identifier alone, which is what
+- **Leave `elementType` off by default.** `test-forge-driver` matches on identifier alone, which is what
   makes an identifier survive its view being rebuilt as a different element kind. Only narrow it
-  when disambiguation is genuinely needed (`qa_get_element_count` over one container).
-- **Every wait is a `qa_wait_for_exists` / `qa_wait_for_not_exists` call**, never a pause. There is
+  when disambiguation is genuinely needed (`test_forge_get_element_count` over one container).
+- **Every wait is a `test_forge_wait_for_exists` / `test_forge_wait_for_not_exists` call**, never a pause. There is
   no sleep command in the vocabulary, deliberately.
-- **Read state, then decide.** `qa_get_label`, `qa_get_element_count` and `qa_get_frame` return
+- **Read state, then decide.** `test_forge_get_label`, `test_forge_get_element_count` and `test_forge_get_frame` return
   real values, so ordering/formatting/position assertions are made here from what the screen
   actually reports — not encoded as a compiled `XCTAssert` in advance.
 - **A mock precondition is a step in the plan, not a manual note.** Arm it via the platform's mock
   section, then
-  `qa_relaunch_app` — which is what makes a file-based NetworkLens rule take effect without a
+  `test_forge_relaunch_app` — which is what makes a file-based NetworkLens rule take effect without a
   rebuild.
 - **A step whose expected result names a loading or transitional state — shimmer, skeleton,
   spinner, "while loading" — needs a delay armed before the triggering action, not a pause after
@@ -424,7 +424,7 @@ Rules for the plan itself:
   `--root <dir>` once the module is known), then insert its stored commands into the plan at that
   point exactly as written. Each spliced step is still executed and checked individually — never
   collapsed into one action — so a macro that no longer works fails at whichever step broke, the
-  same way a hand-written one would. See `commands/qa-macro.md` for how a macro gets recorded.
+  same way a hand-written one would. See `commands/test-forge-macro.md` for how a macro gets recorded.
 
 `ScreenChain`'s hop model still describes the *shape* of a home-screen → target traversal, and the
 project's existing hand-written UI tests remain useful **read-only** reference for how that
@@ -445,17 +445,17 @@ no generate-then-someone-else-runs-it handoff, and no `.swift` file per flow.
   expectation. A tool that reports `reachable: false` is an infrastructure failure, not a test
   failure; say which one it is.
 - **Capture evidence that shows what the case asserts.** Pass the assertion's own identifiers as
-  `mustBeVisible` on every `qa_screenshot`. The accessibility tree sees an element through a
+  `mustBeVisible` on every `test_forge_screenshot`. The accessibility tree sees an element through a
   keyboard, sheet or overlay and the camera does not, so a verdict can be right while the image
   handed to the reviewer does not show it. `visible: false` is an **evidence failure** — fix the
   frame and re-shoot; do not keep the shot because the tree-level reading was fine. Re-shooting a
-  still is free. Re-shooting a recording is not, so clear the obstruction *before* `qa_start_recording`.
-- **A keyboard belongs to the case that raised it and to no other.** `qa_type` now brings it down on
+  still is free. Re-shooting a recording is not, so clear the obstruction *before* `test_forge_start_recording`.
+- **A keyboard belongs to the case that raised it and to no other.** `test_forge_type` now brings it down on
   its own; if one is up at the start of a case that did not ask for it, that is a leak from an
   earlier case — dismiss it before doing anything else rather than working around it. The same
   obstruction that ruins a screenshot also makes everything beneath it unhittable, which is how two
   cases previously recorded a false `PASS`.
-- **Record the device against every case, not against the run.** Take `qa_device_info` once per
+- **Record the device against every case, not against the run.** Take `test_forge_device_info` once per
   device and write it into each result. On a matrix run the same case id appears once per device and
   those are separate results — collapsing them discards the only thing the sweep was run to find.
 - **Verify the verifiable half before declaring the case unverifiable.** Read the end state, take a
@@ -471,18 +471,18 @@ no generate-then-someone-else-runs-it handoff, and no `.swift` file per flow.
   three of those fields change what a step means. `forced: true` says the hit test called the element
   covered and the tap went to its coordinate anyway — legitimate, but it belongs in the evidence.
   `ambiguous: true` says a label matched several elements and the first was chosen for you, which is
-  how one case tapped the wrong control and still read as a pass. `valueAfter` on a `qa_type` that
+  how one case tapped the wrong control and still read as a pass. `valueAfter` on a `test_forge_type` that
   does not contain what was typed means the keystrokes went to whatever held first responder. A step
   that only checks `found` cannot see any of the three.
-- **A refused gesture is a finding about the app or the run, not a dead end.** `qa_tap` refusing an
+- **A refused gesture is a finding about the app or the run, not a dead end.** `test_forge_tap` refusing an
   unhittable element usually means something is covering it — a keyboard left up by the previous
   step is the common one, and dismissing it is the fix. Reach for `force: true` only after a
   screenshot shows the element genuinely reachable, never to get past the refusal.
 - **Stop and ask when a step's outcome is ambiguous**, rather than continuing down a plan whose
   preconditions no longer hold. A wrong screen state makes every later step meaningless.
-- **The harness is a one-time build, and the only build.** If `qa_status` reports no harness, hand
+- **The harness is a one-time build, and the only build.** If `test_forge_status` reports no harness, hand
   the developer the bring-up below — never run `xcodebuild` from this skill. Once up, it serves
-  every flow until it has been **idle** 30 minutes (`QADRIVER_SESSION_MINUTES`); the bound resets
+  every flow until it has been **idle** 30 minutes (`TEST_FORGE_DRIVER_SESSION_MINUTES`); the bound resets
   on every command, so it never expires mid-flow.
 
   ```bash
@@ -497,18 +497,18 @@ no generate-then-someone-else-runs-it handoff, and no `.swift` file per flow.
 
   # One time, from the project directory. May need network or VPN access for dependency resolution.
   xcodebuild build-for-testing -workspace <your>.xcworkspace \
-    -scheme QADriver -configuration Debug \
+    -scheme TestForgeDriver -configuration Debug \
     -destination "platform=iOS Simulator,id=$SIM"
 
   # Then start the session and leave it running.
   xcodebuild test-without-building -workspace <your>.xcworkspace \
-    -scheme QADriver -configuration Debug \
+    -scheme TestForgeDriver -configuration Debug \
     -destination "platform=iOS Simulator,id=$SIM"
   ```
 
   Three things about that invocation are load-bearing:
 
-  - **The dedicated `QADriver` scheme, not the app's main one.** It carries only this one test
+  - **The dedicated `TestForgeDriver` scheme, not the app's main one.** It carries only this one test
     target. A main scheme builds *every* testable, so any unrelated test target that fails to
     compile blocks the harness — a real and common state in a large project. Neither `-testPlan`
     nor `-only-testing` prunes that build; only a scheme without those testables does.
@@ -524,15 +524,15 @@ no generate-then-someone-else-runs-it handoff, and no `.swift` file per flow.
     specifier".
 
   Add the session's test to the app's main test plan **skip list**, so a normal whole-plan run
-  never starts a live session by accident. Selecting the `QADriver` scheme in Xcode and running
+  never starts a live session by accident. Selecting the `TestForgeDriver` scheme in Xcode and running
   from the test gutter works identically to the command above.
-- **Treat `qa_open_deeplink` as unproven until the screen answers.** An app's two URL forms often
+- **Treat `test_forge_open_deeplink` as unproven until the screen answers.** An app's two URL forms often
   behave differently, and only one may work: the **https universal-link form routes**, while a
   **custom scheme can silently do nothing** — the app stays where it was, still alive, even with the
   scheme registered as a `CFBundleURLScheme` and a matching route in the app's deeplink table.
   `simctl` reports only the handoff, never the destination, so a non-routing deeplink looks
-  identical to one that worked. Always follow one with a `qa_wait_for_exists`, or with
-  `qa_alert_tap` when a chooser is expected.
+  identical to one that worked. Always follow one with a `test_forge_wait_for_exists`, or with
+  `test_forge_alert_tap` when a chooser is expected.
 
   Prefer a working deeplink over hunting an entry point on the home screen: it reaches the
   destination's own routing directly, and does not depend on the home screen rendering an entry
@@ -540,10 +540,10 @@ no generate-then-someone-else-runs-it handoff, and no `.swift` file per flow.
 - **A container identifier is not necessarily a container.** SwiftUI's
   `.setAccessibilityIdentifier` often lands on a *sibling* leaf rather than the wrapping element:
   a container-named identifier can exist and match while having no descendants, so
-  `qa_get_labels`/`qa_get_element_count` scoped to it return 0 rather than erroring. When a scoped
-  read comes back empty, check with `qa_dump_tree` before concluding the section is absent, then
+  `test_forge_get_labels`/`test_forge_get_element_count` scoped to it return 0 rather than erroring. When a scoped
+  read comes back empty, check with `test_forge_dump_tree` before concluding the section is absent, then
   either scope to the whole screen or retrofit identifiers onto the real children (see the platform file).
-- **An unscoped `qa_get_labels` can kill the session.** Sweeping every label on a screen as deep
+- **An unscoped `test_forge_get_labels` can kill the session.** Sweeping every label on a screen as deep
   as Home makes XCUITest give up with *"Failed to get matching snapshot: Timed out while
   evaluating UI query"* — and like an unmatched-element access, that raise unwinds `testLiveSession`
   and ends the whole session, not just the one command. The harness now refuses the unbounded case
@@ -557,16 +557,16 @@ no generate-then-someone-else-runs-it handoff, and no `.swift` file per flow.
   destination was pushing. `readLabels` now takes
   `scope.allElementsBoundByIndex` once and slices it; write any new multi-element handler the same
   way. A single indexed read guarded by a `count` wait is fine — the loop is what makes it likely.
-- **`qa_dump_tree` output is capped, and it truncates silently from the end.** A whole-app dump of
+- **`test_forge_dump_tree` output is capped, and it truncates silently from the end.** A whole-app dump of
   a dense screen stops before anything late in tree order — a tab row near the end reads as *absent*
-  while `qa_assert_exists` and `qa_get_labels` both find it. Check `truncated` in the result, and
+  while `test_forge_assert_exists` and `test_forge_get_labels` both find it. Check `truncated` in the result, and
   scope the dump: `identifier` **plus** `elementType` dumps that element's own subtree, every child
   frame included, which is both complete and cheap.
 - **Reopening the deeplink does not reload the screen — it stacks another one.** Firing
-  `qa_open_deeplink` while already on the destination pushes a second instance on top, so the tree
+  `test_forge_open_deeplink` while already on the destination pushes a second instance on top, so the tree
   then holds two of every identifier and a frame read can silently answer from the wrong copy.
   Between fixture states always
-  `qa_relaunch_app` first, then deeplink, then `qa_alert_tap` — roughly two minutes per state, and
+  `test_forge_relaunch_app` first, then deeplink, then `test_forge_alert_tap` — roughly two minutes per state, and
   the only way the reads mean what they say.
 - **A pack import is refused while the harness is attached, on older `networklens-mcp` builds.**
   Its running-app check matched `UIKitApplication:<bundleId>` as a prefix, which also matches the
@@ -592,19 +592,19 @@ no generate-then-someone-else-runs-it handoff, and no `.swift` file per flow.
   `scripts/queue_cli.py` wraps that: `cmd '<json>'` posts one command and prints its result,
   `tree [identifier] [type]` writes a dump to a file so a big tree can be `grep`ed instead of read
   into context, and `reload` is the relaunch → deeplink → chooser → wait sequence in one call.
-- **When a lookup fails unexpectedly, call `qa_dump_tree` before changing anything else.** An
+- **When a lookup fails unexpectedly, call `test_forge_dump_tree` before changing anything else.** An
   element that exists but is unhittable, or carries a different identifier than the code suggests,
   is invisible to every other command and guessing at it wastes a whole plan.
 - **Commands are issued one at a time, deliberately.** A step's outcome usually decides whether the
   next step means anything, so there is no batch command to hide a mid-plan failure.
 - **Extending the vocabulary is a deliberate two-sided change**, not a per-flow one: a new command
-  needs a `server.tool(...)` in `mcp/qa-driver-mcp/src/index.ts` **and** a case in
-  `QADriverSession.swift`'s matching handler, and it costs the one-time rebuild again. Compose
+  needs a `server.tool(...)` in `mcp/test-forge-driver-mcp/src/index.ts` **and** a case in
+  `TestForgeDriverSession.swift`'s matching handler, and it costs the one-time rebuild again. Compose
   existing commands first; only add one when a step is genuinely inexpressible.
 
 ---
 
-### The `qa-driver` vocabulary
+### The `test-forge-driver` vocabulary
 
 ### Evidence capture
 
@@ -620,9 +620,9 @@ no transition to show, and one glance at its screenshot settles it either way.
 | taps, swipes, scrolls, pans, types, navigates, relaunches, dismisses an alert | screenshot **and** recording |
 | only checks that elements exist, or reads their labels, counts or frames | screenshot alone |
 
-Concretely, a case is interacting when it calls any of `qa_tap`, `qa_tap_by_label`, `qa_swipe`,
-`qa_scroll_until_exists`, `qa_scroll_to_top`, `qa_type`, `qa_open_deeplink`, `qa_relaunch_app` or
-`qa_alert_tap`. `build_evidence.py` derives that from the case's own `commands` and **fails the run**
+Concretely, a case is interacting when it calls any of `test_forge_tap`, `test_forge_tap_by_label`, `test_forge_swipe`,
+`test_forge_scroll_until_exists`, `test_forge_scroll_to_top`, `test_forge_type`, `test_forge_open_deeplink`, `test_forge_relaunch_app` or
+`test_forge_alert_tap`. `build_evidence.py` derives that from the case's own `commands` and **fails the run**
 when an interacting case carries no `video` — bracketing is not left to the runner remembering.
 
 Two things follow for the runner:
@@ -633,18 +633,18 @@ Two things follow for the runner:
 - **Bracket before the first action, not before the first command.** A case that reads three labels
   and then taps starts recording at the tap.
 
-- `qa_screenshot` with `caseId` writes to
+- `test_forge_screenshot` with `caseId` writes to
   `$SIMULATOR_HOST_HOME/Documents/<Team>-Test/<caseId>/<step-n>-<label>.png`. Pass `caseId` every
   time: one long-lived harness session serves every case, so without it the folder comes from the
   harness's single test method name and all 183 cases' screenshots pile into one directory.
-- `qa_start_recording` / `qa_stop_recording` bracket the case, producing
+- `test_forge_start_recording` / `test_forge_stop_recording` bracket the case, producing
   `<Team>-Test/<caseId>/<caseId>.mov`. Both run host-side (`simctl io recordVideo`, hevc), so they
-  need no harness and survive a `qa_relaunch_app` mid-case.
+  need no harness and survive a `test_forge_relaunch_app` mid-case.
 - **A recorded read is wasted bytes.** Filming an existence check produces a clip of a motionless
   screen — the same information the screenshot already carries, at a thousand times the size. Leave
   those cases unrecorded rather than bracketing everything out of habit.
 - **Keep the case short, and diagnose outside the recording.** Recording runs at roughly 0.4 MB/s —
-  a six-minute session is ~140 MB. Element hunting, `qa_dump_tree`, identifier archaeology: stop the
+  a six-minute session is ~140 MB. Element hunting, `test_forge_dump_tree`, identifier archaeology: stop the
   recording first and start a fresh one for the real attempt. A clip of the runner looking for
   something proves nothing about the case, and it is the single biggest source of wasted disk.
 - **Prune before reporting.** A run leaves clips the report has no use for: one left rolling through
@@ -722,7 +722,7 @@ observation when it was.
 
 Written **after** a live run, never as a stand-in for one, and git-tracked under
 `<UITestRoot>/<Module>/<Submodule>/`. `scripts/build_evidence.py` emits it — do not hand-write
-one. An existing `<Screen>QATest.tracking.md` from a compiled-generation run is this file's
+one. An existing `<Screen>TestForgeTest.tracking.md` from a compiled-generation run is this file's
 predecessor: read it for the identifier map, and append to it rather than starting a second
 document for the same flow.
 
@@ -741,7 +741,7 @@ trail" below) — its own stderr names any it could not find, which is informati
 
 ```bash
 scripts/build_evidence.py <cases>.json <results>.json \
-    --out-dir <UITestRoot>/<Module>/<Submodule>/<Screen>QARun \
+    --out-dir <UITestRoot>/<Module>/<Submodule>/<Screen>TestForgeRun \
     --media-dir <scratchpad>/evidence/media \
     --feature "<Feature Name>" --main-page <parent pageId> \
     --run-label "<date> · <build>" --environment <env>.json [--runner "Name"] \
@@ -849,13 +849,13 @@ Two things make the reading sound rather than suggestive:
 
 ### The companion tracking document
 
-`build_evidence.py` owns the run report. `<Screen>QATest.tracking.md` is the separate, hand-kept
+`build_evidence.py` owns the run report. `<Screen>TestForgeTest.tracking.md` is the separate, hand-kept
 record of *how the flow is driven*, and it is what a re-run reads first:
 
 | Section | Contents |
 |---|---|
 | Accessibility Identifier Map & Gaps | Every identifier the flow relies on, which existed already vs. which this run added, and any gap the user declined to retrofit (still unrunnable). |
-| Command Plan | The Stage 3 sequence in order — each step's `qa-driver`/`networklens` calls and their parameters. |
+| Command Plan | The Stage 3 sequence in order — each step's `test-forge-driver`/`networklens` calls and their parameters. |
 | Step → Result | `Step ID \| source step text or Confluence ref \| content hash \| commands run \| what they returned \| mock rule/variant in effect \| pass/fail \| screenshot path` |
 | Run History | One row per run: date, plan changes since the last run, what triggered it. |
 
@@ -993,7 +993,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/test-flow-recorder/scripts/publish_evidenc
 
 ## The apply-fixes mode
 
-A **separate invocation** over a **completed** run — `/qa-fix`, never a stage inside a pass. It
+A **separate invocation** over a **completed** run — `/test-forge-fix`, never a stage inside a pass. It
 applies the `patch` entries that run already proposed, re-runs exactly those cases, and keeps only
 the ones that now pass. It never re-adjudicates a verdict: the run decided which side was wrong, and
 this mode is only allowed to act on that decision.
@@ -1060,7 +1060,7 @@ attributable afterwards rather than implied.
 Proves an analytics tracker fired on device, with the right payload, from the same trace a case's
 `isMockServed` proof already came from — `scripts/extract_trackers.py`, ported from upstream
 NetworkInterceptor's own script and skill and kept behind the same `dataplane.py` resolver as
-`preflight.py`/`capture_baseline.py`, so it reads whichever `QA_DATA_PLANE` driver is active.
+`preflight.py`/`capture_baseline.py`, so it reads whichever `TEST_FORGE_DATA_PLANE` driver is active.
 
 ```bash
 scripts/extract_trackers.py --ids TR-001,TR-002 --bundle-id <bundle id> \
@@ -1150,7 +1150,7 @@ which reads a tester-saved `.webarchive`/`.html` snapshot of the TRMS tracker-de
 a payload contract **cross-validated against itself**: the page's `dataLayer.push` script checked
 against its own "Tracker parameters" table, with any disagreement reported as a warning rather than
 one side silently winning. Snapshots resolve by id under `--snapshot-dir` (default
-`$QA_MEDIA_ROOT/trms/`) as `<TRMS-ID>.webarchive`/`.html`/`.htm`.
+`$TEST_FORGE_MEDIA_ROOT/trms/`) as `<TRMS-ID>.webarchive`/`.html`/`.htm`.
 
 **Fetching the TRMS page live does not work as a substitute** — it is a client-rendered SPA, and a
 plain HTTP fetch returns only the unrendered shell, none of the table or script content. A saved
@@ -1184,11 +1184,11 @@ See `contracts/evidence.md`'s "Tracker trail" for the full field shape.
 | `test-flow-recorder` action | Chains into | Why |
 |---|---|---|
 | Retrofit an accessibility identifier on an *existing* view file | `swiftui-code-gen` if the file imports SwiftUI, else `swift-codegen` | Mirrors `require-codegen-skill.py`'s own `is_swiftui_view_file` classification — invoking the wrong one won't satisfy the gate anyway. |
-| Extend `QADriverKit` (a new command case, a new wait primitive), or append to a shared helper | `swift-codegen` | Imports `XCTest`, not `SwiftUI` — a non-SwiftUI edit under the hook's rules. `tdd`/`swift-unit-testing` target the Swift Testing framework and explicitly ban XCTest, so despite technically satisfying the hook's `ALLOWED_SKILLS` set, they are the wrong semantic choice here. |
+| Extend `TestForgeDriverKit` (a new command case, a new wait primitive), or append to a shared helper | `swift-codegen` | Imports `XCTest`, not `SwiftUI` — a non-SwiftUI edit under the hook's rules. `tdd`/`swift-unit-testing` target the Swift Testing framework and explicitly ban XCTest, so despite technically satisfying the hook's `ALLOWED_SKILLS` set, they are the wrong semantic choice here. |
 | Mock an endpoint/scenario a pack does not already cover | nothing — no `api-mock` skill exists in this repo | Author the rule directly against `preflight.py`'s `REQUIRED_RULE_KEYS`/`REQUIRED_VARIANT_KEYS` schema and install it with `mcp__networklens__lens_mock_endpoint` (or `lens_edit` for a one-off body). This is the only path — NetworkLens is the only mock channel. |
 
 The first two rows are never assumed present — `scripts/audit_platform_skills.py` enforces that the
-skill actually exists before `/qa-init` finishes setup, and again at the top of Stage 1 Preflight
+skill actually exists before `/test-forge-init` finishes setup, and again at the top of Stage 1 Preflight
 above; see `platforms/<platform>.md`'s "Host-project skills required" for which platforms declare
 the dependency.
 
@@ -1207,7 +1207,7 @@ These are non-negotiable. Verify every one before handing a flow back:
    edited.**
 4. **No fixed-duration wait, in the harness or in a plan.** There is no sleep command; every wait
    polls real UI state.
-5. **A harness command reports, never asserts.** Nothing in `QADriverKit` calls `XCTAssert` or
+5. **A harness command reports, never asserts.** Nothing in `TestForgeDriverKit` calls `XCTAssert` or
    `XCTFail`: an assertion would unwind the session on one bad lookup, ending every case still
    queued instead of failing a single step.
 6. **A run report is written only after a real run**, and quotes what the tools actually returned.
@@ -1235,7 +1235,7 @@ git diff <shared helper>   # must show only added lines, never a removed or chan
 grep -rn "sleep(\|Thread\.sleep\|usleep(" <UITestRoot>/
 
 # Nothing in the harness may assert — one raise ends the session, not the command.
-grep -rn "XCTAssert\|XCTFail" <QADriverKit sources>/
+grep -rn "XCTAssert\|XCTFail" <TestForgeDriverKit sources>/
 ```
 
 ---
@@ -1248,7 +1248,7 @@ grep -rn "XCTAssert\|XCTFail" <QADriverKit sources>/
   `test-without-building` against a bundle that already exists, which costs seconds and decides
   nothing, and `queue_cli.py` calls it automatically when a command does not return. A harness that
   dies at case 12 of 40 is a mechanical problem, not a reason to stop and ask.
-- Do not write a per-flow `<Screen>QATest.swift`. A flow is a command plan executed live; a
+- Do not write a per-flow `<Screen>TestForgeTest.swift`. A flow is a command plan executed live; a
   compiled regression export is a possible future step, not this skill's output.
 - Do not write into a stub UI test target. A project often carries an unused Xcode-generated one
   alongside the live one; confirm which target the scheme actually builds. Writes are confined to
@@ -1279,5 +1279,5 @@ grep -rn "XCTAssert\|XCTFail" <QADriverKit sources>/
 
 | Deferred | Why |
 |---|---|
-| A compiled regression export | Emitting a standing `<Screen>QATest.swift` from a proven plan is a plausible later step, once the live path has real mileage. Not an output today. |
+| A compiled regression export | Emitting a standing `<Screen>TestForgeTest.swift` from a proven plan is a plausible later step, once the live path has real mileage. Not an output today. |
 | NetworkLens-change → regression-guard hook | A `PostToolUse` hook can't boot a simulator or drive a flow, so the honest scope would be a static drift-detector plus a printed nudge, not an automated pass/fail gate — worth its own small hook someday, not part of this skill. |

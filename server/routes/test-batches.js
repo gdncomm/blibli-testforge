@@ -4,7 +4,7 @@
 import { buildReport as buildRunReport } from "../lib/results.js";
 import { batchProgress, compareBatches } from "../lib/test-batches.js";
 
-const KIND_TITLES = { run: "Test runs", replay: "Test replays", "replay-v2": "Macro replays", "qa-run": "Claude test runs", claude: "Claude tasks", "claude-chat": "Claude chats", scan: "Scans" };
+const KIND_TITLES = { run: "Test runs", replay: "Test replays", "replay-v2": "Macro replays", "test-forge-run": "Claude test runs", claude: "Claude tasks", "claude-chat": "Claude chats", scan: "Scans" };
 
 export function registerTestBatchRoutes(app, { testBatches, readiness, isTestInFlight, isRunQueueBusy = () => false, results, tasks }) {
 	const refuseWhileTesting = (res) => {

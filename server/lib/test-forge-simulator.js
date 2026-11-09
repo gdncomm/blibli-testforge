@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 import { chosenTestDeviceUdid, noteTestDevice } from "./test-device.js";
 
 const run = promisify(execFile);
-export const QA_PREFIX = "QA · ";
+export const TEST_FORGE_PREFIX = "TestForge · ";
 
 async function simctl(args, timeout = 60_000) {
 	return (await run("xcrun", ["simctl", ...args], { timeout, maxBuffer: 16 * 1024 * 1024 })).stdout;
@@ -18,11 +18,11 @@ export async function listDevices() {
 	return Object.entries(devices).flatMap(([runtime, list]) => list.filter((device) => device.isAvailable !== false).map((device) => ({ ...device, runtime })));
 }
 
-/** The test device (D-120): the one the person chose ("Use for tests"), else the "QA · " clone. */
-export async function findQaSimulator(devices = null) {
+/** The test device (D-120): the one the person chose ("Use for tests"), else the "TestForge · " clone. */
+export async function findTestForgeSimulator(devices = null) {
 	const list = devices ?? (await listDevices());
 	const chosen = chosenTestDeviceUdid();
-	const device = (chosen && list.find((candidate) => candidate.udid === chosen)) || list.find((candidate) => candidate.name.startsWith(QA_PREFIX)) || null;
+	const device = (chosen && list.find((candidate) => candidate.udid === chosen)) || list.find((candidate) => candidate.name.startsWith(TEST_FORGE_PREFIX)) || null;
 	noteTestDevice(device?.udid);
 	return device;
 }
@@ -30,22 +30,22 @@ export async function findQaSimulator(devices = null) {
 /** `{ qa, booted, others }` — what the readiness check and the fix buttons need. */
 export async function simulatorState() {
 	const devices = await listDevices();
-	const qa = await findQaSimulator(devices);
+	const qa = await findTestForgeSimulator(devices);
 	const booted = devices.filter((device) => device.state === "Booted");
 	return { qa, booted, others: booted.filter((device) => device.udid !== qa?.udid) };
 }
 
 /**
- * Clones the booted simulator (or `sourceUdid`) as "QA · <name>". simctl only clones a shut-down
+ * Clones the booted simulator (or `sourceUdid`) as "TestForge · <name>". simctl only clones a shut-down
  * device, so the source is shut down for the clone and booted again afterwards when `rebootSource`.
  */
-export async function createQaSimulator({ sourceUdid, rebootSource = false, onLine = () => {} } = {}) {
+export async function createTestForgeSimulator({ sourceUdid, rebootSource = false, onLine = () => {} } = {}) {
 	const devices = await listDevices();
-	const existing = await findQaSimulator(devices);
+	const existing = await findTestForgeSimulator(devices);
 	if (existing) return existing;
 	const source = devices.find((device) => device.udid === sourceUdid) ?? devices.find((device) => device.state === "Booted");
 	if (!source) throw new Error("no simulator to clone — boot the one you test with first");
-	const name = `${QA_PREFIX}${source.name}`;
+	const name = `${TEST_FORGE_PREFIX}${source.name}`;
 	if (source.state === "Booted") {
 		onLine(`▸ shutting down ${source.name} to clone it`);
 		await simctl(["shutdown", source.udid]);
@@ -60,8 +60,8 @@ export async function createQaSimulator({ sourceUdid, rebootSource = false, onLi
 	return { ...source, udid, name, state: "Booted" };
 }
 
-export async function bootQaSimulator() {
-	const qa = await findQaSimulator();
+export async function bootTestForgeSimulator() {
+	const qa = await findTestForgeSimulator();
 	if (!qa) throw new Error("no QA simulator yet — create it first");
 	if (qa.state !== "Booted") await simctl(["boot", qa.udid]);
 	await run("open", ["-a", "Simulator"]).catch(() => {});

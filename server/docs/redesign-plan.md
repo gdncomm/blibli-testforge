@@ -94,7 +94,7 @@ Node server (unchanged role) ── jobs, Claude sessions, queue, macros, driver
 
 - **Minimum macOS 14** (Sonoma): TipKit and `MenuBarExtra` need it. The iOS-16 rule in the iOS
   app's `CLAUDE.md` applies to the Blibli app, not to this Mac tool.
-- **Location:** `tools/testforge-mac/` — a Swift package (D-081: user chose it over an .xcodeproj), beside `tools/qa-dashboard/`.
+- **Location:** `tools/mac-app/` — a Swift package (D-081: user chose it over an .xcodeproj), beside `tools/test-forge-server/`.
 - **The web UI stays** at `http://127.0.0.1:4545` while the Mac app reaches parity, then moves to
   `/classic`. Both read the same stream.
 
@@ -116,7 +116,7 @@ Node server (unchanged role) ── jobs, Claude sessions, queue, macros, driver
 - **Replay:** each macro step already has a label (e.g. "Tap Home Flash Sale 'Show all'"). A small
   vocabulary file maps step kinds to an SF Symbol and a verb (tap → `hand.tap`, scroll →
   `arrow.up.and.down`, assert colour → `paintpalette`, screenshot → `camera`, cleanup → `trash`).
-- **Claude first run:** QADriver and NetworkLens tool calls are translated with the same
+- **Claude first run:** TestForgeDriver and NetworkLens tool calls are translated with the same
   vocabulary; Claude's own messages go to the console, tagged `[claude]`.
 
 ### Live Claude usage (#15)
@@ -153,7 +153,7 @@ emits one with both windows. So dashboard runs are the primary source and the ta
 Design:
 
 1. **Usage tap (optional; for when no dashboard run happened lately).** One line added to the status line command copies its stdin
-   JSON to `~/.testforge/usage.json` (atomic write). The app watches that file. Values are exactly
+   JSON to `~/.test-forge/usage.json` (atomic write). The app watches that file. Values are exactly
    the CLI's, refreshed whenever any interactive Claude Code session renders its status line. The
    tap is offered as a Get ready check with a **Connect** button and an explicit consent sheet; the
    app never edits the user's Claude settings silently.
@@ -169,7 +169,7 @@ Design:
   System Settings.
 - **Step outline overlay:** a borderless, click-through, transparent panel kept above the Simulator
   window. It draws the numbered outline using the element frame the robot already reads
-  (`qa_get_frame`), mapped from device points to the Simulator's screen area.
+  (`test_forge_get_frame`), mapped from device points to the Simulator's screen area.
   - Risk: the bezel, zoom and window size vary. The bridge calibrates from the device's screen size
     and the window's content area, and hides the outline when calibration is not confident rather
     than drawing it in the wrong place.

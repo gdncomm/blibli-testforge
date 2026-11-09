@@ -1,4 +1,4 @@
-// D-156: Claude Code's own tools (the `networklens` + `qa-driver` MCP servers) need personal,
+// D-156: Claude Code's own tools (the `networklens` + `test-forge-driver` MCP servers) need personal,
 // per-Mac values — this developer's project path, QA simulator UDID, proof folder — to target the
 // right device when used directly in a Claude Code session, outside the dashboard (which already
 // resolves all of this per request instead, D-032, so it never needed these). They belong in
@@ -8,16 +8,16 @@
 // that file, so a fresh clone doesn't need hand-edited JSON before Claude's own tools work.
 import { readFile, rename, writeFile } from "node:fs/promises";
 import { DEFAULT_BUNDLE_ID } from "./app-defaults.js";
-import { findQaSimulator } from "./qa-simulator.js";
+import { findTestForgeSimulator } from "./test-forge-simulator.js";
 
 export const LOCAL_ENV_KEYS = [
-	"QA_BUNDLE_ID",
+	"TEST_FORGE_BUNDLE_ID",
 	"NETWORKLENS_BUNDLE_ID",
-	"QA_PROJECT_DIR",
-	"QA_UITEST_TARGET",
-	"QA_DATA_PLANE",
-	"QA_MEDIA_ROOT",
-	"QA_DEVICE_UDID",
+	"TEST_FORGE_PROJECT_DIR",
+	"TEST_FORGE_UITEST_TARGET",
+	"TEST_FORGE_DATA_PLANE",
+	"TEST_FORGE_MEDIA_ROOT",
+	"TEST_FORGE_DEVICE_UDID",
 ];
 
 /** The real filesystem, for the server. Tests inject a fake `deps` instead. */
@@ -27,17 +27,17 @@ export function realDeps() {
 
 /** What this Mac's env values should be, worked out from what the dashboard server already knows. */
 export async function detectLocalEnv({
-	projectDir, mediaRoot, uitestTarget = "BlibliMobile_XCUITest", bundleId = DEFAULT_BUNDLE_ID, findQaSim = findQaSimulator,
+	projectDir, mediaRoot, uitestTarget = "BlibliMobile_XCUITest", bundleId = DEFAULT_BUNDLE_ID, findTestForgeSim = findTestForgeSimulator,
 } = {}) {
-	const qa = await findQaSim().catch(() => null);
+	const qa = await findTestForgeSim().catch(() => null);
 	return {
-		QA_BUNDLE_ID: bundleId,
+		TEST_FORGE_BUNDLE_ID: bundleId,
 		NETWORKLENS_BUNDLE_ID: bundleId,
-		QA_PROJECT_DIR: projectDir ?? null,
-		QA_UITEST_TARGET: uitestTarget,
-		QA_DATA_PLANE: "simctl",
-		QA_MEDIA_ROOT: mediaRoot ?? null,
-		QA_DEVICE_UDID: qa?.udid ?? null,
+		TEST_FORGE_PROJECT_DIR: projectDir ?? null,
+		TEST_FORGE_UITEST_TARGET: uitestTarget,
+		TEST_FORGE_DATA_PLANE: "simctl",
+		TEST_FORGE_MEDIA_ROOT: mediaRoot ?? null,
+		TEST_FORGE_DEVICE_UDID: qa?.udid ?? null,
 	};
 }
 

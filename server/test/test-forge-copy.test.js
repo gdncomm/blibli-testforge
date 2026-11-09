@@ -5,9 +5,9 @@ import { existsSync, mkdtempSync, readFileSync, statSync, writeFileSync, mkdirSy
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const sandbox = mkdtempSync(join(tmpdir(), "qa-copy-"));
-process.env.TESTFORGE_HOME = join(sandbox, "testforge");
-const { listBranches, localDrift, prepareBranch, snapshotLocal } = await import("../lib/qa-copy.js");
+const sandbox = mkdtempSync(join(tmpdir(), "test-forge-copy-"));
+process.env.TEST_FORGE_HOME = join(sandbox, "testforge");
+const { listBranches, localDrift, prepareBranch, snapshotLocal } = await import("../lib/test-forge-copy.js");
 
 const sh = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@t", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@t" } }).trim();
 const origin = join(sandbox, "origin.git");
@@ -110,7 +110,7 @@ test("branches: local refs first; refresh adds a branch only GitHub has", async 
 });
 
 test("D-069: edits and commits under tools/ keep the build-input id; app edits change it", async () => {
-	const { buildInputId } = await import("../lib/qa-copy.js");
+	const { buildInputId } = await import("../lib/test-forge-copy.js");
 	const { execFileSync } = await import("node:child_process");
 	const { mkdtemp, mkdir, writeFile } = await import("node:fs/promises");
 	const { tmpdir } = await import("node:os");
@@ -126,8 +126,8 @@ test("D-069: edits and commits under tools/ keep the build-input id; app edits c
 	git("commit", "-qm", "one");
 	const before = await buildInputId(repo);
 	// The UI-test folder's JSON (macros, registry, packs) is read by the dashboard, never built.
-	await mkdir(join(repo, "BlibliMobile-iOS", "BlibliMobile_XCUITest", "QAMacros"), { recursive: true });
-	await writeFile(join(repo, "BlibliMobile-iOS", "BlibliMobile_XCUITest", "QAMacros", "elements.json"), "{}\n");
+	await mkdir(join(repo, "BlibliMobile-iOS", "BlibliMobile_XCUITest", "TestForgeMacros"), { recursive: true });
+	await writeFile(join(repo, "BlibliMobile-iOS", "BlibliMobile_XCUITest", "TestForgeMacros", "elements.json"), "{}\n");
 	assert.equal(await buildInputId(repo), before);
 	await writeFile(join(repo, "tools", "server.js"), "2\n");
 	await writeFile(join(repo, "tools", "new.js"), "x\n");

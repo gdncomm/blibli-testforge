@@ -6,13 +6,13 @@ import { TAP_MARKER, scriptPathFrom, withTap } from "../lib/usage-tap.js";
 const script = "#!/usr/bin/env bash\n\ninput=$(cat)\n\necho \"$input\" | jq .\n";
 
 test("inserts the tap after the stdin read, using the script's variable", () => {
-	const { script: tapped, isChanged } = withTap(script, "/Users/me/.testforge/usage.json");
+	const { script: tapped, isChanged } = withTap(script, "/Users/me/.test-forge/usage.json");
 	assert.equal(isChanged, true);
 	const lines = tapped.split("\n");
 	const read = lines.indexOf("input=$(cat)");
 	assert.equal(lines[read + 1], TAP_MARKER);
-	assert.match(lines[read + 2], /printf '%s' "\$input" > "\/Users\/me\/\.testforge\/usage\.json\.tmp" && mv/);
-	assert.match(lines[read + 2], /mkdir -p "\/Users\/me\/\.testforge"/);
+	assert.match(lines[read + 2], /printf '%s' "\$input" > "\/Users\/me\/\.test-forge\/usage\.json\.tmp" && mv/);
+	assert.match(lines[read + 2], /mkdir -p "\/Users\/me\/\.test-forge"/);
 });
 
 test("is idempotent", () => {

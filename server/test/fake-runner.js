@@ -1,4 +1,4 @@
-// Stands in for the XCUITest runner: polls a queue's /commands like QADriverRunner does and posts a
+// Stands in for the XCUITest runner: polls a queue's /commands like TestForgeDriverRunner does and posts a
 // result for each command, answered by `respond(command)`. Returning `undefined` from respond leaves
 // the command unanswered — how a frozen app or a dead session looks from the host.
 export function startFakeRunner(base, respond, { pollMs = 20 } = {}) {
@@ -15,7 +15,7 @@ export function startFakeRunner(base, respond, { pollMs = 20 } = {}) {
 					await fetch(`${base}/result`, {
 						method: "POST",
 						headers: { "content-type": "application/json" },
-						// Same envelope as QADriverRunner: outcome under `value`, failures as top-level `error`.
+						// Same envelope as TestForgeDriverRunner: outcome under `value`, failures as top-level `error`.
 						body: JSON.stringify(outcome.error === undefined ? { id: command.id, value: outcome } : { id: command.id, error: outcome.error }),
 					});
 				}

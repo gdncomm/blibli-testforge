@@ -1,5 +1,5 @@
 // Thin wrapper around test-flow-recorder's macro_cli.py (list/resolve only — recording macros stays
-// a Claude-driven flow via /qa-macro, this dashboard only replays what it already saved).
+// a Claude-driven flow via /test-forge-macro, this dashboard only replays what it already saved).
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { resolvePluginScript } from "./plugin-paths.js";
@@ -9,15 +9,15 @@ const run = promisify(execFile);
 
 function uiTestRoot() {
 	return (
-		process.env.QA_UITEST_ROOT ||
-		`${process.env.QA_PROJECT_DIR || "."}/${process.env.QA_UITEST_TARGET || "BlibliMobile_XCUITest"}`
+		process.env.TEST_FORGE_UITEST_ROOT ||
+		`${process.env.TEST_FORGE_PROJECT_DIR || "."}/${process.env.TEST_FORGE_UITEST_TARGET || "BlibliMobile_XCUITest"}`
 	);
 }
 
 async function callCli(args) {
-	const script = resolvePluginScript("QA_MACRO_SCRIPT", "macro_cli.py");
+	const script = resolvePluginScript("TEST_FORGE_MACRO_SCRIPT", "macro_cli.py");
 	if (!script) {
-		return { ok: false, error: "macro_cli.py not found. Set QA_MACRO_SCRIPT to its path." };
+		return { ok: false, error: "macro_cli.py not found. Set TEST_FORGE_MACRO_SCRIPT to its path." };
 	}
 	try {
 		const { stdout } = await run("python3", [script, ...args], { timeout: 15_000 });
@@ -65,7 +65,7 @@ export async function replayMacro(name, onStep, isCancelled = () => false) {
 	for (const [index, command] of resolved.steps.entries()) {
 		if (isCancelled()) return { ok: false, cancelledAt: index };
 		const raw = await postCommand(command);
-		// QADriverRunner answers `{id, value: {...}}`; failures come back as a top-level `error`.
+		// TestForgeDriverRunner answers `{id, value: {...}}`; failures come back as a top-level `error`.
 		const outcome = raw?.value && raw.error === undefined ? raw.value : raw;
 		const failed =
 			outcome?.error ||

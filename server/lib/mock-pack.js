@@ -1,6 +1,6 @@
 // Mock pack in the repo (D-064): the NetworkLens rules macros arm live inside the app's container, so
 // a reinstalled app or another tester's simulator had none of them. Each rule a macro uses is kept as
-// `<UITestRoot>/QAMacros/mocks/<endpoint-slug>.networklens-pack.json` — the same format as
+// `<UITestRoot>/TestForgeMacros/mocks/<endpoint-slug>.networklens-pack.json` — the same format as
 // `lens_export_pack`, so the overlay and `lens_import_pack` read it too — redacted, since it is
 // committed. A macro's `mock` step imports its rule from here when the device doesn't have it.
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
@@ -10,7 +10,7 @@ import { uiTestRoot } from "./macro-v2.js";
 
 const PACK_SUFFIX = ".networklens-pack.json";
 
-export const mocksDir = (root = uiTestRoot()) => join(root, "QAMacros", "mocks");
+export const mocksDir = (root = uiTestRoot()) => join(root, "TestForgeMacros", "mocks");
 
 export function packFileName(endpointKey) {
 	const slug = String(endpointKey).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);

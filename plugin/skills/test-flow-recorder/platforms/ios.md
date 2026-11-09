@@ -9,7 +9,7 @@ Two independent MCP channels do the work, and both are needed:
 | Channel | Controls | Comes from |
 |---|---|---|
 | `mcp__networklens__*` | the **data** layer — which mock rule/variant/scenario is live | the **host project's own** `.mcp.json` (e.g. `tools/networklens-mcp` in an app that already links NetworkLens) — this plugin vendors no copy of its own; see `contracts/dataplane.md`'s `networklens` driver entry |
-| `mcp__qa-driver__*` | the **screen** — taps, typing, scrolls, swipes, element reads, screenshots, app relaunch | `mcp/qa-driver-mcp` → `QADriverSession.swift` |
+| `mcp__test-forge-driver__*` | the **screen** — taps, typing, scrolls, swipes, element reads, screenshots, app relaunch | `mcp/test-forge-driver-mcp` → `TestForgeDriverSession.swift` |
 
 They cannot share a queue: `GET /commands` drains destructively, so each channel needs its own port
 (8788 for data, 8789 for screen).
@@ -19,37 +19,37 @@ replaced by this skill.
 
 > **Infrastructure — nothing to bootstrap per run.**
 >
-> The harness ships as an SPM product, `QADriverKit`, so a project consumes it rather than pasting
-> sources into its own UI test target. `/qa-init` does the wiring.
+> The harness ships as an SPM product, `TestForgeDriverKit`, so a project consumes it rather than pasting
+> sources into its own UI test target. `/test-forge-init` does the wiring.
 >
-> - `QADriverKit/QADriverRunner.swift` — the persistent harness. Built **once**, then serves every
+> - `TestForgeDriverKit/TestForgeDriverRunner.swift` — the persistent harness. Built **once**, then serves every
 >   flow. Extended only by adding a command case, which costs that one-time rebuild again.
-> - `QADriverKit/QADriverConfiguration.swift` — bundle id, launch arguments, media root, control
->   host and port, idle bound. Defaulted from the environment `/qa-init` writes, so the common case
+> - `TestForgeDriverKit/TestForgeDriverConfiguration.swift` — bundle id, launch arguments, media root, control
+>   host and port, idle bound. Defaulted from the environment `/test-forge-init` writes, so the common case
 >   needs no Swift; a subclass overrides `configuration` when a launch path is unusual.
-> - `QADriverKit/QAWait.swift` — the wait and scroll primitives the harness composes. **Nothing
+> - `TestForgeDriverKit/TestForgeWait.swift` — the wait and scroll primitives the harness composes. **Nothing
 >   here asserts**: an `XCTAssert` failure unwinds the session and ends every case still queued.
-> - `QADriverKit/ArtifactRecorder.swift` — screenshot capture, invoked live via `qa_screenshot`.
-> - `QADriverKit/ScreenChain.swift` — the generic hop-traversal engine, useful as the *shape* of a
+> - `TestForgeDriverKit/ArtifactRecorder.swift` — screenshot capture, invoked live via `test_forge_screenshot`.
+> - `TestForgeDriverKit/ScreenChain.swift` — the generic hop-traversal engine, useful as the *shape* of a
 >   traversal; no per-flow instance is generated.
 > - **In the host project**, one file only: a subclass declaring the test method.
 >   XCTest enumerates test classes from the .xctest bundle's own image, so a class reached only
 >   through a linked product may never be discovered.
 >
 >   ```swift
->   import QADriverKit
+>   import TestForgeDriverKit
 >
->   final class QADriverSession: QADriverRunner {
+>   final class TestForgeDriverSession: TestForgeDriverRunner {
 >       func testLiveSession() { runLiveSession() }
 >   }
 >   ```
 >
-> - `qa-driver-mcp` — the MCP server and command queue (port 8789, `QADRIVER_CONTROL_PORT` to
->   change it) that the harness polls, registered as `qa-driver`.
+> - `test-forge-driver-mcp` — the MCP server and command queue (port 8789, `TEST_FORGE_DRIVER_CONTROL_PORT` to
+>   change it) that the harness polls, registered as `test-forge-driver`.
 > - `scripts/hash_step.py` — per-step content hashing for the run report (`SKILL.md`, Stage 6).
 > - `scripts/classify_module.py` — the Module/Submodule determination below; run it rather than
 >   re-deriving a taxonomy by hand.
-> - `scripts/dataplane.py` — the data-plane resolver (`QA_DATA_PLANE`), and the one place that globs
+> - `scripts/dataplane.py` — the data-plane resolver (`TEST_FORGE_DATA_PLANE`), and the one place that globs
 >   `trace*.ndjson` for rotation. See `contracts/dataplane.md` for the driver registry.
 
 ---
@@ -62,11 +62,11 @@ replaced by this skill.
 **Required: yes**
 
 A view-code codegen skill covering every file kind this project uses (SwiftUI and/or UIKit). Every
-accessibility-identifier retrofit below, and any edit to `QADriverKit` itself, chains into it (see
+accessibility-identifier retrofit below, and any edit to `TestForgeDriverKit` itself, chains into it (see
 the "chains into" table in `SKILL.md`) — there is no path through this driver that avoids it.
 Discovered the same way `scripts/propose_skill_extension.py` already does: a codegen-gate hook's
 `ALLOWED_SKILLS`, or failing that a keyword heuristic over each project skill's description.
-`scripts/audit_platform_skills.py --platform ios` runs this at `/qa-init` step 8 and again, cheaply,
+`scripts/audit_platform_skills.py --platform ios` runs this at `/test-forge-init` step 8 and again, cheaply,
 at the top of Stage 1 Preflight — missing means both stop rather than guess.
 
 ---
@@ -168,7 +168,7 @@ flow, but no literal in the scope folder mentions them.
 usually low, and the fallback is not equally viable on both:
 
 - **UIKit** degrades gracefully. `UILabel`/`UIButton` expose their text as an accessibility label
-  automatically, so `qa_tap_by_label` and `qa_get_labels` work without any retrofit. The exception
+  automatically, so `test_forge_tap_by_label` and `test_forge_get_labels` work without any retrofit. The exception
   is a container that called `setAccessibilityIdentifier(with:ignoreSubviews: true)` — that marks
   the subtree as one accessibility element and **everything inside it becomes unaddressable**. Check
   for `ignoreSubviews: true` before concluding a child is missing.
@@ -186,7 +186,7 @@ usually low, and the fallback is not equally viable on both:
   `UNVERIFIABLE` verdict. Say which of the two it is when reporting, rather than reporting the case
   as failed.
 
-`qa_dump_tree` truncates silently, and a legacy screen's hierarchy is usually deep enough to hit it.
+`test_forge_dump_tree` truncates silently, and a legacy screen's hierarchy is usually deep enough to hit it.
 Always scope the dump to a subtree rather than dumping the window and trusting what came back.
 
 **Retrofit cost.** The gated retrofit above is unchanged on legacy scope, but its scale is not: a
@@ -200,33 +200,33 @@ which needs no documentation to work. This is the one input a legacy scope suppl
 
 ---
 
-## The `qa-driver` vocabulary
+## The `test-forge-driver` vocabulary
 
 
 | Tool | Key params | Returns | Notes |
 |---|---|---|---|
-| `qa_status` | — | endpoint, harness reachability, booted devices | Start here. |
-| `qa_open_deeplink` | `url` | confirmation | **Host-side**, works with no harness. |
-| `qa_tap` | `identifier`, `index?`, `force?` | `{found, hittable, forced?}` | Waits for existence, a valid frame **and** hittability. Refuses if it never becomes hittable. |
-| `qa_tap_by_label` | `label`, `labelMatch?`, `index?`, `force?` | `{found, hittable, matches, ambiguous?}` | For components with no identifier. `ambiguous` means the tap went to the first of several. |
-| `qa_type` | `identifier`, `text`, `keepKeyboard?` | `{found, hittable, valueAfter, keyboardDismissed}` | Taps to focus, types, then **brings the keyboard down**. Read `valueAfter` — it is how a keystroke sent nowhere shows up. |
-| `qa_scroll_until_exists` | `identifier`, `scrollViewIdentifier?`, `maxAttempts?` | `{found, hittable, attempts}` | Deep swipe-up until found. **Does not tap** — follow with `qa_tap`. |
-| `qa_swipe` | `direction` (up/down/left/right) | `{ok}` | No target element. |
-| `qa_scroll_to_top` | `identifier?`, `maxAttempts?` | `{found, attempts}` | Swipes down to a top marker. |
-| `qa_wait_for_exists` / `qa_wait_for_not_exists` | `identifier`, `timeout?` | `{exists}` | Polls; the only kind of wait there is. |
-| `qa_get_label` | `identifier` | `{label}` | One element's text. |
-| `qa_get_labels` | `containerIdentifier?`, `elementType?` | `{labels, count, truncated}` | Tree order — one call for a whole row. **Must be scoped** (see traps). Caps at 200. |
-| `qa_get_element_count` | `containerIdentifier`, `elementType?` | `{count}` | |
-| `qa_get_frame` | `identifier`, `elementType?`, `index?` | `{x, y, width, height}` | Position/order/size assertions. With `index`, walks the slots of a repeated identifier — how a carousel's centred page is identified (centre slot ≈ x 28, peek ≈ 408, off-screen negative). |
-| `qa_assert_exists` | `identifier`, `expected?` | `{pass}` | Structural pass/fail. |
-| `qa_alert_tap` | `buttonTitle` | `{found}` | Exact title, e.g. the routing chooser. |
-| `qa_screenshot` | `label`, `caseId?`, `mustBeVisible?`, `keepKeyboard?` | `{path, device, keyboardVisible, visibility?}` | Dismisses the keyboard first. `caseId` gives the case its own folder and step numbering. **Always pass `mustBeVisible`** with what the case asserts — `visible: false` means the image does not support the row. |
-| `qa_dismiss_keyboard` | — | `{keyboardVisible, keyboardDismissed}` | Through the keyboard's own key, never a blind tap. Use it when a keyboard has leaked in from an earlier case. |
-| `qa_device_info` | — | `{deviceName, osVersion, udid, screenPoints}` | Which simulator this session is driving. Record it against every case. |
-| `qa_dump_tree` | `identifier?`, `elementType?` | `{tree, truncated}` | Reach for it on any surprising miss. Output is capped — scope it with `identifier` + `elementType` and check `truncated` (see traps). |
-| `qa_relaunch_app` | — | `{ok}` | Harness survives; the app restarts. |
-| `qa_start_recording` | `caseId` | path being written | **Host-side** `simctl io recordVideo` (hevc). One per case; must be stopped. |
-| `qa_stop_recording` | `caseId` | path + size | Finalizes the `.mov`. Skipping it leaves an unplayable file. |
+| `test_forge_status` | — | endpoint, harness reachability, booted devices | Start here. |
+| `test_forge_open_deeplink` | `url` | confirmation | **Host-side**, works with no harness. |
+| `test_forge_tap` | `identifier`, `index?`, `force?` | `{found, hittable, forced?}` | Waits for existence, a valid frame **and** hittability. Refuses if it never becomes hittable. |
+| `test_forge_tap_by_label` | `label`, `labelMatch?`, `index?`, `force?` | `{found, hittable, matches, ambiguous?}` | For components with no identifier. `ambiguous` means the tap went to the first of several. |
+| `test_forge_type` | `identifier`, `text`, `keepKeyboard?` | `{found, hittable, valueAfter, keyboardDismissed}` | Taps to focus, types, then **brings the keyboard down**. Read `valueAfter` — it is how a keystroke sent nowhere shows up. |
+| `test_forge_scroll_until_exists` | `identifier`, `scrollViewIdentifier?`, `maxAttempts?` | `{found, hittable, attempts}` | Deep swipe-up until found. **Does not tap** — follow with `test_forge_tap`. |
+| `test_forge_swipe` | `direction` (up/down/left/right) | `{ok}` | No target element. |
+| `test_forge_scroll_to_top` | `identifier?`, `maxAttempts?` | `{found, attempts}` | Swipes down to a top marker. |
+| `test_forge_wait_for_exists` / `test_forge_wait_for_not_exists` | `identifier`, `timeout?` | `{exists}` | Polls; the only kind of wait there is. |
+| `test_forge_get_label` | `identifier` | `{label}` | One element's text. |
+| `test_forge_get_labels` | `containerIdentifier?`, `elementType?` | `{labels, count, truncated}` | Tree order — one call for a whole row. **Must be scoped** (see traps). Caps at 200. |
+| `test_forge_get_element_count` | `containerIdentifier`, `elementType?` | `{count}` | |
+| `test_forge_get_frame` | `identifier`, `elementType?`, `index?` | `{x, y, width, height}` | Position/order/size assertions. With `index`, walks the slots of a repeated identifier — how a carousel's centred page is identified (centre slot ≈ x 28, peek ≈ 408, off-screen negative). |
+| `test_forge_assert_exists` | `identifier`, `expected?` | `{pass}` | Structural pass/fail. |
+| `test_forge_alert_tap` | `buttonTitle` | `{found}` | Exact title, e.g. the routing chooser. |
+| `test_forge_screenshot` | `label`, `caseId?`, `mustBeVisible?`, `keepKeyboard?` | `{path, device, keyboardVisible, visibility?}` | Dismisses the keyboard first. `caseId` gives the case its own folder and step numbering. **Always pass `mustBeVisible`** with what the case asserts — `visible: false` means the image does not support the row. |
+| `test_forge_dismiss_keyboard` | — | `{keyboardVisible, keyboardDismissed}` | Through the keyboard's own key, never a blind tap. Use it when a keyboard has leaked in from an earlier case. |
+| `test_forge_device_info` | — | `{deviceName, osVersion, udid, screenPoints}` | Which simulator this session is driving. Record it against every case. |
+| `test_forge_dump_tree` | `identifier?`, `elementType?` | `{tree, truncated}` | Reach for it on any surprising miss. Output is capped — scope it with `identifier` + `elementType` and check `truncated` (see traps). |
+| `test_forge_relaunch_app` | — | `{ok}` | Harness survives; the app restarts. |
+| `test_forge_start_recording` | `caseId` | path being written | **Host-side** `simctl io recordVideo` (hevc). One per case; must be stopped. |
+| `test_forge_stop_recording` | `caseId` | path + size | Finalizes the `.mov`. Skipping it leaves an unplayable file. |
 
 `elementType` is optional everywhere and defaults to a type-agnostic match — leave it off unless
 disambiguation is genuinely needed. `index` reaches the Nth match of a repeated identifier or label.
@@ -390,7 +390,7 @@ reaching the app or only the session file.
   is both faster than a relaunch and closer to what a manual tester does.
 - **Not live** (older build, or the app was launched without the control channel): rules are
   file-based, take effect only on a fresh launch, and the app overwrites `session.json` from memory
-  while it runs — so terminate the app, write, then launch. `mcp__qa-driver__qa_relaunch_app`
+  while it runs — so terminate the app, write, then launch. `mcp__test-forge-driver__test_forge_relaunch_app`
   is that launch, and the harness survives it.
 
 **Importing resets arming.** `lens_import_pack` replaces the rules and leaves every one of them
@@ -427,7 +427,7 @@ answered** — so the target is settled before the first case, not inferred afte
 - The harness is launched against a destination by **UDID**, never by device name. Two runtimes
   routinely carry the same name (`iPhone 15` on iOS 17 and on iOS 18), and a name-based destination
   picks whichever the toolchain feels like.
-- `qa_device_info` returns what the runner process sees — `SIMULATOR_DEVICE_NAME`,
+- `test_forge_device_info` returns what the runner process sees — `SIMULATOR_DEVICE_NAME`,
   `SIMULATOR_RUNTIME_VERSION`, `SIMULATOR_UDID`, and the app frame in points. That is the value
   written into each result's `device`, and it is read from the session rather than from whatever the
   run was asked to target, so a mismatch between the two is visible instead of silent.
@@ -459,8 +459,8 @@ by itself**. Every consequence of that has already cost this project something:
 | Gestures | Anything beneath it is not hittable. A tab bar under a keyboard silently swallowed taps, and two cases recorded a false `PASS` before the driver was made to report hittability |
 | Recordings | Same as evidence, and unrecoverable — a still can be retaken after the fact, a clip covering a case that has moved on cannot |
 
-The driver handles this rather than the plan remembering to: `qa_type` dismisses the keyboard when it
-finishes, `qa_screenshot` dismisses before the shutter, and `qa_start_recording` dismisses before the
+The driver handles this rather than the plan remembering to: `test_forge_type` dismisses the keyboard when it
+finishes, `test_forge_screenshot` dismisses before the shutter, and `test_forge_start_recording` dismisses before the
 clip starts. Dismissal goes through the keyboard's **own** dismiss key — `Done`, `Return`, `Go`,
 `Search`, `Send`, `Hide keyboard` — or a return sent to whatever holds focus. It never taps a blank
 area to shed focus: that is a tap at a coordinate nobody checked, and it is how a run navigates
@@ -533,7 +533,7 @@ key that merely starts with it — UI copy such as a card's overlay message or i
 missing, and an assertion on the rendered text will happily match a placeholder. `check_baseline.py`
 flags these; a fixture that needs the real value must `set` it explicitly.
 
-### Trap — `qa_status` can say "never polled" while the harness is running
+### Trap — `test_forge_status` can say "never polled" while the harness is running
 
 The attach flag tracks queue polls and goes stale. A live harness reports
 `harness attached: false (never polled)` after a restart even though its own log says
@@ -554,7 +554,7 @@ hand:
 python3 <skill>/scripts/classify_module.py "<code-reference file path>" [--taxonomy <file.json>]
 ```
 
-Resolved in order: `--taxonomy`, `$QA_TAXONOMY`, `./.claude/test-flow-recorder/taxonomy.json`.
+Resolved in order: `--taxonomy`, `$TEST_FORGE_TAXONOMY`, `./.claude/test-flow-recorder/taxonomy.json`.
 
 **With a taxonomy**, matching order — restated here so the logic is auditable without reading
 Python:

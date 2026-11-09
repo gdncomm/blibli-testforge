@@ -69,7 +69,7 @@ struct UpdateStateTests {
 
 @Suite("GitAppUpdateService")
 struct GitAppUpdateServiceTests {
-	private let repo = URL(fileURLWithPath: "/tmp/testforge-repo", isDirectory: true)
+	private let repo = URL(fileURLWithPath: "/tmp/test-forge-repo", isDirectory: true)
 
 	private func behindRunner() -> ScriptedRunner {
 		ScriptedRunner([

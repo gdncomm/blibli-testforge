@@ -46,7 +46,7 @@ test("start runs claude remote-control in the repo with the marker; output updat
 	await remote.start({ spawnMode: "worktree" });
 	assert.deepEqual(launched[0].args, ["remote-control", "--name", "TestForge · repo", "--spawn", "worktree"]);
 	assert.equal(launched[0].options.cwd, "/repo/App");
-	assert.equal(launched[0].options.env.TESTFORGE_REMOTE, "1");
+	assert.equal(launched[0].options.env.TEST_FORGE_REMOTE, "1");
 	fakeChild.stdout.emit("data", sample);
 	const view = remote.view();
 	assert.equal(view.isRunning, true);

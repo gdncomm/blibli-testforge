@@ -135,7 +135,7 @@ leave three unrelated edits in the working tree and the next run starts from a s
 ## The apply-fixes pass
 
 A separate mode, run after a completed pass, never inside it — `scripts/apply_fixes.py`, driven by
-`/qa-fix`. It takes the cases whose `patch` carries an `app-wrong` authority and a whitelisted class,
+`/test-forge-fix`. It takes the cases whose `patch` carries an `app-wrong` authority and a whitelisted class,
 applies them, and re-runs only those cases.
 
 It reuses this file's rules rather than restating them: eligibility is imported from the same

@@ -41,12 +41,12 @@ final class PrepareCodeViewModel: ObservableObject {
 	private var branches: [CodeBranch] = []
 	private var jobId: String?
 	private let service: CodePreparing
-	private let logFollower: QABuildActing
+	private let logFollower: TestForgeBuildActing
 	private var loadTask: Task<Void, Never>?
 	private var branchTask: Task<Void, Never>?
 	private var prepareTask: Task<Void, Never>?
 
-	init(service: CodePreparing, logFollower: QABuildActing) {
+	init(service: CodePreparing, logFollower: TestForgeBuildActing) {
 		self.service = service
 		self.logFollower = logFollower
 	}

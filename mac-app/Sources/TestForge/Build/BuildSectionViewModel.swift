@@ -47,7 +47,7 @@ struct BuildActionResult: Equatable {
 }
 
 struct BuildSectionDependencies {
-	let qaBuild: QABuildActing
+	let testForgeBuild: TestForgeBuildActing
 	let tools: XcodeToolsActing
 	let store: StateStore
 	let launcher: BuiltAppLaunching
@@ -76,7 +76,7 @@ final class BuildSectionViewModel: ObservableObject {
 	@Published var isBuildConfirmationShown = false
 	@Published var isBuildBeforeInstallShown = false
 	@Published var isPackageResetConfirmationShown = false
-	@Published var launchSource: LaunchSource = .qaBuild
+	@Published var launchSource: LaunchSource = .testForgeBuild
 
 	private let dependencies: BuildSectionDependencies
 	private var followedJobId: String?
@@ -163,10 +163,10 @@ final class BuildSectionViewModel: ObservableObject {
 	func loadStatus() {
 		statusTask?.cancel()
 		isCheckingStatus = true
-		let qaBuild = dependencies.qaBuild
+		let testForgeBuild = dependencies.testForgeBuild
 		statusTask = Task { [weak self] in
 			do {
-				let snapshot = try await qaBuild.status()
+				let snapshot = try await testForgeBuild.status()
 				self?.didLoad(snapshot: snapshot)
 			} catch {
 				self?.statusState = .failed(message: error.localizedDescription)
@@ -179,7 +179,7 @@ final class BuildSectionViewModel: ObservableObject {
 
 	func confirmBuild() {
 		perform(action: .build, title: String(localized: "Build for testing")) { dependencies in
-			try await dependencies.qaBuild.startBuild()
+			try await dependencies.testForgeBuild.startBuild()
 			return String(localized: "Started. The log below follows it.")
 		}
 	}
@@ -191,10 +191,10 @@ final class BuildSectionViewModel: ObservableObject {
 			return
 		}
 		isStoppingBuild = true
-		let qaBuild = dependencies.qaBuild
+		let testForgeBuild = dependencies.testForgeBuild
 		Task { [weak self] in
 			do {
-				try await qaBuild.cancel(jobId: jobId)
+				try await testForgeBuild.cancel(jobId: jobId)
 				self?.loadStatus()
 			} catch {
 				self?.didFailToStop(message: error.localizedDescription)
@@ -221,7 +221,7 @@ final class BuildSectionViewModel: ObservableObject {
 
 	func stopRunner() {
 		perform(action: .stopRunner, title: String(localized: "Stop test runner")) { dependencies in
-			try await dependencies.qaBuild.stopRunner()
+			try await dependencies.testForgeBuild.stopRunner()
 			return String(localized: "Stopped")
 		}
 	}
@@ -253,8 +253,8 @@ final class BuildSectionViewModel: ObservableObject {
 			guard let app = await dependencies.launcher.latestApp(inDerivedData: folders) else {
 				throw BuiltAppError.noApp(source: source)
 			}
-			let qaUDID = try? await dependencies.deviceScreen.screen().udid
-			guard let udid = selectedUDID ?? qaUDID else {
+			let testForgeUDID = try? await dependencies.deviceScreen.screen().udid
+			guard let udid = selectedUDID ?? testForgeUDID else {
 				throw BuiltAppError.noSimulator
 			}
 			let output = try await dependencies.launcher.installAndLaunch(app, udid: udid)
@@ -267,11 +267,11 @@ final class BuildSectionViewModel: ObservableObject {
 
 	private func launchFolders(for source: LaunchSource) -> [URL] {
 		switch source {
-			case .qaBuild:
+			case .testForgeBuild:
 				if let derivedData = snapshot?.lastBuild?.derivedData {
 					return [URL(fileURLWithPath: derivedData, isDirectory: true)]
 				}
-				let root = CleanTarget.qaBuildOutput.url
+				let root = CleanTarget.testForgeBuildOutput.url
 				let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []
 				return names.map { root.appendingPathComponent($0, isDirectory: true) }
 			case .xcodeBuild:
@@ -328,8 +328,8 @@ final class BuildSectionViewModel: ObservableObject {
 	/// A fresh runner start runs `test-without-building`, which installs the QA app and the runner, replacing any other build.
 	private func installBuiltApp() {
 		perform(action: .installForTesting, title: String(localized: "Install for testing")) { dependencies in
-			try await dependencies.qaBuild.stopRunner()
-			try await dependencies.qaBuild.startRunner()
+			try await dependencies.testForgeBuild.stopRunner()
+			try await dependencies.testForgeBuild.startRunner()
 			return String(localized: "The QA app and test runner are installed on the QA simulator and running.")
 		}
 	}
@@ -367,9 +367,9 @@ final class BuildSectionViewModel: ObservableObject {
 		followedJobId = jobId
 		logLines = []
 		logTask?.cancel()
-		let qaBuild = dependencies.qaBuild
+		let testForgeBuild = dependencies.testForgeBuild
 		logTask = Task { [weak self] in
-			try? await qaBuild.followLog(jobId: jobId) { line in
+			try? await testForgeBuild.followLog(jobId: jobId) { line in
 				self?.append(line: line)
 			}
 			self?.loadStatus()

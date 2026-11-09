@@ -8,10 +8,10 @@ NetworkLens's own. `preflight.py` and `capture_baseline.py` used to resolve both
 glob. Two copies is how the two of them drift: one already reads `trace*.ndjson` to catch a rotation,
 the other has to remember to as well.
 
-This module is the single dispatch point on `QA_DATA_PLANE`. Two values are live: `simctl` and
+This module is the single dispatch point on `TEST_FORGE_DATA_PLANE`. Two values are live: `simctl` and
 `networklens` — both NetworkLens under the booted simulator's own container, the same driver;
 `networklens` is `contracts/dataplane.md`'s own driver-registry name and is accepted as an alias
-so a run that sets `QA_DATA_PLANE=networklens` (matching the contract's own vocabulary) actually
+so a run that sets `TEST_FORGE_DATA_PLANE=networklens` (matching the contract's own vocabulary) actually
 works, rather than only "leave it unset" doing so. Any other value fails loudly rather than
 silently resolving `simctl` anyway, because a stale trace that answers "yes" is exactly the failure this whole skill exists to
 catch.
@@ -61,7 +61,7 @@ def endpoint_key(method: str, pathname: str) -> str:
 
 
 def data_plane() -> str:
-    return os.environ.get("QA_DATA_PLANE", DEFAULT_DATA_PLANE)
+    return os.environ.get("TEST_FORGE_DATA_PLANE", DEFAULT_DATA_PLANE)
 
 
 def _simctl_container(bundle_id: str) -> Path | None:
@@ -82,7 +82,7 @@ def container_path(bundle_id: str) -> Path | None:
     plane = data_plane()
     if plane in ("simctl", "networklens"):
         return _simctl_container(bundle_id)
-    raise SystemExit(f"QA_DATA_PLANE={plane!r} has no driver yet — see contracts/dataplane.md's "
+    raise SystemExit(f"TEST_FORGE_DATA_PLANE={plane!r} has no driver yet — see contracts/dataplane.md's "
                      "driver registry. Unset it, or set it to 'simctl' or 'networklens', to use "
                      "NetworkLens under the booted simulator.")
 

@@ -54,7 +54,7 @@ The dashboard records and checks each link.
 | **Build** | Compile the app and the test runner for the simulator from that code. |
 | **Check** | The readiness checklist; every item must be green. |
 | **Run** | Execute the selected cases on the simulator. |
-| **Verdict** | PASS · FAIL · BLOCKED · EVIDENCE_ONLY · UNDECIDED (from `/qa-run`), plus a human **Accepted / Overridden** status. |
+| **Verdict** | PASS · FAIL · BLOCKED · EVIDENCE_ONLY · UNDECIDED (from `/test-forge-run`), plus a human **Accepted / Overridden** status. |
 | **Report** | A shareable summary of a run with its manifest and evidence. |
 
 ## 4. Workflow: three questions, one Run button, automatic preparation (D-035)
@@ -77,7 +77,7 @@ Check are plumbing, not decisions, so they are no longer steps the user performs
 
 The Run button names exactly what will happen; when disabled, the text beside it says why.
 
-**After Run** — the form folds into one line (`Testing develop @ a1b2c3d · 8 tests · QA · iPhone 17
+**After Run** — the form folds into one line (`Testing develop @ a1b2c3d · 8 tests · TestForge · iPhone 17
 Pro Max   [Stop]`) and an automatic progress list runs:
 
 ```
@@ -115,14 +115,14 @@ The sections below keep their ①–⑦ numbering as the **internal stages** beh
 
 | Concern | Design | Why it can't affect the developer's repo / project |
 |---|---|---|
-| Location | `~/.testforge/checkouts/<repo>/`, outside every project folder | Different directory tree |
+| Location | `~/.test-forge/checkouts/<repo>/`, outside every project folder | Different directory tree |
 | Git | An **independent clone**: its own `.git`, `origin` = the GitHub URL. Seeded from the local repo for speed — `git clone --reference <local repo> --dissociate <GitHub URL>` borrows objects during the clone and then copies them, so the QA copy never depends on the developer's repo; plain GitHub clone when no local repo exists. **Not** a `git worktree`. | A worktree shares the developer's `.git`: refs, `git fetch` results and worktree metadata would change their repo, and git refuses to check out a branch the developer already has checked out. An independent clone shares nothing. |
 | Checkout | **Detached HEAD at `origin/<branch>`**: no local branches are created | Nothing to diverge, nothing to clean up. A remote-only branch works the same way. |
 | Updates | `git fetch origin` + `git checkout --detach origin/<branch>`, in the QA copy only | The developer's remote-tracking refs are untouched |
 | Dependencies | `pod install` / Carthage bootstrap **inside the QA copy**, only when `Podfile.lock` / `Cartfile.resolved` changed since that copy's last prepare. The first prepare always runs them, with an estimate shown. | Writes `Pods/` and `Carthage/` in the QA copy only. Global download caches (`~/Library/Caches/CocoaPods`, Carthage cache) are shared, read-mostly caches, not project state. |
-| Build output | `xcodebuild -derivedDataPath ~/.testforge/derived/<repo>` | The developer's DerivedData and Xcode indexes are untouched, so no surprise rebuilds for them |
-| Simulator | A **dedicated QA simulator** ("QA · iPhone 17 Pro Max"), created by the dashboard the first time | Installing the QA build replaces `com.blibli.mobile` only on the QA simulator, never on the one the developer runs from Xcode |
-| Cleanup | "Free disk space" removes QA copies and derived data not used for 14 days | Only touches `~/.testforge/` |
+| Build output | `xcodebuild -derivedDataPath ~/.test-forge/derived/<repo>` | The developer's DerivedData and Xcode indexes are untouched, so no surprise rebuilds for them |
+| Simulator | A **dedicated QA simulator** ("TestForge · iPhone 17 Pro Max"), created by the dashboard the first time | Installing the QA build replaces `com.blibli.mobile` only on the QA simulator, never on the one the developer runs from Xcode |
+| Cleanup | "Free disk space" removes QA copies and derived data not used for 14 days | Only touches `~/.test-forge/` |
 
 **Load = Prepare + Load cases (one button, with a progress list):**
 1. Create the QA copy if it is missing (first time: a few minutes).
@@ -136,7 +136,7 @@ The sections below keep their ①–⑦ numbering as the **internal stages** beh
 **Guard rails:**
 - **Branch switch lock**: the QA copy can't move to another branch while a build or run uses it.
   The button says why.
-- The dashboard never commits, pushes or rebases. It writes nothing outside `~/.testforge/` and
+- The dashboard never commits, pushes or rebases. It writes nothing outside `~/.test-forge/` and
   its own `.data/` folder, apart from the QA simulator.
 
 #### Source: GitHub branch or Local folder (D-034)
@@ -148,7 +148,7 @@ Step ① starts with a two-way choice:
 | Tests | what is pushed to GitHub | the folder as it is now: unpushed commits and uncommitted changes included |
 | Best for | QA: everyone can reproduce the exact code | developers, before pushing |
 | Picker | Repo + Branch (above) | Folder dropdown (the `lib/projects.js` scan) + "Other folder… (paste a path)"; shows branch, HEAD, "N commits not on GitHub · M uncommitted files" |
-| QA copy | `~/.testforge/checkouts/<repo>/` | `~/.testforge/checkouts/<repo>-local/` (separate, so switching modes doesn't throw away either copy's dependencies) |
+| QA copy | `~/.test-forge/checkouts/<repo>/` | `~/.test-forge/checkouts/<repo>-local/` (separate, so switching modes doesn't throw away either copy's dependencies) |
 | Code id | commit SHA (`a1b2c3d`) | **snapshot id** = HEAD SHA + short hash of the uncommitted content (`1107d7f+e41a`); just the SHA when the folder is clean |
 | Report stamp | — | **LOCAL CHANGES — not reproducible from GitHub** |
 
@@ -189,7 +189,7 @@ Saved setups in local mode store the folder path and always take a fresh snapsho
 
 - Scheme, configuration and test plan come from a **Repo profile**, auto-detected once and editable
   under Advanced (today's defaults: `BlibliMobile-iOS-PerfTest` / `PerformanceTest` /
-  `QADriver.xctestplan`).
+  `TestForgeDriver.xctestplan`).
 - **Build** runs `build-for-testing` in the QA copy, with the QA derived-data path, on the QA
   simulator. It only runs on click, which keeps the existing hard constraint.
   - Output: a live log with friendly errors (first compiler error, signing issue, missing pods).
@@ -220,7 +220,7 @@ Every item shows ✅ / ⚠ / ❌, one sentence of why, and a one-click fix:
 | App installed from this build | Ensure harness |
 | Harness healthy (probe) | Restart harness |
 | NetworkLens live control reachable | Launch app |
-| Claude logged in; qa-driver plugin connected | How-to link |
+| Claude logged in; test-forge-driver plugin connected | How-to link |
 | Atlassian connected (Confluence source only) | How-to link |
 | Device not held by another task | Open Queue |
 | Disk space ≥ 10 GB (DerivedData) | Clean DerivedData |
@@ -236,9 +236,9 @@ overrides, which are logged in the manifest.
 - Live view per case: current step, the latest screenshot, a Claude transcript toggle, and Pause
   (finish the current case, then hold), Cancel, and Skip case.
 - **Approval policy** is chosen per setup:
-  - *Ask me* (default for amateurs; the QADriver and read tools that are pre-allowed today still run
+  - *Ask me* (default for amateurs; the TestForgeDriver and read tools that are pre-allowed today still run
     without asking);
-  - *Autonomous* (today's `QA_ALLOW_AUTONOMOUS_CLAUDE`).
+  - *Autonomous* (today's `TEST_FORGE_ALLOW_AUTONOMOUS_CLAUDE`).
 - Hard denies always apply; the production Confluence page stays read-only.
 - **Crash or timeout handling**:
   - The app crashes: verdict **BLOCKED**, with the crash log attached and a "Relaunch & continue"
@@ -254,7 +254,7 @@ overrides, which are logged in the manifest.
 - screenshots and video;
 - the network calls made, plus which mocks were active;
 - Claude's reasoning summary;
-- the steps QADriver executed;
+- the steps TestForgeDriver executed;
 - a "Re-run this case" button.
 
 **Human validation, the "validate results" requirement.** Each verdict needs one of:
@@ -290,7 +290,7 @@ approval policy. The setup is listed on Home with "▶ Run again". This is the 2
 - `profiles.json`: per repo: scheme, configuration, test plan, UI test target, bundle id, workspace
   path.
 - `checkouts.json`: per repo: QA copy path, GitHub URL, current branch, prepared SHA, dependency lock
-  hashes, last prepared / last used time. (The copies themselves live in `~/.testforge/`.)
+  hashes, last prepared / last used time. (The copies themselves live in `~/.test-forge/`.)
 - `devices.json`: the QA simulator's UDID, model and runtime.
 - `builds.json`: build id, SHA, checkout path, scheme/config, simulator, time, result.
 - `setups.json`: saved setups.
@@ -303,7 +303,7 @@ approval policy. The setup is listed on Home with "▶ Run again". This is the 2
   - one prepare/build per checkout;
   - one run per device;
   - no branch switch on a QA copy that is building or running.
-- **Isolation**: every git, dependency and build operation runs in `~/.testforge/`. The
+- **Isolation**: every git, dependency and build operation runs in `~/.test-forge/`. The
   developer's repo, branches, refs, DerivedData and simulator are never touched (§4 ① table).
 - Existing hard constraints carry over:
   - production Confluence page read-only;
@@ -317,7 +317,7 @@ approval policy. The setup is listed on Home with "▶ Run again". This is the 2
 |---|---|---|
 | fetch fails | "Can't reach GitHub — VPN?" | Retry; VPN hint |
 | branch deleted on GitHub | "This branch no longer exists on GitHub" | Pick another branch |
-| QA copy damaged / disk full | what failed | "Rebuild QA copy" (deletes and re-clones; only `~/.testforge/`) |
+| QA copy damaged / disk full | what failed | "Rebuild QA copy" (deletes and re-clones; only `~/.test-forge/`) |
 | `pod install` fails | first error line | Retry; "Repo update" option |
 | build fails | first compiler/signing error, link to the full log | Rebuild; copy log |
 | stale build | "Built from 9f8e7d6, branch is at a1b2c3d" | Rebuild / reasoned override |
@@ -370,4 +370,4 @@ Each phase updates `usage.md`, flipping 🚧 to ✅, plus the other four docs.
 3. **Verdict overrides**: anyone, with a valid (mandatory) reason, shown in the report.
 4. **Reports**: file export + personal Confluence page `2437316839`.
 5. **Remote-only branches**: supported (detached checkout of `origin/<branch>`).
-6. **Multiple simulators**: a good future feature. v3 stabilises QADriver on **one device** first.
+6. **Multiple simulators**: a good future feature. v3 stabilises TestForgeDriver on **one device** first.

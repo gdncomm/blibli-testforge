@@ -1,44 +1,44 @@
 // QA setup routes — the QA simulator (D-053), building the QA copy (P2, D-054) and disk cleanup.
 // Every action that changes the machine is a POST the page only sends after a confirm.
-import { currentManifest, freeDiskSpace, localDrift, TESTFORGE_HOME, testForgeUsage } from "../lib/qa-copy.js";
+import { currentManifest, freeDiskSpace, localDrift, TEST_FORGE_HOME, testForgeUsage } from "../lib/test-forge-copy.js";
 import { execFile } from "node:child_process";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
 const run = promisify(execFile);
-import { buildQaCopy, buildStatus, harnessEnvFor, installedMatchesBuild, latestBuild, profileFor, saveProfile } from "../lib/qa-build.js";
-import { bootQaSimulator, createQaSimulator, findQaSimulator, shutDownOthers, simulatorState } from "../lib/qa-simulator.js";
+import { buildTestForgeCopy, buildStatus, harnessEnvFor, installedMatchesBuild, latestBuild, profileFor, saveProfile } from "../lib/test-forge-build.js";
+import { bootTestForgeSimulator, createTestForgeSimulator, findTestForgeSimulator, shutDownOthers, simulatorState } from "../lib/test-forge-simulator.js";
 import { appendLine, createJob, finishJob } from "../lib/jobs.js";
 import { formatMb, performReset, RESET_IDS, resetPlan } from "../lib/reset.js";
 import { detectLocalEnv, diffLocalEnv, readLocalEnv, realDeps, writeLocalEnv } from "../lib/claude-local-env.js";
 
 /** `.claude/settings.local.json` (and its committed `.example` baseline) in the QA project. */
 function localSettingsPaths() {
-	const claudeDir = join(process.env.QA_PROJECT_DIR || process.cwd(), ".claude");
+	const claudeDir = join(process.env.TEST_FORGE_PROJECT_DIR || process.cwd(), ".claude");
 	return { path: join(claudeDir, "settings.local.json"), examplePath: join(claudeDir, "settings.local.json.example") };
 }
 
 /** For the readiness check (D-156): detected vs. what `.claude/settings.local.json` already has. */
 export async function claudeEnvCheck() {
 	const { path } = localSettingsPaths();
-	const expected = await detectLocalEnv({ projectDir: process.env.QA_PROJECT_DIR, mediaRoot: process.env.QA_MEDIA_ROOT, uitestTarget: process.env.QA_UITEST_TARGET });
+	const expected = await detectLocalEnv({ projectDir: process.env.TEST_FORGE_PROJECT_DIR, mediaRoot: process.env.TEST_FORGE_MEDIA_ROOT, uitestTarget: process.env.TEST_FORGE_UITEST_TARGET });
 	const actual = await readLocalEnv(path, realDeps());
 	const missing = diffLocalEnv(expected, actual);
 	if (!missing.length) return { ok: true, detail: "settings.local.json matches this Mac" };
-	const reason = !expected.QA_DEVICE_UDID ? "waits for the QA simulator" : `${missing.join(", ")} not set for this Mac`;
-	return { ok: false, detail: `${reason} — only matters for Claude's own NetworkLens/qa-driver tools used directly, not Run/Replay here` };
+	const reason = !expected.TEST_FORGE_DEVICE_UDID ? "waits for the QA simulator" : `${missing.join(", ")} not set for this Mac`;
+	return { ok: false, detail: `${reason} — only matters for Claude's own NetworkLens/test-forge-driver tools used directly, not Run/Replay here` };
 }
 
-let activeQaBuild = null;
+let activeTestForgeBuild = null;
 let activeSimJob = null;
 let activeReset = null;
 /** "Test the installed app anyway" — held for one code id only, so new code clears it. */
 let buildOverride = null;
 
-export const isQaBuilding = () => activeQaBuild?.status === "running";
+export const isTestForgeBuilding = () => activeTestForgeBuild?.status === "running";
 
 /** For the readiness check: the prepared code's build state, plus any reasoned override. */
-export async function qaBuildState() {
+export async function testForgeBuildState() {
 	const manifest = await currentManifest();
 	if (!manifest) return { state: "no-code" };
 	const status = await buildStatus(manifest);
@@ -47,9 +47,9 @@ export async function qaBuildState() {
 }
 
 /** harness.py env: the current QA-copy build when it matches the code, and always the QA simulator. */
-export async function qaHarnessTarget() {
-	const qa = await findQaSimulator().catch(() => null);
-	const base = qa ? { QA_SIMULATOR_UDID: qa.udid } : {};
+export async function testForgeHarnessTarget() {
+	const qa = await findTestForgeSimulator().catch(() => null);
+	const base = qa ? { TEST_FORGE_SIMULATOR_UDID: qa.udid } : {};
 	const manifest = await currentManifest();
 	if (!manifest) return base;
 	const status = await buildStatus(manifest).catch(() => ({ state: "none" }));
@@ -77,7 +77,7 @@ async function appVersionOf(build) {
 export async function buildStamp() {
 	const manifest = await currentManifest();
 	if (!manifest) return { linked: false };
-	const state = await qaBuildState();
+	const state = await testForgeBuildState();
 	return {
 		linked: true,
 		source: manifest.source,
@@ -96,19 +96,19 @@ export async function buildStamp() {
 
 // --- P3 checklist inputs (D-055) ---
 
-export async function qaCodeState() {
+export async function testForgeCodeState() {
 	const manifest = await currentManifest();
 	return { manifest, drift: manifest ? await localDrift(manifest).catch(() => null) : null };
 }
 
-export async function qaInstalledMatch(bundleId) {
-	const state = await qaBuildState();
-	return state.state === "current" ? installedMatchesBuild(state.build, bundleId, (await findQaSimulator().catch(() => null))?.udid) : { applies: false };
+export async function testForgeInstalledMatch(bundleId) {
+	const state = await testForgeBuildState();
+	return state.state === "current" ? installedMatchesBuild(state.build, bundleId, (await findTestForgeSimulator().catch(() => null))?.udid) : { applies: false };
 }
 
-/** Free space on the volume holding ~/.testforge (DerivedData and QA copies live there). */
+/** Free space on the volume holding ~/.test-forge (DerivedData and QA copies live there). */
 export async function testForgeFreeGb() {
-	const { stdout } = await run("df", ["-k", TESTFORGE_HOME.replace(/\/\.testforge.*$/, "") || "/"], { timeout: 10_000 });
+	const { stdout } = await run("df", ["-k", TEST_FORGE_HOME.replace(/\/\.test-forge.*$/, "") || "/"], { timeout: 10_000 });
 	const columns = stdout.trim().split("\n").at(-1).split(/\s+/);
 	return Number(columns[3]) / 1024 / 1024;
 }
@@ -126,14 +126,14 @@ function simJob(res, kind, action) {
 	res.json({ ok: true, jobId: job.id });
 }
 
-export function registerQaSetupRoutes(app, { readiness, isTestInFlight, harnessStop, deviceLock, resetStores }) {
+export function registerTestForgeSetupRoutes(app, { readiness, isTestInFlight, harnessStop, deviceLock, resetStores }) {
 	const refuseWhileBusy = (res) => {
 		const busy = isTestInFlight();
 		if (busy) {
 			res.status(409).json({ error: `“${busy.title}” is running — wait for it to finish.` });
 			return true;
 		}
-		if (isQaBuilding()) {
+		if (isTestForgeBuilding()) {
 			res.status(409).json({ error: "a build is running — wait for it to finish." });
 			return true;
 		}
@@ -145,33 +145,33 @@ export function registerQaSetupRoutes(app, { readiness, isTestInFlight, harnessS
 	};
 
 	// --- QA simulator ---
-	app.get("/api/qa-sim", async (_req, res) => {
+	app.get("/api/test-forge-sim", async (_req, res) => {
 		try {
 			res.json(await simulatorState());
 		} catch (error) {
 			res.status(500).json({ error: error.message });
 		}
 	});
-	app.post("/api/qa-sim/create", (_req, res) => {
+	app.post("/api/test-forge-sim/create", (_req, res) => {
 		if (refuseWhileBusy(res)) return;
-		simJob(res, "qa-sim", async (say) => {
+		simJob(res, "test-forge-sim", async (say) => {
 			await harnessStop();
-			const qa = await createQaSimulator({ onLine: say });
+			const qa = await createTestForgeSimulator({ onLine: say });
 			readiness.invalidate();
 			return qa.name;
 		});
 	});
-	app.post("/api/qa-sim/boot", (_req, res) => {
-		simJob(res, "qa-sim", async (say) => {
-			const qa = await bootQaSimulator();
+	app.post("/api/test-forge-sim/boot", (_req, res) => {
+		simJob(res, "test-forge-sim", async (say) => {
+			const qa = await bootTestForgeSimulator();
 			say(`✓ ${qa.name} booted`);
 			readiness.invalidate();
 			return qa.name;
 		});
 	});
-	app.post("/api/qa-sim/solo", (_req, res) => {
+	app.post("/api/test-forge-sim/solo", (_req, res) => {
 		if (refuseWhileBusy(res)) return;
-		simJob(res, "qa-sim", async (say) => {
+		simJob(res, "test-forge-sim", async (say) => {
 			const names = await shutDownOthers();
 			say(names.length ? `✓ shut down ${names.join(", ")}` : "✓ nothing else was booted");
 			readiness.invalidate();
@@ -183,7 +183,7 @@ export function registerQaSetupRoutes(app, { readiness, isTestInFlight, harnessS
 	app.get("/api/build/status", async (_req, res) => {
 		const manifest = await currentManifest();
 		const profile = manifest ? await profileFor(manifest).catch((error) => ({ error: error.message })) : null;
-		res.json({ manifest, profile, ...(await qaBuildState()), isBuilding: isQaBuilding(), jobId: activeQaBuild?.id ?? null, last: manifest ? await latestBuild(manifest) : null });
+		res.json({ manifest, profile, ...(await testForgeBuildState()), isBuilding: isTestForgeBuilding(), jobId: activeTestForgeBuild?.id ?? null, last: manifest ? await latestBuild(manifest) : null });
 	});
 
 	app.post("/api/build/profile", async (req, res) => {
@@ -194,14 +194,14 @@ export function registerQaSetupRoutes(app, { readiness, isTestInFlight, harnessS
 
 	/** Only from the page's confirmed button (hard constraint: never an implicit build-for-testing). */
 	app.post("/api/build/qa", async (_req, res) => {
-		if (isQaBuilding()) return res.json({ ok: true, jobId: activeQaBuild.id });
+		if (isTestForgeBuilding()) return res.json({ ok: true, jobId: activeTestForgeBuild.id });
 		if (refuseWhileBusy(res)) return;
 		const manifest = await currentManifest();
 		if (!manifest) return res.status(409).json({ error: "prepare the code first (Question 1)" });
-		const qa = await findQaSimulator();
+		const qa = await findTestForgeSimulator();
 		if (!qa || qa.state !== "Booted") return res.status(409).json({ error: "the QA simulator isn't booted — set it up first" });
 		const job = createJob({ kind: "build", codeId: manifest.snapshotId });
-		activeQaBuild = job;
+		activeTestForgeBuild = job;
 		const controller = new AbortController();
 		job.onCancel = () => controller.abort();
 		const say = (line) => appendLine(job, line);
@@ -209,7 +209,7 @@ export function registerQaSetupRoutes(app, { readiness, isTestInFlight, harnessS
 		// The runner's own xcodebuild uses the same DerivedData and package cache; building under it
 		// raced SwiftPM's checkouts (D-066). Nothing runs on it now (refuseWhileBusy).
 		harnessStop()
-			.then(() => buildQaCopy({ manifest, udid: qa.udid, onLine: say, signal: controller.signal }))
+			.then(() => buildTestForgeCopy({ manifest, udid: qa.udid, onLine: say, signal: controller.signal }))
 			.then(async (build) => {
 				if (build.status === "succeeded") {
 					say(`✓ Built ${build.codeId} in ${Math.round(build.durationMs / 1000)} s`);
@@ -282,12 +282,12 @@ export function registerQaSetupRoutes(app, { readiness, isTestInFlight, harnessS
 
 	// --- Claude Code local env (D-156) ---
 	// Fills in this Mac's `.claude/settings.local.json` `env` block so Claude's own NetworkLens/
-	// qa-driver MCP tools, used directly in a Claude Code session, target the right project + QA
+	// test-forge-driver MCP tools, used directly in a Claude Code session, target the right project + QA
 	// simulator. The page only sends this after showing the developer exactly what will be written
 	// and why (same "confirm first" rule as every other action here).
 	app.post("/api/claude-env/configure", async (_req, res) => {
-		const expected = await detectLocalEnv({ projectDir: process.env.QA_PROJECT_DIR, mediaRoot: process.env.QA_MEDIA_ROOT, uitestTarget: process.env.QA_UITEST_TARGET });
-		if (!expected.QA_DEVICE_UDID) return res.status(409).json({ error: "no QA simulator yet — fix “Test simulator ready” first" });
+		const expected = await detectLocalEnv({ projectDir: process.env.TEST_FORGE_PROJECT_DIR, mediaRoot: process.env.TEST_FORGE_MEDIA_ROOT, uitestTarget: process.env.TEST_FORGE_UITEST_TARGET });
+		if (!expected.TEST_FORGE_DEVICE_UDID) return res.status(409).json({ error: "no QA simulator yet — fix “Test simulator ready” first" });
 		const { path, examplePath } = localSettingsPaths();
 		await writeLocalEnv(path, expected, { examplePath }, realDeps());
 		readiness.invalidate();

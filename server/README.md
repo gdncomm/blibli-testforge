@@ -1,8 +1,8 @@
-# QA Dashboard
+# TestForge server
 
-The **QA server** behind the **TestForge** Mac app (`../testforge-mac`): QADriver runs, macro replays,
+The **QA server** behind the **TestForge** Mac app (`../mac-app`): TestForgeDriver runs, macro replays,
 NetworkLens mocking, Claude sessions and test cases from Confluence. The Mac app starts it and is its only UI;
-`qaw` (`scripts/qaw.mjs`) and Claude Code skills talk to the same HTTP API. The browser UI was removed in D-199.
+`test-forge` (`scripts/test-forge.mjs`) and Claude Code skills talk to the same HTTP API. The browser UI was removed in D-199.
 
 > **Status:** POC tooling. Localhost only — binds `127.0.0.1`. One live state stream (`/api/state/stream`, D-077).
 
@@ -14,7 +14,7 @@ NetworkLens mocking, Claude sessions and test cases from Confluence. The Mac app
 | [`docs/walkthrough-v4.md`](docs/walkthrough-v4.md) | v4 design gate: tasks and observation sheet (R0) |
 | [`docs/workflow-plan.md`](docs/workflow-plan.md) | v3 guided-workflow design spec (signed off, D-039; P1 built) |
 | [`docs/walkthrough.md`](docs/walkthrough.md) | Walkthrough kit for the design sign-off gate (tasks, script, observation sheet) |
-| [`docs/feasibility-macros.md`](docs/feasibility-macros.md) | Feasibility study: QADriver macros with element IDs + prompt section |
+| [`docs/feasibility-macros.md`](docs/feasibility-macros.md) | Feasibility study: TestForgeDriver macros with element IDs + prompt section |
 | [`docs/context-resumption.md`](docs/context-resumption.md) | current state, hard constraints, next steps — **start here in a new session** |
 | [`docs/design.md`](docs/design.md) | architecture, ports, routes, file map |
 | [`docs/decision.md`](docs/decision.md) | why things are the way they are (append-only log) |
@@ -24,15 +24,15 @@ NetworkLens mocking, Claude sessions and test cases from Confluence. The Mac app
 
 ## Quick start
 
-Open **TestForge** (`tools/testforge-mac`, build with `./scripts/make-app.sh`). It runs `start.sh`, which
+Open **TestForge** (`tools/mac-app`, build with `./scripts/make-app.sh`). It runs `start.sh`, which
 installs `node_modules` on first run and starts `node server.js` on port 4545. Without the app:
-`tools/qa-dashboard/start.sh` (then drive it with `qaw` or Claude Code).
+`tools/test-forge-server/start.sh` (then drive it with `test-forge` or Claude Code).
 
 Needs Node 22+ and `python3`.
 
 ### First-time setup
 
-1. `cp tools/qa-dashboard/.env.local.example tools/qa-dashboard/.env.local` and fill in what you need
+1. `cp tools/test-forge-server/.env.local.example tools/test-forge-server/.env.local` and fill in what you need
    (autonomous flag — see below). Confluence needs no token: loads go through Claude and your
    Atlassian connector.
 2. In TestForge, follow **Get Ready** until green: **Prepare code…** picks the branch or working copy,
@@ -73,32 +73,32 @@ The HTTP API is listed in [`docs/design.md`](docs/design.md#http-api).
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `TESTFORGE_HOME` | `~/.testforge` | QA copies (`checkouts/`) and `state.json` |
-| `QA_DRIVER_PORT` | `8789` | port the dashboard hosts the QADriver queue on |
-| `QA_DASHBOARD_PORT` | `4545` | dashboard port |
+| `TEST_FORGE_HOME` | `~/.test-forge` | QA copies (`checkouts/`) and `state.json` |
+| `TEST_FORGE_DRIVER_PORT` | `8789` | port the dashboard hosts the TestForgeDriver queue on |
+| `TEST_FORGE_SERVER_PORT` | `4545` | dashboard port |
 | `NETWORKLENS_BUNDLE_ID` | `com.blibli.mobile` | app whose container holds `session.json` / `trace.ndjson` |
 | `NETWORKLENS_CONTROL_PORT` | `8788` | live mock-control queue (hosted by the dashboard) |
-| `QA_GRAPH_CLIENT_ID` | Microsoft Graph command-line tools client | app used for the Outlook OTP sign-in (D-048); set it if IT issues a dedicated registration |
-| `QA_GRAPH_TENANT` | `organizations` | Microsoft tenant for that sign-in |
-| `QA_OTP_SENDER` | `noreply@bliblitiket.com` | only mail from this sender is read for OTPs |
-| `QA_DRIVER_URL` | `http://127.0.0.1:8789` | QADriver queue the dashboard posts commands to |
-| `QA_PROJECT_DIR` | `../../BlibliMobile-iOS` | Xcode project dir; `cwd` for `claude`, `xcodebuild`, `harness.py` |
-| `QA_BUILD_IGNORED_PATHS` | `tools/**,**/.claude/**,BlibliMobile-iOS/BlibliMobile_XCUITest/**/*.json,BlibliMobile-iOS/BlibliMobile_XCUITest/**/*.md` | Comma-separated git globs whose changes leave the QA build current (D-069) |
-| `QA_SCHEME` | `BlibliMobile-iOS-PerfTest` | scheme the driver runs on |
-| `QA_CONFIGURATION` | `PerformanceTest` | its build configuration |
-| `QA_UITEST_TARGET` | `BlibliMobile_XCUITest` | UI test target; macro search root |
-| `QA_UITEST_ROOT` | `$QA_PROJECT_DIR/$QA_UITEST_TARGET` | where `/qa-macro` saves macros |
-| `QA_HARNESS_SCRIPT` / `QA_MACRO_SCRIPT` | auto-discovered | test-flow-recorder `harness.py` / `macro_cli.py` |
+| `TEST_FORGE_GRAPH_CLIENT_ID` | Microsoft Graph command-line tools client | app used for the Outlook OTP sign-in (D-048); set it if IT issues a dedicated registration |
+| `TEST_FORGE_GRAPH_TENANT` | `organizations` | Microsoft tenant for that sign-in |
+| `TEST_FORGE_OTP_SENDER` | `noreply@bliblitiket.com` | only mail from this sender is read for OTPs |
+| `TEST_FORGE_DRIVER_URL` | `http://127.0.0.1:8789` | TestForgeDriver queue the dashboard posts commands to |
+| `TEST_FORGE_PROJECT_DIR` | `../../BlibliMobile-iOS` | Xcode project dir; `cwd` for `claude`, `xcodebuild`, `harness.py` |
+| `TEST_FORGE_BUILD_IGNORED_PATHS` | `tools/**,**/.claude/**,BlibliMobile-iOS/BlibliMobile_XCUITest/**/*.json,BlibliMobile-iOS/BlibliMobile_XCUITest/**/*.md` | Comma-separated git globs whose changes leave the QA build current (D-069) |
+| `TEST_FORGE_SCHEME` | `BlibliMobile-iOS-PerfTest` | scheme the driver runs on |
+| `TEST_FORGE_CONFIGURATION` | `PerformanceTest` | its build configuration |
+| `TEST_FORGE_UITEST_TARGET` | `BlibliMobile_XCUITest` | UI test target; macro search root |
+| `TEST_FORGE_UITEST_ROOT` | `$TEST_FORGE_PROJECT_DIR/$TEST_FORGE_UITEST_TARGET` | where `/test-forge-macro` saves macros |
+| `TEST_FORGE_HARNESS_SCRIPT` / `TEST_FORGE_MACRO_SCRIPT` | auto-discovered | test-flow-recorder `harness.py` / `macro_cli.py` |
 | `CONFLUENCE_EMAIL` / `CONFLUENCE_TOKEN` | — | optional REST fast path for Confluence loads; without them loads go through Claude |
-| `QA_LOADER_MODEL` | `haiku` | model for the Claude-driven Confluence load (it only fetches, never writes) |
-| `QA_ALLOW_AUTONOMOUS_CLAUDE` | `0` | `1` adds `--dangerously-skip-permissions` to ▶ Run |
-| `QA_GENERAL_CONCURRENCY` | `3` | general-lane tasks running at once |
-| `QA_PROJECT_ROOTS` | `~/Projects` | `:`-separated roots scanned (2 levels) for git repos |
+| `TEST_FORGE_LOADER_MODEL` | `haiku` | model for the Claude-driven Confluence load (it only fetches, never writes) |
+| `TEST_FORGE_ALLOW_AUTONOMOUS_CLAUDE` | `0` | `1` adds `--dangerously-skip-permissions` to ▶ Run |
+| `TEST_FORGE_GENERAL_CONCURRENCY` | `3` | general-lane tasks running at once |
+| `TEST_FORGE_PROJECT_ROOTS` | `~/Projects` | `:`-separated roots scanned (2 levels) for git repos |
 
 ### Headless runs and permissions
 
-`claude -p` cannot answer permission prompts. With `QA_ALLOW_AUTONOMOUS_CLAUDE=0`, a ▶ Run stops at
-the first tool not allowlisted in `BlibliMobile-iOS/.claude/settings.json`. With `1`, `/qa-run`
+`claude -p` cannot answer permission prompts. With `TEST_FORGE_ALLOW_AUTONOMOUS_CLAUDE=0`, a ▶ Run stops at
+the first tool not allowlisted in `BlibliMobile-iOS/.claude/settings.json`. With `1`, `/test-forge-run`
 runs every tool unprompted — set it only in your own `.env.local`. Each ▶ Run consumes Claude
 usage; ⚡ Replay does not.
 
@@ -114,7 +114,7 @@ On the Test Cases tab, the macro is found through its `links.testCase`; there is
 
 ## QA simulator and QA build
 
-QA runs use their own simulator, **QA · <model>**. It is cloned from the one you test with, so the app and the saved passwords come along. They also use their own build of the code prepared in Question 1, under `~/.testforge/`.
+QA runs use their own simulator, **TestForge · <model>**. It is cloned from the one you test with, so the app and the saved passwords come along. They also use their own build of the code prepared in Question 1, under `~/.test-forge/`.
 
 The setup banner offers each step with a confirm:
 
@@ -123,7 +123,7 @@ The setup banner offers each step with a confirm:
 - **Build the app**: 10–25 min the first time; may need the VPN.
 - **Start harness**
 
-When the prepared code changes, the build is out of date and runs are blocked until you rebuild. Changes that never go into the app don't count (D-069): `tools/` (the dashboard itself), and the macros, element registry and mock packs (the JSON under `BlibliMobile_XCUITest/`), and the run notes Claude writes there (`*-notes.md`, D-198). The Code prepared warning names the first app file that changed. So learning or repairing a macro never forces a rebuild (`QA_BUILD_IGNORED_PATHS`). **Test the installed app anyway…** needs a reason, and runs are then stamped UNVERIFIED BUILD.
+When the prepared code changes, the build is out of date and runs are blocked until you rebuild. Changes that never go into the app don't count (D-069): `tools/` (the dashboard itself), and the macros, element registry and mock packs (the JSON under `BlibliMobile_XCUITest/`), and the run notes Claude writes there (`*-notes.md`, D-198). The Code prepared warning names the first app file that changed. So learning or repairing a macro never forces a rebuild (`TEST_FORGE_BUILD_IGNORED_PATHS`). **Test the installed app anyway…** needs a reason, and runs are then stamped UNVERIFIED BUILD.
 
 Each build:
 - stops the runner first;
@@ -203,13 +203,13 @@ opens can be re-opened in one click. `https://www.blibli.com/…` links work too
 simulator hands them to the app (no Safari, no prompt). A UAT-B link (`https://wwwuatb.gdn-app.com/…`) opens as
 `blibli://…` with the same path, shown as "Opens as …". Other `https://` hosts are refused (they'd open Safari).
 If iOS asks "Open in “Blibli”?", the harness taps Open when it's running.
-From a terminal or Remote Control: `scripts/qaw.mjs link routes cart`, `link match <url>`, `link open <url>`.
+From a terminal or Remote Control: `scripts/test-forge.mjs link routes cart`, `link match <url>`, `link open <url>`.
 
 ## Run bundles: hand a run to the next person (D-162)
 
 The person who runs a document first pays for Claude; everyone after replays it for free.
 
-- **Export:** Results › pick a run › **Export bundle…** saves one `*.qawbundle.json`: the cases, the recordings
+- **Export:** Results › pick a run › **Export bundle…** saves one `*.test-forge-bundle.json`: the cases, the recordings
   (macros and the routines they use), the elements they tap, the mocks they arm (redacted), the code it tested, the
   verdicts and a small proof picture per case. Later runs of the same code fill in cases they finished.
 - **Import:** Results › **Import bundle…** shows what it adds and whether your prepared code is the code it tested,
@@ -224,9 +224,9 @@ The person who runs a document first pays for Claude; everyone after replays it 
   hand. Runs record the variant from D-163 on; older runs read it back from the NetworkLens trace while it still
   has them.
 - Prepare the bundle's branch first (Test Cases › 1 · What code?). A bundle made from uncommitted changes says so.
-- Terminal: `qaw bundle export latest ~/Desktop/run.qawbundle.json`, `qaw bundle import <file> [--overwrite]`,
-  `qaw bundle replay <bundleId> [case…]`, `qaw bundle compare <bundleId>`, `qaw bundle list`,
-  `qaw bundle mocks <bundleId>`, `qaw bundle arm <bundleId> <case>`.
+- Terminal: `test-forge bundle export latest ~/Desktop/run.test-forge-bundle.json`, `test-forge bundle import <file> [--overwrite]`,
+  `test-forge bundle replay <bundleId> [case…]`, `test-forge bundle compare <bundleId>`, `test-forge bundle list`,
+  `test-forge bundle mocks <bundleId>`, `test-forge bundle arm <bundleId> <case>`.
 
 ## Export the whole session (D-173)
 
@@ -287,7 +287,7 @@ moment, so switching back and forth never ends a batch. Reports › Batches show
 **Resume** / **End** buttons; the start sheet lists them too. A paused batch can be ended (its report says how often it
 was paused) but not removed. Pausing or resuming waits while a test or a run of several cases is going. Replay on this
 build pauses the active batch too. API: `POST /api/test-batches/:id/pause`, `…/resume`, `POST /api/test-batches` with
-`pauseActive: true`; CLI: `qaw batch pause`, `qaw batch resume ["<name>"]`.
+`pauseActive: true`; CLI: `test-forge batch pause`, `test-forge batch resume ["<name>"]`.
 
 ## Proof under the selected case (D-183)
 
@@ -314,7 +314,7 @@ API: `PUT /api/testcases/:id/result {verdict, reason, leniency, expected, rerun}
 ## Demo library (D-177)
 
 Demos render at 1080 px wide in high quality (D-178). A demo made before 2 Nov 2026 is blurry (220×480); re-render it
-with `"tools/testforge-mac/build/TestForge.app/Contents/MacOS/TestForge" --render-demo <demo folder>`.
+with `"tools/mac-app/build/TestForge.app/Contents/MacOS/TestForge" --render-demo <demo folder>`.
 
 **Reports › Demos** lists every demo video recorded with Tests › Record demo video, newest first: test name, case,
 verdict and date. Click a demo (anywhere on its row) to open it on the right, paused; press the big ▶ (or Space) when ready. It plays in the macOS player (play/pause, drag the bar to seek, full screen).
@@ -369,9 +369,9 @@ subtitles for each step, a pointer on the exact element, "✓ As expected" on ea
 and Bahasa Indonesia. Share the MP4 on Teams or Jira, or with its `.vtt` subtitles on Confluence.
 
 ```bash
-scripts/qaw.mjs demo notes mc_MTA18NCHR4     # once per case: Claude writes the plain-words notes into the recording
-scripts/qaw.mjs demo record mc_MTA18NCHR4    # replays slowly, films it, renders demo-en.mp4 / demo-id.mp4 + .vtt
-scripts/qaw.mjs demo list                    # where the videos are (<proof folder>/demos/<case>-<time>/)
+scripts/test-forge.mjs demo notes mc_MTA18NCHR4     # once per case: Claude writes the plain-words notes into the recording
+scripts/test-forge.mjs demo record mc_MTA18NCHR4    # replays slowly, films it, renders demo-en.mp4 / demo-id.mp4 + .vtt
+scripts/test-forge.mjs demo list                    # where the videos are (<proof folder>/demos/<case>-<time>/)
 ```
 
 Recording a demo needs no Claude; the notes travel in bundles, so the next person records the same demo for free.
@@ -380,7 +380,7 @@ Re-render a folder after editing notes: `"TestForge.app/Contents/MacOS/TestForge
 ## When Claude's usage limit is reached
 
 A case the limit stops is not marked failed: it goes back in the queue and the batch pauses with Claude's message
-(e.g. "resets 11am"). After the reset press **Continue** — menu bar (Mac app), the web page, or `qaw resume`.
+(e.g. "resets 11am"). After the reset press **Continue** — menu bar (Mac app), the web page, or `test-forge resume`.
 
 ## Model for Claude runs
 
@@ -389,19 +389,19 @@ motion, screens crossed, and how earlier Claude runs of it went — and starts o
 tier mid-run when the run gets stuck (three failed steps in a row, or 6 min on Haiku / 12 min on Sonnet). Or pick a
 model yourself; a hand-picked model never changes. The live steps show the model and why; the run's history record
 keeps the pick and any switches. API: `model` (`auto` | `haiku` | `sonnet` | `opus`) on `POST /api/testcases/:id/run` and
-`POST /api/batch`; `QA_RUN_MODEL` sets the server default.
+`POST /api/batch`; `TEST_FORGE_RUN_MODEL` sets the server default.
 
 **Post to Jira (D-193):** a case's *Post to Jira…* fills the ticket from the test document and writes the result comment; you edit it and confirm before anything is posted.
 
 **Real devices (D-197):** Simulator › *Real devices* lists iPhones paired with this Mac and, for the one you pick, what's missing before tests can run on it. Its **Use for tests** stays disabled until a device-signed QA build exists (D-213).
 
-**Verify my changes (D-196):** Tests › *Verify my changes…* (or `/verify` / `qaw verify` in Claude Code) picks the loaded cases whose recordings cover the code your branch changes and hands them to the Run-all plan.
+**Verify my changes (D-196):** Tests › *Verify my changes…* (or `/verify` / `test-forge verify` in Claude Code) picks the loaded cases whose recordings cover the code your branch changes and hands them to the Run-all plan.
 
 **Edit steps (D-195):** Scan › a saved macro › *Edit steps…* reorders, removes and adjusts steps (wait, Skip if not there, typed text) and saves the macro file. Taps on elements without an accessibility ID are recorded by their position inside the nearest identified container; system alert taps become optional alert answers (D-194).
 
 **Deeplinks and mocks (D-195):** a recorded case's detail lists the deeplinks it opens and the mocked JSON it arms, to copy or download.
 
-**Prerequisites (D-190):** Get Ready checks tools, the test-flow-recorder plugin and the qa-driver / networklens / Atlassian MCP servers; *Show what's missing* lists the fix for each.
+**Prerequisites (D-190):** Get Ready checks tools, the test-flow-recorder plugin and the test-forge-driver / networklens / Atlassian MCP servers; *Show what's missing* lists the fix for each.
 
 **Run all (D-191):** Tests › Run all… shows the batch plan (order, environment switches, anything that would stop it) before it starts.
 
@@ -431,26 +431,26 @@ them — with **All off** and **Reset to repo pack** — so a fake answer is nev
   Save the current set of rules as a **scenario** and apply it later in one click. Deleting a scenario restarts the app
   (NetworkLens can't drop one while it runs).
 
-## NetworkLens from a terminal: `qaw-lens`
+## NetworkLens from a terminal: `test-forge-lens`
 
-`scripts/qaw-lens.mjs` drives NetworkLens through the running dashboard — no MCP needed. JSON out.
+`scripts/test-forge-lens.mjs` drives NetworkLens through the running dashboard — no MCP needed. JSON out.
 
 ```bash
-scripts/qaw-lens.mjs state                                   # queue owner, is the app polling, rules + variants
-scripts/qaw-lens.mjs mocking on|off
-scripts/qaw-lens.mjs mock "GET /backend/content-api/flashsale" empty [--retime]
-scripts/qaw-lens.mjs off "GET /backend/content-api/flashsale"
-scripts/qaw-lens.mjs calls --grep flashsale --limit 10
-scripts/qaw-lens.mjs call 1BF04EE3 --curl                    # an id or its first characters
-scripts/qaw-lens.mjs mock-call 1BF04EE3                      # its real response becomes a rule
-scripts/qaw-lens.mjs trackers ENG1047-0001,ENG1015-0001       # fired / missing / payload problems (no ids = all)
-scripts/qaw-lens.mjs tracker ENG1047-0001 --contract c.json   # each fire with its payload, checked
-scripts/qaw-lens.mjs trackers-report ENG1047-0001 --out report.md   # the DA-format markdown page
-scripts/qaw-lens.mjs hold "GET /backend/content-api/flashsale" --once  # its next response waits (phase-D app build)
-scripts/qaw-lens.mjs breakpoints                               # what is held now, with ids
-scripts/qaw-lens.mjs release 1A2B… --status 500 --body '{}'     # continue edited  (or --fail offline)
-scripts/qaw-lens.mjs replay 1BF04EE3                          # send a captured request again from the app
-scripts/qaw-lens.mjs bubble hide                               # NetworkLens bubble out of a test's way
+scripts/test-forge-lens.mjs state                                   # queue owner, is the app polling, rules + variants
+scripts/test-forge-lens.mjs mocking on|off
+scripts/test-forge-lens.mjs mock "GET /backend/content-api/flashsale" empty [--retime]
+scripts/test-forge-lens.mjs off "GET /backend/content-api/flashsale"
+scripts/test-forge-lens.mjs calls --grep flashsale --limit 10
+scripts/test-forge-lens.mjs call 1BF04EE3 --curl                    # an id or its first characters
+scripts/test-forge-lens.mjs mock-call 1BF04EE3                      # its real response becomes a rule
+scripts/test-forge-lens.mjs trackers ENG1047-0001,ENG1015-0001       # fired / missing / payload problems (no ids = all)
+scripts/test-forge-lens.mjs tracker ENG1047-0001 --contract c.json   # each fire with its payload, checked
+scripts/test-forge-lens.mjs trackers-report ENG1047-0001 --out report.md   # the DA-format markdown page
+scripts/test-forge-lens.mjs hold "GET /backend/content-api/flashsale" --once  # its next response waits (phase-D app build)
+scripts/test-forge-lens.mjs breakpoints                               # what is held now, with ids
+scripts/test-forge-lens.mjs release 1A2B… --status 500 --body '{}'     # continue edited  (or --fail offline)
+scripts/test-forge-lens.mjs replay 1BF04EE3                          # send a captured request again from the app
+scripts/test-forge-lens.mjs bubble hide                               # NetworkLens bubble out of a test's way
 ```
 
 Breakpoints, replay and the bubble (D-130) work only while an app built with the phase-D NetworkLens is running; an
@@ -461,11 +461,11 @@ Trackers (D-129) are also the **Trackers** tab in the Mac app's Network section.
 "expect": { "component": "USP" } } }`. Only the latest app launch counts unless `--all-sessions` / "All launches".
 
 Changes are live when the app polls the dashboard's queue (port 8788), otherwise saved for the next launch — each
-answer says which. `QAW_DASHBOARD=http://host:4545` targets another dashboard.
+answer says which. `TestForge_DASHBOARD=http://host:4545` targets another dashboard.
 
 ## Test simulator (Mac app › Simulator)
 
-Tests run on the **test simulator**: the "QA · " clone by default. On the Simulator screen, pick any simulator and press
+Tests run on the **test simulator**: the "TestForge · " clone by default. On the Simulator screen, pick any simulator and press
 **Use for tests** to run tests there instead (**Back to the QA clone** undoes it); the device in use shows **Used by
 tests**. Every command names that device, so other simulators — e.g. another repo's — can stay booted. A newly chosen
 device needs **Build › Install for testing** once. **Measure** works on whatever device the Simulator window shows, with
@@ -495,7 +495,7 @@ can't run until you stop it. API: `GET /api/scan`, `POST /api/scan/{start,mark,s
 
 The macro lands in `<UITestRoot>/<Module>/<Submodule>/macros/` (never overwriting another), reuses registry elements,
 waits for each new screen and screenshots it; a linked case replays from Tests. Each recording starts fresh; the
-screen map behind it is still saved as `~/.testforge/flows/<time>/flow.json` + thumbnails. Needs only the
+screen map behind it is still saved as `~/.test-forge/flows/<time>/flow.json` + thumbnails. Needs only the
 Accessibility permission — no harness, no app change, and it doesn't hold the simulator. Taps made by tests aren't
 recorded (they aren't mouse clicks).
 API: `GET /api/macros/v2/recorded` (the list), `POST /api/macros/v2/recorded {name, caseIds, module, submodule,
@@ -503,7 +503,7 @@ startFresh, gestures}`.
 
 ## Install from a DMG (Mac app)
 
-Share `tools/testforge-mac/build/TestForge-<version>.dmg` (make it with `./scripts/make-dmg.sh`). The person:
+Share `tools/mac-app/build/TestForge-<version>.dmg` (make it with `./scripts/make-dmg.sh`). The person:
 
 1. Drags TestForge into Applications and opens it (first time: System Settings › Privacy & Security › Open Anyway —
    the app is not notarised).
@@ -517,7 +517,7 @@ Share `tools/testforge-mac/build/TestForge-<version>.dmg` (make it with `./scrip
 **Claude › Remote Control › Turn on** starts Claude Code's Remote Control in this repo. Scan the QR code (or open the
 Claude app › Code and pick "TestForge · <repo>") and drive QA from your phone: "status", "replay SF-001 and
 SF-006", "mock the flash sale as empty and screenshot it", "anything waiting on me?". Claude works on this Mac through
-`qaw` (`tools/qa-dashboard/scripts/qaw.mjs`), `qaw-lens` and the driver tools, following the `testforge-remote`
+`test-forge` (`tools/test-forge-server/scripts/test-forge.mjs`), `test-forge-lens` and the driver tools, following the `test-forge-remote`
 skill. Approvals and questions come to your phone; pushing, building for testing and erasing a simulator always ask
 first, and the production test-case page is never written. Pick **Own worktree per session** to keep parallel sessions
 apart. It keeps running if the QA server restarts; **Turn off** stops it and its sessions.
@@ -563,15 +563,15 @@ command protocol, macros, server and Mac app, with a UiAutomator runner in place
 | Banner "Launch the app to pick this up" | App not polling the control queue (not running / NetworkLens off). The edit went to `session.json`; relaunch the app. |
 | Banner "App is running but not reachable live yet" | Wait a few seconds, or quit the app before editing. |
 | Live traffic empty | No booted simulator, NetworkLens off, or nothing captured yet. |
-| "Link Outlook" fails with "admin approval required" / AADSTS65001 | The company tenant blocks user consent for `Mail.Read`. Ask IT to approve it, or for a dedicated app registration (`QA_GRAPH_CLIENT_ID`). Until then, prod OTPs come from the popup. |
-| Prod run still shows the OTP popup with Outlook linked | No mail from `QA_OTP_SENDER` within 60 s (check Junk, or the sender address). Type it in the popup; the run carries on. |
+| "Link Outlook" fails with "admin approval required" / AADSTS65001 | The company tenant blocks user consent for `Mail.Read`. Ask IT to approve it, or for a dedicated app registration (`TEST_FORGE_GRAPH_CLIENT_ID`). Until then, prod OTPs come from the popup. |
+| Prod run still shows the OTP popup with Outlook linked | No mail from `TEST_FORGE_OTP_SENDER` within 60 s (check Junk, or the sender address). Type it in the popup; the run carries on. |
 | A change in `lib/` has no effect | Node caches modules: restart with `./start.sh`. |
-| “no mock rule for … on the device or in the repo's mock pack” | The rule exists nowhere yet. Create it on the Mocking tab, then Macros tab → **💾 Save mocks to repo** and commit `QAMacros/mocks/` (D-064). |
+| “no mock rule for … on the device or in the repo's mock pack” | The rule exists nowhere yet. Create it on the Mocking tab, then Macros tab → **💾 Save mocks to repo** and commit `TestForgeMacros/mocks/` (D-064). |
 | A case shows “🔧 macro repaired” | Claude found the macro or an element stale and fixed it; the driver's replay after the fix decided the verdict. Review the listed files (`git diff BlibliMobile_XCUITest`) before committing (D-064). |
 | Mocks aren't served / “NetworkLens isn't answering” | An environment switch turns NetworkLens off. Mocking tab → **Turn NetworkLens on** (relaunches the app). |
-| A Claude run says a case was BLOCKED because "no test bundle built", or it uses `qa-mock` tools (deleted from the plugin, D-072) | The session loaded a stale cached copy of the `test-flow-recorder` plugin. Reinstall it from source: `claude plugin marketplace update test-flow-recorder-local`, then `claude plugin uninstall test-flow-recorder@test-flow-recorder-local` and `claude plugin install test-flow-recorder@test-flow-recorder-local` (D-071). |
+| A Claude run says a case was BLOCKED because "no test bundle built", or it uses `test-forge-mock` tools (deleted from the plugin, D-072) | The session loaded a stale cached copy of the `test-flow-recorder` plugin. Reinstall it from source: `claude plugin marketplace update test-flow-recorder-local`, then `claude plugin uninstall test-flow-recorder@test-flow-recorder-local` and `claude plugin install test-flow-recorder@test-flow-recorder-local` (D-071). |
 | A learned macro's proving replay is BLOCKED with "… needs an identifier" | Only typing, scrolling, scroll-to-top and reading a *different* label off an element need an identifier; checking that a label-only element is shown (or gone) works by its label (D-071). Add an accessibility identifier in the app for the others. |
-| Need a NetworkLens MCP change | Edit `NetworkLens/Tools/networklens-mcp/src` in the worktree `~/Projects/Tools/NetworkInterceptor-qa` (branch `darshan/innovation/qa-mocker-testing`), commit, tag `qa-mocker-testing-N`, push (no force-push: the repository refuses it — to move the branch onto a new upstream, rebase, tag, then merge the tag into the branch, D-065), then `scripts/sync-networklens.sh ~/Projects/Tools/NetworkInterceptor-qa` and re-pin the app's revision (D-050). |
+| Need a NetworkLens MCP change | Edit `NetworkLens/Tools/networklens-mcp/src` in the worktree `~/Projects/Tools/NetworkInterceptor-qa` (branch `darshan/innovation/test-forge-driver`), commit, tag `test-forge-driver-N`, push (no force-push: the repository refuses it — to move the branch onto a new upstream, rebase, tag, then merge the tag into the branch, D-065), then `scripts/sync-networklens.sh ~/Projects/Tools/NetworkInterceptor-qa` and re-pin the app's revision (D-050). |
 | Harness "no test bundle built" | **Build test bundle**, then **Ensure**. |
 | A replay is stuck at "Ask a person" | A system popup needs you: answer the dashboard popup (Done / It wasn't shown / Stop). It times out after 10 min. |
 | `typeSecret` step: "couldn't type …" | Give your terminal app **Accessibility** permission (System Settings → Privacy & Security → Accessibility), and keep the Simulator's hardware keyboard connected. |
@@ -580,13 +580,13 @@ command protocol, macros, server and Mac app, with a UiAutomator runner in place
 | Harness "queue server unreachable at …:8789" | Harness not running → **Ensure**. |
 | Driver command `timeout waiting for …` | Harness died; one automatic restart+retry already happened. **Tail logs**. |
 | Checklist: "the runner isn't answering — the next test restarts it first" | Nothing to do: the next run or replay restarts the runner before step 1 and logs "↻ … restarting it" (D-066). If that restart fails, the case is BLOCKED; then **Ensure** and **Tail logs**. |
-| A ▶ Run (Claude) drives the wrong simulator, or `/qa-run` preflight reports a device mismatch | Fixed in D-068: dashboard runs pass the QA simulator and build as flag settings, which outrank your `.claude/settings.local.json` `QA_DEVICE_UDID`. Restart the dashboard if it predates this. |
-| Claude's own NetworkLens/qa-driver tools (not ▶ Run/Replay) target the wrong device, or a fresh clone's "Claude Code set up for this Mac" check never turns green | **Get ready**'s Fix writes your project folder, QA simulator and proof folder into `.claude/settings.local.json`'s `env` block (D-156) — kept out of git, seeded from the committed `.claude/settings.local.json.example`. Fix again after the QA simulator changes; `.claude/settings.json` itself should never carry personal values. |
-| Claude Code: `networklens` MCP server "failed to connect" | `scripts/networklens/resolve-checkout.sh` found no NetworkInterceptor checkout. It looks at `$NETWORKINTERCEPTOR_PATH`, then Xcode's DerivedData for this workspace, then the TestForge build (`~/.testforge/derived`), then a sibling clone. Build once (in Xcode or with the dashboard's QA build), then `/mcp` → reconnect. |
+| A ▶ Run (Claude) drives the wrong simulator, or `/test-forge-run` preflight reports a device mismatch | Fixed in D-068: dashboard runs pass the QA simulator and build as flag settings, which outrank your `.claude/settings.local.json` `TEST_FORGE_DEVICE_UDID`. Restart the dashboard if it predates this. |
+| Claude's own NetworkLens/test-forge-driver tools (not ▶ Run/Replay) target the wrong device, or a fresh clone's "Claude Code set up for this Mac" check never turns green | **Get ready**'s Fix writes your project folder, QA simulator and proof folder into `.claude/settings.local.json`'s `env` block (D-156) — kept out of git, seeded from the committed `.claude/settings.local.json.example`. Fix again after the QA simulator changes; `.claude/settings.json` itself should never carry personal values. |
+| Claude Code: `networklens` MCP server "failed to connect" | `scripts/networklens/resolve-checkout.sh` found no NetworkInterceptor checkout. It looks at `$NETWORKINTERCEPTOR_PATH`, then Xcode's DerivedData for this workspace, then the TestForge build (`~/.test-forge/derived`), then a sibling clone. Build once (in Xcode or with the dashboard's QA build), then `/mcp` → reconnect. |
 | Load: `Claude could not read Confluence page …` | Atlassian connector not connected in Claude (claude.ai → Settings → Connectors), or no access to the page. Transcript is in Run output. |
 | Load: `Confluence answered HTTP 401/403` | Wrong email/token, or no access to that space. |
 | Load: 0 cases | No table whose headers look like ID / Scenario / Steps / Expected. |
-| Replay `BLOCKED (macro not resolved)` | No macro by that name (or it exists in two modules). Record with `/qa-macro record <name>`. |
+| Replay `BLOCKED (macro not resolved)` | No macro by that name (or it exists in two modules). Record with `/test-forge-macro record <name>`. |
 | ▶ Run hangs silently | Permission prompt — see *Headless runs and permissions*. |
 | Red bar "Dashboard server is not responding" | The server stopped. Run `start.sh` (or double-click the app); the page reconnects on its own. |
 | "A case is already running" / "harness … already in progress" | One case and one harness action at a time — wait, or use **Cancel**. |
@@ -601,20 +601,20 @@ command protocol, macros, server and Mac app, with a UiAutomator runner in place
 | Prepare: "Can't reach GitHub — is the VPN on?" | Connect the VPN; the branch fetch and ↻ Check GitHub need it. |
 | Prepare: "the code is already being prepared" | One prepare at a time — the page re-attaches to the running one. |
 | A branch isn't in the list | Click **↻ Check GitHub** (lists branches straight from GitHub). A branch only on your Mac: use **A local repository**. |
-| Disk filling up | QA copies live in `~/.testforge/checkouts/` (≈ 0.7 GB GitHub copy, ≈ 0.35 GB local snapshot for this repo); delete a folder there to reclaim it. |
+| Disk filling up | QA copies live in `~/.test-forge/checkouts/` (≈ 0.7 GB GitHub copy, ≈ 0.35 GB local snapshot for this repo); delete a folder there to reclaim it. |
 
 ---
 
 ## Roadmap
 
-**Dropped:** Jira and PR views (D-030) — they distracted from the QADriver-first goal.
+**Dropped:** Jira and PR views (D-030) — they distracted from the TestForgeDriver-first goal.
 
 **Done through P6 (D-064):** driver first, Claude only on an issue. A failed replay is triaged and
 repaired by Claude, then replayed by the driver; a case Claude passes is saved as a macro. Macros,
-references (`*.ref.json`) and mock packs (`QAMacros/mocks/`) live in the repo.
+references (`*.ref.json`) and mock packs (`TestForgeMacros/mocks/`) live in the repo.
 
 **Next:** the v4 native Mac app redesign — `docs/redesign-plan.md` (D-075). The R2 shell is in
-`../testforge-mac` (D-081; build with `./scripts/make-app.sh`, see its README) — it attaches to
+`../mac-app` (D-081; build with `./scripts/make-app.sh`, see its README) — it attaches to
 this server when running, or starts it. Current state: `docs/context-resumption.md`. The live mirror was removed (D-033); the browser UI was removed in D-199.
 
 ### Tests

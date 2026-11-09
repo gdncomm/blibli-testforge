@@ -1,4 +1,4 @@
-// D-127 (phase A): captured calls for the console and `qaw-lens` — list rows, one call's detail, and a curl command a
+// D-127 (phase A): captured calls for the console and `test-forge-lens` — list rows, one call's detail, and a curl command a
 // backend developer can paste. Pure: works on the records `Trace.entries()` returns.
 import { decodeBody, durationMs, preview, statusOf } from "./trace.js";
 

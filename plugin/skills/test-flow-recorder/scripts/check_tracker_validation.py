@@ -20,7 +20,7 @@ out to the host project's own already-built, tested extractor —
 tester-saved `.webarchive`/`.html` snapshot of a TRMS tracker-detail page and returns a
 cross-validated `{event, datalayer_params, params, warnings}` per id (see that script's own
 docstring for how it cross-checks the dataLayer script against the parameter table). Snapshots are
-looked up by id under `--snapshot-dir` (default: `$QA_MEDIA_ROOT/trms/`, the same media-root
+looked up by id under `--snapshot-dir` (default: `$TEST_FORGE_MEDIA_ROOT/trms/`, the same media-root
 convention screenshots and recordings already use), as `<TRMS-ID>.webarchive` or `.html`/`.htm`.
 
 **Contract derivation, and its one known gap**: the extractor's `datalayer_params` holds only the
@@ -49,7 +49,7 @@ automatically.
 Usage:
     check_tracker_validation.py cases.json results.json --bundle-id com.example.app
     check_tracker_validation.py cases.json results.json --trace <dir> \\
-        --snapshot-dir ~/Documents/QA-Test/trms --format markdown
+        --snapshot-dir ~/Documents/TestForge-Test/trms --format markdown
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ from dataplane import trace_dir  # noqa: E402
 from extract_trackers import check_contract, collect, load_exchanges  # noqa: E402
 
 BUNDLE_ID = os.environ.get("NETWORKLENS_BUNDLE_ID", "com.blibli.mobile")
-MEDIA_ROOT = Path(os.environ.get("QA_MEDIA_ROOT") or (Path.home() / "Documents" / "QA-Test"))
+MEDIA_ROOT = Path(os.environ.get("TEST_FORGE_MEDIA_ROOT") or (Path.home() / "Documents" / "TestForge-Test"))
 SNAPSHOT_EXTENSIONS = (".webarchive", ".html", ".htm")
 EXTRACTOR_RELATIVE = Path(".claude/skills/ios-analytics-tracker/scripts/extract_webarchive_contract.py")
 
@@ -288,13 +288,13 @@ def main() -> int:
     parser.add_argument("cases", type=Path)
     parser.add_argument("results", type=Path, help="mutated in place — each checked case gains a `trackerTrail` field")
     parser.add_argument("--trace", help="directory holding trace*.ndjson; defaults to the active "
-                        "QA_DATA_PLANE's resolved trace dir")
+                        "TEST_FORGE_DATA_PLANE's resolved trace dir")
     parser.add_argument("--bundle-id", default=BUNDLE_ID,
                         help="app bundle id, when the data plane needs one to resolve a trace dir "
                         "(default: %(default)s, or $NETWORKLENS_BUNDLE_ID)")
     parser.add_argument("--snapshot-dir", type=Path, default=MEDIA_ROOT / "trms",
                         help="directory holding <TRMS-ID>.webarchive/.html snapshots "
-                        "(default: $QA_MEDIA_ROOT/trms)")
+                        "(default: $TEST_FORGE_MEDIA_ROOT/trms)")
     parser.add_argument("--extractor", help="path to extract_webarchive_contract.py, overriding "
                         "discovery under the host project's own git root "
                         f"({EXTRACTOR_RELATIVE})")

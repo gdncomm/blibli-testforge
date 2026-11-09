@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Wires an arbitrary Xcode project to QADriverKit, so the harness is an install rather than a paste.
+"""Wires an arbitrary Xcode project to TestForgeDriverKit, so the harness is an install rather than a paste.
 
 Reads `project.pbxproj` through `plutil` — it is an OpenStep plist, so no third-party parser is
 needed — and writes only by inserting lines. Nothing here reserialises the project file: a tool that
@@ -7,18 +7,18 @@ rewrites it reorders every object and silently drops what it cannot round-trip, 
 final gate is that the diff shows zero deleted lines.
 
 What it changes, all additive:
-  * a Swift package reference (local path or remote URL), if the project has none for QADriverKit
-  * the `QADriverKit` product attached to the UI test target, and nothing else
+  * a Swift package reference (local path or remote URL), if the project has none for TestForgeDriverKit
+  * the `TestForgeDriverKit` product attached to the UI test target, and nothing else
   * a 4-line subclass declaring the test method, in that target
-  * `QADriver.xcscheme` and `QADriver.xctestplan`, generated with this project's own identifiers
+  * `TestForgeDriver.xcscheme` and `TestForgeDriver.xctestplan`, generated with this project's own identifiers
   * `.claude/settings.json` env, so the MCP servers know which app they are driving,
-    `QA_TAXONOMY` when the project carries a module taxonomy, and `QA_DATA_PLANE` (`simctl` or its
+    `TEST_FORGE_TAXONOMY` when the project carries a module taxonomy, and `TEST_FORGE_DATA_PLANE` (`simctl` or its
     alias `networklens` — NetworkLens under the booted simulator is the only mock channel)
 
 Never edits app source.
 
 Usage:
-    qa_init.py --project <path/to/App.xcodeproj> --bundle-id <id>
+    test_forge_init.py --project <path/to/App.xcodeproj> --bundle-id <id>
         [--ui-test-target NAME] [--app-target NAME]
         [--package-path <dir> | --package-url <url> --package-ref <branch-or-revision>]
         [--media-root NAME] [--taxonomy <file.json>]
@@ -36,8 +36,8 @@ from pathlib import Path
 
 UI_TEST_TYPE = "com.apple.product-type.bundle.ui-testing"
 APP_TYPE = "com.apple.product-type.application"
-PRODUCT_NAME = "QADriverKit"
-SHIM_NAME = "QADriverSession.swift"
+PRODUCT_NAME = "TestForgeDriverKit"
+SHIM_NAME = "TestForgeDriverSession.swift"
 # Ordered: a taxonomy describes the app's own structure, so a tracked path is the better home and
 # is looked for first. The second is classify_module.py's own default, worth pointing at anyway --
 # see find_taxonomy.
@@ -45,10 +45,10 @@ TAXONOMY_CANDIDATES = ("qa/taxonomy.json", ".claude/test-flow-recorder/taxonomy.
 
 
 def find_taxonomy(root: Path, explicit: Path | None) -> Path | None:
-    """classify_module.py resolves a taxonomy through --taxonomy, then $QA_TAXONOMY, then a
+    """classify_module.py resolves a taxonomy through --taxonomy, then $TEST_FORGE_TAXONOMY, then a
     *relative* .claude/test-flow-recorder/taxonomy.json. That last one only resolves when the cwd
     happens to be the project root, and a project that gitignores .claude/ cannot keep its
-    taxonomy there at all -- so an absolute QA_TAXONOMY is what makes one reachable from
+    taxonomy there at all -- so an absolute TEST_FORGE_TAXONOMY is what makes one reachable from
     anywhere, and the only thing that finds one kept at a tracked path.
 
     No taxonomy is a normal state: classification falls back to folder shape, which is right for
@@ -99,11 +99,11 @@ def check_local_package_governance(root: Path, package_path: Path, pin_tag: str 
     scripts/spm-cache/spm_cache.py pair: every XCLocalSwiftPackageReference must resolve under
     `<root>/SwiftPackages/<name>`, and that tool is strictly tag-based (hardcodes refs/tags/<tag>
     in its own checks) — a branch reference works for one fresh clone and then breaks on every
-    later `status`/`download`. None of this is specific to QADriverKit; any local package a host
+    later `status`/`download`. None of this is specific to TestForgeDriverKit; any local package a host
     project attaches this way hits the same shape of problem, so it's cheaper to catch here, before
     a single line is written, than to let it surface as a generic failure deep in a build log.
 
-    Returns the package path qa-init should actually wire up — either the one it was given
+    Returns the package path test-forge-init should actually wire up — either the one it was given
     (no governance in play, or already inside the managed directory) or the corrected managed path.
     """
     package_list = root / "SwiftPackageList.txt"
@@ -156,7 +156,7 @@ def check_local_package_governance(root: Path, package_path: Path, pin_tag: str 
         f"at tag {current_tag!r} (-> {managed_dir / name}) — {resolved} is a second, unmanaged "
         f"checkout of the same repo, which this project's own build will reject.\n"
         f"Either:\n"
-        f"  · re-run with --package-pin-tag <new-tag-name> to have qa-init create+push that tag on "
+        f"  · re-run with --package-pin-tag <new-tag-name> to have test-forge-init create+push that tag on "
         f"this checkout's HEAD ({head_ref}), repoint {package_list.name}'s {name} line to it, and "
         f"tell you the one remaining command ({download_cmd}); or\n"
         f"  · point --package-path at {managed_dir / name} once it already carries what you need."
@@ -263,7 +263,7 @@ def package_reference_section(text: str, arguments, product_uuid: str) -> tuple[
 
     reference_uuid = fresh_uuid(text)
     pin = ("branch" if not re.fullmatch(r"[0-9a-f]{40}", arguments.package_ref or "") else "revision")
-    entry = (f"\t\t{reference_uuid} /* XCRemoteSwiftPackageReference \"QADriverKit\" */ = {{\n"
+    entry = (f"\t\t{reference_uuid} /* XCRemoteSwiftPackageReference \"TestForgeDriverKit\" */ = {{\n"
              f"\t\t\tisa = XCRemoteSwiftPackageReference;\n"
              f"\t\t\trepositoryURL = \"{arguments.package_url}\";\n"
              f"\t\t\trequirement = {{\n"
@@ -277,8 +277,8 @@ def package_reference_section(text: str, arguments, product_uuid: str) -> tuple[
         header = ("/* Begin XCRemoteSwiftPackageReference section */\n"
                   + entry + "/* End XCRemoteSwiftPackageReference section */\n\n")
         text = insert_before(text, "/* Begin XCSwiftPackageProductDependency section */\n", header)
-    text = register_package_reference(text, reference_uuid, 'XCRemoteSwiftPackageReference "QADriverKit"')
-    return text, f"\t\t\tpackage = {reference_uuid} /* XCRemoteSwiftPackageReference \"QADriverKit\" */;\n"
+    text = register_package_reference(text, reference_uuid, 'XCRemoteSwiftPackageReference "TestForgeDriverKit"')
+    return text, f"\t\t\tpackage = {reference_uuid} /* XCRemoteSwiftPackageReference \"TestForgeDriverKit\" */;\n"
 
 
 def add_frameworks_phase(text: str, ui_uuid: str, build_file_uuid: str) -> str:
@@ -436,7 +436,7 @@ def main() -> int:
     parser.add_argument("--bundle-id", required=True)
     parser.add_argument("--ui-test-target")
     parser.add_argument("--app-target")
-    parser.add_argument("--package-path", help="Relative path to a local QADriverKit package")
+    parser.add_argument("--package-path", help="Relative path to a local TestForgeDriverKit package")
     parser.add_argument("--package-url", help="Remote package URL, when not using --package-path")
     parser.add_argument("--package-ref", help="Branch name or 40-char revision for --package-url")
     parser.add_argument("--package-pin-tag",
@@ -444,10 +444,10 @@ def main() -> int:
                              "overrides via SwiftPackageList.txt + spm_cache.py and --package-path "
                              "is an unmanaged checkout of an already-declared repo: creates+pushes "
                              "this tag at --package-path's current HEAD, repoints that repo's "
-                             "SwiftPackageList.txt line to it, and wires QADriverKit to the managed "
+                             "SwiftPackageList.txt line to it, and wires TestForgeDriverKit to the managed "
                              "checkout instead. Without it, that situation is a hard failure with "
                              "the equivalent manual steps printed.")
-    parser.add_argument("--media-root", default="QA-Test")
+    parser.add_argument("--media-root", default="TestForge-Test")
     parser.add_argument("--taxonomy", type=Path,
                         help="Module taxonomy for classify_module.py; "
                              f"default: the first of {', '.join(TAXONOMY_CANDIDATES)} that exists")
@@ -510,38 +510,38 @@ def main() -> int:
 
     scheme_dir = project / "xcshareddata" / "xcschemes"
     scheme_dir.mkdir(parents=True, exist_ok=True)
-    (scheme_dir / "QADriver.xcscheme").write_text(render(arguments.templates / "QADriver.xcscheme.template", values))
-    testplan = root / "QADriver.xctestplan"
-    testplan.write_text(render(arguments.templates / "QADriver.xctestplan.template", values))
-    print("  · wrote QADriver.xcscheme and QADriver.xctestplan")
+    (scheme_dir / "TestForgeDriver.xcscheme").write_text(render(arguments.templates / "TestForgeDriver.xcscheme.template", values))
+    testplan = root / "TestForgeDriver.xctestplan"
+    testplan.write_text(render(arguments.templates / "TestForgeDriver.xctestplan.template", values))
+    print("  · wrote TestForgeDriver.xcscheme and TestForgeDriver.xctestplan")
 
-    shim_dir = root / ui_target["name"] / "QADriver"
+    shim_dir = root / ui_target["name"] / "TestForgeDriver"
     shim_dir.mkdir(parents=True, exist_ok=True)
     shim = shim_dir / SHIM_NAME
     if shim.exists():
         print(f"  · {shim.relative_to(root)} already exists — leaving it alone")
     else:
-        shim.write_text(render(arguments.templates / "QADriverSession.swift.template", values))
+        shim.write_text(render(arguments.templates / "TestForgeDriverSession.swift.template", values))
         print(f"  · wrote {shim.relative_to(root)}")
 
-    wire_pbxproj(pbxproj, objects, ui_uuid, ui_target, arguments, f"QADriver/{SHIM_NAME}")
+    wire_pbxproj(pbxproj, objects, ui_uuid, ui_target, arguments, f"TestForgeDriver/{SHIM_NAME}")
 
     settings_path = root / ".claude" / "settings.json"
     settings_path.parent.mkdir(parents=True, exist_ok=True)
     settings = json.loads(settings_path.read_text()) if settings_path.exists() else {}
     environment = settings.setdefault("env", {})
-    environment["QA_BUNDLE_ID"] = arguments.bundle_id
+    environment["TEST_FORGE_BUNDLE_ID"] = arguments.bundle_id
     environment["NETWORKLENS_BUNDLE_ID"] = arguments.bundle_id
-    environment["QA_MEDIA_ROOT"] = str(Path.home() / "Documents" / arguments.media_root)
-    environment["QA_PROJECT_DIR"] = str(root)
-    environment["QA_UITEST_TARGET"] = ui_target["name"]
-    environment["QA_DATA_PLANE"] = arguments.data_plane
+    environment["TEST_FORGE_MEDIA_ROOT"] = str(Path.home() / "Documents" / arguments.media_root)
+    environment["TEST_FORGE_PROJECT_DIR"] = str(root)
+    environment["TEST_FORGE_UITEST_TARGET"] = ui_target["name"]
+    environment["TEST_FORGE_DATA_PLANE"] = arguments.data_plane
     if taxonomy:
-        environment["QA_TAXONOMY"] = str(taxonomy)
-    elif environment.get("QA_TAXONOMY") and not Path(environment["QA_TAXONOMY"]).exists():
+        environment["TEST_FORGE_TAXONOMY"] = str(taxonomy)
+    elif environment.get("TEST_FORGE_TAXONOMY") and not Path(environment["TEST_FORGE_TAXONOMY"]).exists():
         # A pointer at a missing file degrades to the folder-shape fallback silently, which reads
         # as "the taxonomy is being ignored". Say it rather than deleting someone's config.
-        print(f"  ! QA_TAXONOMY points at {environment['QA_TAXONOMY']}, which does not exist"
+        print(f"  ! TEST_FORGE_TAXONOMY points at {environment['TEST_FORGE_TAXONOMY']}, which does not exist"
               " — classification will fall back to folder shape")
     settings_path.write_text(json.dumps(settings, indent=2) + "\n")
     print(f"  · wrote {settings_path.relative_to(root)} env for {arguments.bundle_id}")
@@ -552,9 +552,9 @@ def main() -> int:
     # correct plan as malformed, which is worse than not checking it.
     print(f"  python3 -m json.tool {testplan.relative_to(root)} > /dev/null")
     print(f"  git -C {root} diff --numstat -- {pbxproj.relative_to(root)}   # deletions MUST be 0")
-    print(f"  xcodebuild -project {project.name} -scheme QADriver -showTestPlans")
+    print(f"  xcodebuild -project {project.name} -scheme TestForgeDriver -showTestPlans")
     print("\nThen, once only:")
-    print("  xcodebuild build-for-testing -scheme QADriver -configuration Debug "
+    print("  xcodebuild build-for-testing -scheme TestForgeDriver -configuration Debug "
           "-destination \"platform=iOS Simulator,id=$SIM\"")
     return 0
 

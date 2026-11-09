@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// qaw-fuzz — generate NetworkLens mock variants from a Swift Decodable model's field list (D-155):
+// test-forge-fuzz — generate NetworkLens mock variants from a Swift Decodable model's field list (D-155):
 // one variant per optional field absent, each enum case, an unknown enum value, an empty array —
 // instead of hand-authoring them. Standalone: reads/writes local files directly, no dashboard server
-// involved (QA_PROJECT_DIR points at a detached QA clone, D-032 — routing this through the server
+// involved (TEST_FORGE_PROJECT_DIR points at a detached QA clone, D-032 — routing this through the server
 // would risk fuzzing a stale copy of whatever Swift file you're actually editing). Run it from
 // inside whichever checkout (dev or QA) you want fuzzed.
 //
-//   qaw-fuzz fields --type <Name> [--file <path>] [--root .]
-//   qaw-fuzz generate --type <Name> --pack <path> [--baseline loaded] [--file <path>] [--root .]
+//   test-forge-fuzz fields --type <Name> [--file <path>] [--root .]
+//   test-forge-fuzz generate --type <Name> --pack <path> [--baseline loaded] [--file <path>] [--root .]
 //                      [--endpoint "<METHOD /path>"] [--rule-id <id>] [--at <dotPath>]
 //                      [--out <path>] [--dry-run] [--json]
 
@@ -41,7 +41,7 @@ function printFieldTable(fields) {
 
 async function main() {
 	if (command === "fields") {
-		if (!flags.get("type")) throw new Error("usage: qaw-fuzz fields --type <Name> [--file <path>] [--root .]");
+		if (!flags.get("type")) throw new Error("usage: test-forge-fuzz fields --type <Name> [--file <path>] [--root .]");
 		const result = await runFields({ type: flags.get("type"), file: flags.get("file"), root: flags.get("root") }, realDeps());
 		if (flags.has("json")) return result;
 		process.stdout.write(`${result.swiftPath}\n\n`);
@@ -51,7 +51,7 @@ async function main() {
 
 	if (command === "generate") {
 		if (!flags.get("type") || !flags.get("pack")) {
-			throw new Error('usage: qaw-fuzz generate --type <Name> --pack <path> [--baseline loaded] [--file <path>] [--root .]'
+			throw new Error('usage: test-forge-fuzz generate --type <Name> --pack <path> [--baseline loaded] [--file <path>] [--root .]'
 				+ ' [--endpoint "<METHOD /path>"] [--rule-id <id>] [--at <dotPath>] [--out <path>] [--dry-run] [--json]');
 		}
 		const result = await runGenerate({
@@ -83,7 +83,7 @@ main().then(
 		if (value !== undefined) process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 	},
 	(error) => {
-		process.stderr.write(`qaw-fuzz: ${error.message}\n`);
+		process.stderr.write(`test-forge-fuzz: ${error.message}\n`);
 		process.exit(1);
 	},
 );

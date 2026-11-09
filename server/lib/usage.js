@@ -11,8 +11,8 @@ import { readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-/** `QA_USAGE_TAP` points a test server at its own file (D-149). */
-export const TAP_PATH = process.env.QA_USAGE_TAP || join(homedir(), ".testforge", "usage.json");
+/** `TEST_FORGE_USAGE_TAP` points a test server at its own file (D-149). */
+export const TAP_PATH = process.env.TEST_FORGE_USAGE_TAP || join(homedir(), ".test-forge", "usage.json");
 const FIVE_HOURS_S = 5 * 3600;
 const WEEK_S = 7 * 86400;
 const WORK_WEEK_S = 5 * 86400;

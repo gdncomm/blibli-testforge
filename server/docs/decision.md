@@ -1,4 +1,4 @@
-# QA Dashboard — Decision Log
+# TestForge server — Decision Log
 
 Append-only. One entry per non-obvious choice: what was decided, why, and what was rejected.
 Newest at the bottom. Never rewrite an old entry — supersede it with a new one that references it.
@@ -4427,3 +4427,16 @@ Saving and triage turns are no longer counted as the case's last run. A usage li
 the result and pauses the batch. Re-run failed plans each case again. Case ids match recordings without regard to
 case, as a batch already did. **Not done:** a "replays only" batch option, and a button to save a recording for an
 UNCONFIRMED case without running it with Claude again.
+
+## D-221 — One machine name: test-forge (2026-11-09)
+
+Every machine name that said `qa`, `qaw`, `qa-mocker`, `qa-dashboard` or `testforge` now uses one form, before the app
+is shared, so names never have to change again. Kebab `test-forge-x` (files, commands, CLI `test-forge`, folders
+`~/.test-forge`, bundle id `com.blibli.test-forge`, keychain `test-forge.*`, plugin marketplace `test-forge`, MCP
+server `test-forge-driver`), snake `test_forge_x` (MCP tools), env `TEST_FORGE_X` (`QA_DASHBOARD_*` became
+`TEST_FORGE_SERVER_*`), types `TestForgeX` (`QADriverKit` became `TestForgeDriverKit`, tags `test-forge-driver-N`),
+accessibility IDs `TestForge_X` (was `QAW_`), test simulator `TestForge · <model>`, media folder `TestForge-Test`.
+The plugin skill is `test-flow-recorder`. **Kept:** "QA" as English for the role (QA simulator, Build for QA), the
+session `meta.testforge` flag, the repo name `blibli-testforge`, the "QA Workbench Local" keychain label, and history
+entries in this log and the progress files. **Rejected:** keeping old names as aliases; nobody else uses the app yet,
+so a clean break costs one local migration (folders, keychain, defaults, simulator name, plugin reinstall).

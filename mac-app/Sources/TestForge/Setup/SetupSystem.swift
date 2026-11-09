@@ -44,7 +44,7 @@ struct SetupSystem: AppRelaunching, ClaudeSignInOpening {
 	}
 
 	func openClaudeSignIn() throws {
-		let scriptURL = fileManager.temporaryDirectory.appendingPathComponent("testforge-claude-sign-in.command")
+		let scriptURL = fileManager.temporaryDirectory.appendingPathComponent("test-forge-claude-sign-in.command")
 		let script = """
 		#!/bin/zsh -l
 		export PATH="\(SetupConstants.Tools.searchPath)"

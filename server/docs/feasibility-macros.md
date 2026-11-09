@@ -1,15 +1,15 @@
-# Feasibility study — QADriver macros with element IDs + a prompt section
+# Feasibility study — TestForgeDriver macros with element IDs + a prompt section
 
 _Written 2026-10-08. Design only — development is paused (D-031). Facts below were checked against
 the code; file references are given so they can be re-verified._
 
 ## 1. The ask
 
-Use QADriver to validate **user flows**, **bug-fix verification** and **repetitive routines** by
+Use TestForgeDriver to validate **user flows**, **bug-fix verification** and **repetitive routines** by
 building **macros**:
 
 - every element a macro touches gets a **uniquely generated ID**;
-- that ID maps to the element's **accessibility (a11y) locator chain** and the **QADriver commands**
+- that ID maps to the element's **accessibility (a11y) locator chain** and the **TestForgeDriver commands**
   used on it, so a macro can be **repeated quickly**;
 - a **prompt section** in the TestForge lets a user describe in plain words what the driver should
   check, and Claude does it — producing a macro that can be replayed later.
@@ -18,7 +18,7 @@ building **macros**:
 
 **Feasible — recommended, in phases.** About half of it already exists:
 
-- QADriver already has a macro recorder and replayer (`/qa-macro`, `macro_cli.py`) and the
+- TestForgeDriver already has a macro recorder and replayer (`/test-forge-macro`, `macro_cli.py`) and the
   dashboard already has a deterministic, no-LLM **⚡ Replay** (`lib/macro.js`).
 - What's missing is exactly what makes macros robust: **element IDs + locator chains**, **assertion
   steps**, a **structured screen snapshot**, and a **replay path that doesn't depend on a Claude
@@ -32,13 +32,13 @@ Both are manageable, but they decide how much of the app macros can cover reliab
 
 | Piece | Where | State |
 |---|---|---|
-| Element targeting | QADriver runner: exact `accessibilityIdentifier` + optional `elementType` (14 types) + `index`; `tapByLabel` (`==`, `CONTAINS`, `BEGINSWITH`) | ✅ works; **no ancestor/container scoping, no predicates, no coordinates** |
-| Transport | XCUITest runner polls an HTTP queue on `127.0.0.1:8789`, hosted inside the qa-driver MCP process (`mcp/qa-driver-mcp/src/queue.ts`) | ✅ but the queue only exists while a Claude session's MCP is up |
-| Macro recording | `/qa-macro` + `macro_cli.py record-step`: Claude's real MCP calls are logged; saved as `<UITestRoot>/<Module>/<Submodule>/macros/<slug>.json` `{schemaVersion:1, name, steps:[{kind,…}]}` | ✅ exists; **no IDs, no locator chains, no per-step assertions**; no macros recorded yet |
+| Element targeting | TestForgeDriver runner: exact `accessibilityIdentifier` + optional `elementType` (14 types) + `index`; `tapByLabel` (`==`, `CONTAINS`, `BEGINSWITH`) | ✅ works; **no ancestor/container scoping, no predicates, no coordinates** |
+| Transport | XCUITest runner polls an HTTP queue on `127.0.0.1:8789`, hosted inside the test-forge-driver MCP process (`mcp/test-forge-driver-mcp/src/queue.ts`) | ✅ but the queue only exists while a Claude session's MCP is up |
+| Macro recording | `/test-forge-macro` + `macro_cli.py record-step`: Claude's real MCP calls are logged; saved as `<UITestRoot>/<Module>/<Submodule>/macros/<slug>.json` `{schemaVersion:1, name, steps:[{kind,…}]}` | ✅ exists; **no IDs, no locator chains, no per-step assertions**; no macros recorded yet |
 | Macro replay | Dashboard `replay` executor → `lib/macro.js replayMacro` posts each step, stops at first `error`/`found:false`/`hittable:false` | ✅ deterministic, no LLM; verdict is only "driver-level PASS" |
-| Screen dump | `qa_dump_tree` → `XCUIElement.debugDescription` **text**, cut at **20,000 chars**; ancestry only via indentation | ⚠ truncation is the *normal* case on rich screens; no `hittable`/`enabled` fields |
-| Assertions | exists / not-exists / wait, `getLabel`, `getLabels` (≤200, needs a container), `getElementCount`, `getFrame`, `assertSpacing`, screenshot | ✅ mostly; label/count comparisons happen caller-side; **`assertSpacing` is missing from the in-repo QADriverKit copy the app actually builds** |
-| Network checks | NetworkLens trace (`lib/trace.js`), `check_network_trail.py`, qa-mock tools | ✅ exists |
+| Screen dump | `test_forge_dump_tree` → `XCUIElement.debugDescription` **text**, cut at **20,000 chars**; ancestry only via indentation | ⚠ truncation is the *normal* case on rich screens; no `hittable`/`enabled` fields |
+| Assertions | exists / not-exists / wait, `getLabel`, `getLabels` (≤200, needs a container), `getElementCount`, `getFrame`, `assertSpacing`, screenshot | ✅ mostly; label/count comparisons happen caller-side; **`assertSpacing` is missing from the in-repo TestForgeDriverKit copy the app actually builds** |
+| Network checks | NetworkLens trace (`lib/trace.js`), `check_network_trail.py`, test-forge-mock tools | ✅ exists |
 | Static a11y map | `scan_identifiers.py`, `a11y_map.py`, `scan_mode.py` (per-screen a11y surface) | ✅ exists |
 
 **App a11y coverage** (5,854 Swift files; `setAccessibilityIdentifier(` 2,169 · `accessibilityIdentifier(` 663 · `.accessibilityIdentifier =` 325):
@@ -117,12 +117,12 @@ When the app renames `FS_ScheduleTab`, only this entry's locator changes; every 
 
 | Mode | Who drives | Cost | When |
 |---|---|---|---|
-| **Author** (prompt) | Claude, via QADriver | LLM tokens, minutes | New flow, new bug, first time |
+| **Author** (prompt) | Claude, via TestForgeDriver | LLM tokens, minutes | New flow, new bug, first time |
 | **Replay** | Dashboard posts steps directly to the runner — **no LLM** | ~1–2 s/step, free | Every repeat |
 | **Heal** | Claude, only for the failing step | small | A locator stopped resolving |
 
 **Authoring** — the user writes a prompt; Claude drives the app. Each successful command is recorded
-(as `/qa-macro` does today) **plus** a scoped snapshot around the touched element, from which the
+(as `/test-forge-macro` does today) **plus** a scoped snapshot around the touched element, from which the
 host builds the locator chain, registers or reuses an element ID, and writes the step. At the end
 the user reviews a readable step list, renames aliases, and saves.
 
@@ -154,16 +154,16 @@ A **"Ask the driver"** card on the Test Cases tab (and on the device rail):
 
 | # | Gap | Fix | Where | Size |
 |---|---|---|---|---|
-| G1 | Replay needs a Claude session for the `:8789` queue to exist; dashboard and MCP would fight over the port | One owner: the **dashboard hosts the queue** (port of `queue.ts`), the qa-driver MCP is pointed at it | dashboard + plugin config | M |
-| G2 | `dumpTree` is truncated text | New runner command **`snapshot`**: JSON nodes `{type, identifier, label, value, frame, hittable, enabled, children}`, scoped to a subtree, paged — no 20k cut | QADriverKit (blibli-utility) | M |
-| G3 | No chain targeting | New runner command **`resolve`** / `target.chain` on tap/type/assert: descend from ancestor identifiers, then type + index | QADriverKit | M |
+| G1 | Replay needs a Claude session for the `:8789` queue to exist; dashboard and MCP would fight over the port | One owner: the **dashboard hosts the queue** (port of `queue.ts`), the test-forge-driver MCP is pointed at it | dashboard + plugin config | M |
+| G2 | `dumpTree` is truncated text | New runner command **`snapshot`**: JSON nodes `{type, identifier, label, value, frame, hittable, enabled, children}`, scoped to a subtree, paged — no 20k cut | TestForgeDriverKit (blibli-utility) | M |
+| G3 | No chain targeting | New runner command **`resolve`** / `target.chain` on tap/type/assert: descend from ancestor identifiers, then type + index | TestForgeDriverKit | M |
 | G4 | Assertions not in macro schema | `schemaVersion: 2` with `assert` steps, element refs, preconditions, `run` | `macro_cli.py`, `lib/macro.js` | S |
 | G5 | `openDeeplink`, recording are host-side, not runner commands | Replay engine executes them on the host (simctl) in order | `lib/macro.js` | S |
-| G6 | In-repo QADriverKit lags the source (no `assertSpacing`) | Sync the package copy; add a version handshake in `/health` | app repo | S |
+| G6 | In-repo TestForgeDriverKit lags the source (no `assertSpacing`) | Sync the package copy; add a version handshake in `/health` | app repo | S |
 | G7 | Session-killing XCTest exceptions | Restart harness and **resume from the failed step** (preconditions re-run) | replay engine | S |
 | G8 | Element registry, IDs, heal flow, UI | New | dashboard | M–L |
 
-G2 and G3 change QADriverKit, which lives in `blibli-utility` — needs that repo's owner on board.
+G2 and G3 change TestForgeDriverKit, which lives in `blibli-utility` — needs that repo's owner on board.
 
 ## 6. Risks
 
@@ -195,12 +195,12 @@ on one with the fix.
 
 1. **Storage — in the app repository, never in the app bundle.** Macros live next to the UI tests:
    `BlibliMobile-iOS/BlibliMobile_XCUITest/<Module>/<Submodule>/macros/<slug>.json` (the existing
-   `/qa-macro` convention); the element registry at `BlibliMobile_XCUITest/QAMacros/elements.json`.
+   `/test-forge-macro` convention); the element registry at `BlibliMobile_XCUITest/TestForgeMacros/elements.json`.
    `BlibliMobile_XCUITest` is a classic Xcode group (not a synchronized folder), so files saved there
    are not target members; a check must keep it that way (no pbxproj reference to `macros/` or
-   `QAMacros/`).
-2. **QADriverKit changes — yes**, in blibli-utility on `darshan/innovation/qa-mocker-testing` with new
-   `qa-mocker-testing-N` tags (as `-2` for `assertSpacing`). They merge to `develop` together with the
+   `TestForgeMacros/`).
+2. **TestForgeDriverKit changes — yes**, in blibli-utility on `darshan/innovation/test-forge-driver` with new
+   `test-forge-driver-N` tags (as `-2` for `assertSpacing`). They merge to `develop` together with the
    rest of the code only **after complete end-to-end testing across multiple modules**.
 3. **Jira — yes, for bug-fix validation.** A **Load Jira** button in *Verify a bug fix* mode, which
    **accepts only Bug tickets** (anything else is rejected with a plain explanation; read-only).

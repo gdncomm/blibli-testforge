@@ -1,6 +1,6 @@
 import Foundation
 
-/// The simulator tests run on (D-120): the "QA · " clone unless the person chose another with "Use for tests".
+/// The simulator tests run on (D-120): the "TestForge · " clone unless the person chose another with "Use for tests".
 struct TestDevice: Decodable, Equatable {
 	let udid: String
 	let name: String
@@ -16,7 +16,7 @@ private struct TestDeviceResponse: Decodable {
 protocol TestDeviceActing: Sendable {
 	func current() async throws -> TestDevice?
 
-	/// `nil` goes back to the "QA · " clone. The server refuses while a test runs and restarts the runner on the new device.
+	/// `nil` goes back to the "TestForge · " clone. The server refuses while a test runs and restarts the runner on the new device.
 	func use(udid: String?) async throws -> TestDevice?
 
 	/// D-197: iPhones paired with this Mac; `isFresh` skips the server's 15 s cache.

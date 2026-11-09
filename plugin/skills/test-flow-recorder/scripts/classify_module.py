@@ -33,7 +33,7 @@ Taxonomy file shape:
 Usage:
     classify_module.py "<path>" [--taxonomy <file.json>]
 
-Resolved in order: --taxonomy, $QA_TAXONOMY, ./.claude/test-flow-recorder/taxonomy.json.
+Resolved in order: --taxonomy, $TEST_FORGE_TAXONOMY, ./.claude/test-flow-recorder/taxonomy.json.
 
 Output: "<Module>/<Submodule>", one line, on stdout.
 """
@@ -58,7 +58,7 @@ def load_taxonomy(explicit: str | None) -> dict:
         if not path.exists():
             raise SystemExit(f"taxonomy not found: {path}")
     else:
-        env = os.environ.get("QA_TAXONOMY")
+        env = os.environ.get("TEST_FORGE_TAXONOMY")
         path = pathlib.Path(env) if env else DEFAULT_TAXONOMY
         if not path.exists():
             return dict(EMPTY_TAXONOMY)

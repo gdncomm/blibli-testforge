@@ -117,8 +117,8 @@ export async function findTestBundle({ projectDir, configuration, runnerTarget, 
 
 function simulatorCheck(sims) {
 	const check = { id: "simulator", label: "Test simulator ready" };
-	if (!sims?.qa) return { ...check, ok: false, detail: "no QA simulator yet — it is cloned from the one you test with (keeps saved passwords)", fix: "qa-sim-create" };
-	if (sims.qa.state !== "Booted") return { ...check, ok: false, detail: `${sims.qa.name} is shut down`, fix: "qa-sim-boot" };
+	if (!sims?.qa) return { ...check, ok: false, detail: "no QA simulator yet — it is cloned from the one you test with (keeps saved passwords)", fix: "test-forge-sim-create" };
+	if (sims.qa.state !== "Booted") return { ...check, ok: false, detail: `${sims.qa.name} is shut down`, fix: "test-forge-sim-boot" };
 	// D-120: every command names the test device by UDID, so other booted simulators no longer get in the way.
 	const others = sims.others.length ? ` · also booted: ${sims.others.map((device) => device.name).join(", ")} (left alone)` : "";
 	return { ...check, ok: true, detail: `${sims.qa.name}${others}` };
@@ -240,7 +240,7 @@ export async function checkReadiness({
 	const selfHeals = canProbe && !isHarnessUp;
 	add({
 		id: "harness", label: "Harness answering", ok: isHarnessUp, ...(selfHeals ? { level: "warn", selfHeals } : {}),
-		detail: isHarnessUp ? "QADriver runner answers" : selfHeals ? "the runner isn't answering — the next test restarts it first" : "waits for the checks above",
+		detail: isHarnessUp ? "TestForgeDriver runner answers" : selfHeals ? "the runner isn't answering — the next test restarts it first" : "waits for the checks above",
 		fix: isHarnessUp || !canProbe ? undefined : "ensure",
 	});
 
@@ -254,10 +254,10 @@ export async function checkReadiness({
 	}
 	if (claudeRead) {
 		const claude = await claudeRead;
-		add({ id: "claude", label: "Claude signed in + qa-driver plugin", scope: "claude", ok: claude.ok, detail: claude.detail, fix: claude.ok ? undefined : "claude-howto" });
+		add({ id: "claude", label: "Claude signed in + test-forge-driver plugin", scope: "claude", ok: claude.ok, detail: claude.detail, fix: claude.ok ? undefined : "claude-howto" });
 	}
 	if (claudeEnvState) {
-		// D-156: only matters when Claude's own NetworkLens/qa-driver tools are used directly in a
+		// D-156: only matters when Claude's own NetworkLens/test-forge-driver tools are used directly in a
 		// Claude Code session — every Run/Replay here goes through this server instead, which never
 		// needed these, so this never blocks a test.
 		const claudeEnv = await claudeEnvState().catch((error) => ({ ok: false, detail: error.message }));

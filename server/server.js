@@ -33,8 +33,8 @@ import { isSidecarUp, LIVE_NOTE, liveEdit } from "./lib/control.js";
 import { checkInterceptor, mockServedSince } from "./lib/lens-check.js";
 import { postCommand } from "./lib/driver-queue.js";
 import { createCheckMemo, findTestBundle, readinessGate } from "./lib/readiness.js";
-import { simulatorState } from "./lib/qa-simulator.js";
-import { buildStamp, claudeEnvCheck, isQaBuilding, qaBuildState, qaCodeState, qaHarnessTarget, qaInstalledMatch, registerQaSetupRoutes, testForgeFreeGb } from "./routes/qa-setup.js";
+import { simulatorState } from "./lib/test-forge-simulator.js";
+import { buildStamp, claudeEnvCheck, isTestForgeBuilding, testForgeBuildState, testForgeCodeState, testForgeHarnessTarget, testForgeInstalledMatch, registerTestForgeSetupRoutes, testForgeFreeGb } from "./routes/test-forge-setup.js";
 import { liveState, sendCommand as sendLensCommand } from "./lib/control.js";
 import { resolvePluginScript } from "./lib/plugin-paths.js";
 import { TestBatchStore, batchCases } from "./lib/test-batches.js";
@@ -51,8 +51,8 @@ import { RunBatch, planItems } from "./lib/run-batch.js";
 import { findCrash } from "./lib/crash-report.js";
 import { ResultsStore, branchHistory, buildReport, compareRuns, defaultBaseRun, finalVerdict, isProbeShot, rerunCandidates, reviewState } from "./lib/results.js";
 import { SetupStore, needsPrepare } from "./lib/setups.js";
-import { currentManifest, localDrift } from "./lib/qa-copy.js";
-import { findQaSimulator, listDevices } from "./lib/qa-simulator.js";
+import { currentManifest, localDrift } from "./lib/test-forge-copy.js";
+import { findTestForgeSimulator, listDevices } from "./lib/test-forge-simulator.js";
 import { chooseTestDevice, chosenTestDeviceUdid, configureTestDevice, deviceArg } from "./lib/test-device.js";
 import { parkLensBubble } from "./lib/lens-bubble.js";
 import { queue as controlQueue } from "./lib/control-queue.js";
@@ -114,29 +114,29 @@ import { registerScanRoutes } from "./routes/scan.js";
 import { ScanSession } from "./lib/scan-session.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BUNDLE_ID = process.env.NETWORKLENS_BUNDLE_ID || process.env.QA_BUNDLE_ID || "com.blibli.mobile";
+const BUNDLE_ID = process.env.NETWORKLENS_BUNDLE_ID || process.env.TEST_FORGE_BUNDLE_ID || "com.blibli.mobile";
 process.env.NETWORKLENS_BUNDLE_ID ??= BUNDLE_ID;
-const PORT = Number(process.env.QA_DASHBOARD_PORT || 4545);
+const PORT = Number(process.env.TEST_FORGE_SERVER_PORT || 4545);
 
 const app = express();
 app.use(express.json({ limit: "5mb" }));
 // One live state for every page (D-077); slices are defined at the end of this file.
 const stateHub = new StateHub();
 registerStateRoutes(app, { hub: stateHub });
-// D-199: no web UI any more; the TestForge Mac app, qaw and Claude Code are the clients.
+// D-199: no web UI any more; the TestForge Mac app, test-forge and Claude Code are the clients.
 
 const DATA_DIR = join(__dirname, ".data");
 configureTestDevice({ file: join(DATA_DIR, "test-device.json") });
 // Pin NetworkLens to the test simulator before anything reads a trace: until the first readiness check resolved it,
 // a second booted simulator with the app (the developer's own) could be guessed instead.
-await findQaSimulator().catch(() => null);
+await findTestForgeSimulator().catch(() => null);
 
 // --- D-127: this server owns the NetworkLens control queue (port 8788) -------------------------------
 // One owner, not a race: Claude sessions it starts point their MCP at it (NETWORKLENS_SIDECAR). The app polls every 2 s;
 // the last poll tells the console whether a change will be live or only applied on the next launch.
 const ownsControlQueue = await controlQueue.listen();
 const LENS_POLL_FRESH_MS = 5_000;
-const DEFAULT_PROJECT_DIR = resolvePath(process.env.QA_PROJECT_DIR || process.cwd());
+const DEFAULT_PROJECT_DIR = resolvePath(process.env.TEST_FORGE_PROJECT_DIR || process.cwd());
 const sessions = new SessionManager(DATA_DIR);
 await sessions.restore();
 registerSessionRoutes(app, { sessions, defaultProjectDir: DEFAULT_PROJECT_DIR, resolveProjectDir: () => sessionProjectDir(DEFAULT_PROJECT_DIR), captureScreenshot: screenshotAttachment });
@@ -191,7 +191,7 @@ async function stalenessNow(runs) {
 	return { current, staleFor };
 }
 
-const tasks = new TaskQueue(DATA_DIR, { generalConcurrency: Number(process.env.QA_GENERAL_CONCURRENCY || 3) });
+const tasks = new TaskQueue(DATA_DIR, { generalConcurrency: Number(process.env.TEST_FORGE_GENERAL_CONCURRENCY || 3) });
 await tasks.restore();
 const results = new ResultsStore(DATA_DIR);
 const setups = new SetupStore(DATA_DIR);
@@ -266,7 +266,7 @@ const { startPrepare } = registerCodeRoutes(app, {
 	isCopyInUse: () => {
 		const busy = testInFlight();
 		if (busy) return `“${busy.title}” is running`;
-		if (isQaBuilding() || activeBuildJob?.status === "running") return "a build is running";
+		if (isTestForgeBuilding() || activeBuildJob?.status === "running") return "a build is running";
 		return null;
 	},
 });
@@ -359,8 +359,8 @@ async function interceptorNote(macro, runStartedAt) {
 
 /** A screenshot taken from the host when the runner doesn't answer (D-064); lands with the run's evidence. */
 async function hostScreenshot(name = "screenshot") {
-	const root = process.env.QA_MEDIA_ROOT;
-	if (!root) throw new Error("QA_MEDIA_ROOT is not set");
+	const root = process.env.TEST_FORGE_MEDIA_ROOT;
+	if (!root) throw new Error("TEST_FORGE_MEDIA_ROOT is not set");
 	const path = join(root, `${String(name).replace(/[^\w.-]/g, "_")}-${new Date().toISOString().replace(/[:.]/g, "-")}.png`);
 	await mkdir(root, { recursive: true });
 	await run("xcrun", ["simctl", "io", deviceArg(), "screenshot", "--type=png", path], { timeout: 15_000 });
@@ -627,7 +627,7 @@ let activeBuildJob = null;
 app.post("/api/harness/build", async (_req, res) => {
 	if (activeBuildJob?.status === "running") return res.json({ ok: true, jobId: activeBuildJob.id });
 
-	const projectDir = process.env.QA_PROJECT_DIR || process.cwd();
+	const projectDir = process.env.TEST_FORGE_PROJECT_DIR || process.cwd();
 	const { stdout } = await new Promise((resolve) => {
 		const probe = spawn("xcrun", ["simctl", "list", "devices", "booted", "-j"]);
 		let out = "";
@@ -646,8 +646,8 @@ app.post("/api/harness/build", async (_req, res) => {
 	const args = [
 		"build-for-testing",
 		"-workspace", "BlibliMobile-iOS.xcworkspace",
-		"-scheme", process.env.QA_SCHEME || "BlibliMobile-iOS-PerfTest",
-		"-configuration", process.env.QA_CONFIGURATION || "PerformanceTest",
+		"-scheme", process.env.TEST_FORGE_SCHEME || "BlibliMobile-iOS-PerfTest",
+		"-configuration", process.env.TEST_FORGE_CONFIGURATION || "PerformanceTest",
 		"-destination", `platform=iOS Simulator,id=${udid},arch=arm64`,
 		// Xcode's GUI "Trust & Enable" for package plug-ins/macros doesn't apply to xcodebuild; without
 		// these the build stops at "Validate plug-in GenerateBluIconInternalResources".
@@ -801,7 +801,7 @@ function loadViaClaude(source) {
 		prompt,
 		cwd: __dirname,
 		args: [
-			"--model", process.env.QA_LOADER_MODEL || "haiku",
+			"--model", process.env.TEST_FORGE_LOADER_MODEL || "haiku",
 			"--allowedTools", "ToolSearch", ...CONFLUENCE_READ_TOOLS,
 			"--disallowedTools", ...CONFLUENCE_WRITE_TOOLS,
 		],
@@ -868,7 +868,7 @@ async function jiraDraft(caseId) {
 	const [{ macros = [] }, { current }] = await Promise.all([ownApi("/api/macros"), stalenessNow(runs)]);
 	const macro = macros.find((entry) => entry.schemaVersion === 2 && (entry.testCases ?? []).includes(caseId));
 	const run = runs.find((entry) => entry.caseId === caseId || (macro && entry.macroId === macro.id)) ?? null;
-	const proofFolder = process.env.QA_MEDIA_ROOT ? join(process.env.QA_MEDIA_ROOT, String(caseId)) : null;
+	const proofFolder = process.env.TEST_FORGE_MEDIA_ROOT ? join(process.env.TEST_FORGE_MEDIA_ROOT, String(caseId)) : null;
 	const proofNames = proofFolder ? (await readdir(proofFolder).catch(() => [])).filter((name) => /\.(png|jpe?g|mp4|mov)$/i.test(name)) : [];
 	const comment = jiraComment({
 		testCase,
@@ -905,7 +905,7 @@ app.post("/api/testcases/:id/jira", async (req, res) => {
 	const outcome = await runClaude(job, {
 		prompt,
 		cwd: __dirname,
-		args: ["--model", process.env.QA_LOADER_MODEL || "haiku", "--allowedTools", "ToolSearch", ...JIRA_COMMENT_TOOLS],
+		args: ["--model", process.env.TEST_FORGE_LOADER_MODEL || "haiku", "--allowedTools", "ToolSearch", ...JIRA_COMMENT_TOOLS],
 	}).catch((error) => ({ result: { text: error.message } }));
 	const reply = String(outcome?.result?.text ?? "").trim();
 	const isPosted = /^POSTED/i.test(reply) && JIRA_COMMENT_TOOLS.some((tool) => (outcome?.toolResults?.[tool] ?? []).length);
@@ -960,7 +960,7 @@ function acceptImported({ title, source, cases: incoming }) {
 // D-183: the case's proof files in the active test batch folder, for the Tests media panel.
 app.get("/api/testcases/:id/media", async (req, res) => {
 	if (!loadedCases.some((entry) => entry.id === req.params.id)) return res.status(404).json({ error: "no such case — load the doc first" });
-	res.json({ files: await caseProofFiles(process.env.QA_MEDIA_ROOT || null, req.params.id) });
+	res.json({ files: await caseProofFiles(process.env.TEST_FORGE_MEDIA_ROOT || null, req.params.id) });
 });
 
 // D-180: a person overrides a case's result with a required description; every override is kept as history,
@@ -984,7 +984,7 @@ app.put("/api/testcases/:id/result", async (req, res) => {
 	applyLocalEdits();
 	stateHub.poke("testcases");
 	const updated = loadedCases.find((item) => item.id === testCase.id);
-	const run = rerun ? confirmAfterPass(updated, enqueueQaRun(updated, { model: req.body.model })) : null;
+	const run = rerun ? confirmAfterPass(updated, enqueueTestForgeRun(updated, { model: req.body.model })) : null;
 	res.json({ ok: true, override: entry, case: updated, ...(run && { jobId: run.job.id, taskId: run.task.id }) });
 });
 
@@ -1043,7 +1043,7 @@ async function endpointsMacrosUse() {
 app.get("/api/mocks/pack", async (_req, res) => {
 	const [needed, packed, session] = await Promise.all([endpointsMacrosUse(), loadPackRules(), resolveSessionPath().then((found) => readSession(found.path)).catch(() => null)]);
 	const onDevice = new Set((session?.mocks ?? []).map((rule) => rule.endpointKey));
-	res.json({ endpoints: [...needed].sort().map((endpoint) => ({ endpoint, inRepo: packed.has(endpoint), onDevice: onDevice.has(endpoint) })), dir: "QAMacros/mocks" });
+	res.json({ endpoints: [...needed].sort().map((endpoint) => ({ endpoint, inRepo: packed.has(endpoint), onDevice: onDevice.has(endpoint) })), dir: "TestForgeMacros/mocks" });
 });
 
 /** Saves the device's rules that macros use into the repo's mock pack (redacted). */
@@ -1107,7 +1107,7 @@ app.get("/api/macros/v2/:id/inputs", async (req, res) => {
 
 /** Replays a v2 macro on its own — no test case, no Claude. Goes through the device lane like any run. */
 /** One test on the simulator at a time (D-051): a second start is refused, never queued behind it. */
-const TEST_KINDS = new Set(["qa-run", "replay", "replay-v2"]);
+const TEST_KINDS = new Set(["test-forge-run", "replay", "replay-v2"]);
 function testInFlight() {
 	return tasks.list().find((task) => TEST_KINDS.has(task.kind) && (task.status === "queued" || task.status === "running")) ?? null;
 }
@@ -1128,7 +1128,7 @@ function refuseWhileTesting(res) {
 
 // D-086: scan mode runs the plugin's scan_mode.py; saved maps go to .data/scans/.
 const scanSession = new ScanSession({
-	scriptPath: resolvePluginScript("QA_SCAN_SCRIPT", "scan_mode.py"),
+	scriptPath: resolvePluginScript("TEST_FORGE_SCAN_SCRIPT", "scan_mode.py"),
 	outDir: join(__dirname, ".data", "scans"),
 });
 registerScanRoutes(app, {
@@ -1167,13 +1167,13 @@ const readiness = readinessGate({
 	prerequisiteState: cachedPrerequisites,
 	bundleId: BUNDLE_ID,
 	memo: createCheckMemo({ file: join(__dirname, ".data", "readiness-memo.json") }),
-	configuration: process.env.QA_CONFIGURATION || "PerformanceTest",
+	configuration: process.env.TEST_FORGE_CONFIGURATION || "PerformanceTest",
 	simulatorState,
-	buildState: qaBuildState,
-	legacyBundle: () => findTestBundle({ projectDir: process.env.QA_PROJECT_DIR || process.cwd(), configuration: process.env.QA_CONFIGURATION || "PerformanceTest", runnerTarget: process.env.QA_UITEST_TARGET }),
-	isBuilding: () => activeBuildJob?.status === "running" || isQaBuilding(),
-	codeState: qaCodeState,
-	installedMatch: () => qaInstalledMatch(BUNDLE_ID),
+	buildState: testForgeBuildState,
+	legacyBundle: () => findTestBundle({ projectDir: process.env.TEST_FORGE_PROJECT_DIR || process.cwd(), configuration: process.env.TEST_FORGE_CONFIGURATION || "PerformanceTest", runnerTarget: process.env.TEST_FORGE_UITEST_TARGET }),
+	isBuilding: () => activeBuildJob?.status === "running" || isTestForgeBuilding(),
+	codeState: testForgeCodeState,
+	installedMatch: () => testForgeInstalledMatch(BUNDLE_ID),
 	diskFreeGb: testForgeFreeGb,
 	deviceHolder: () => deviceLock.status().holder?.label ?? null,
 	testBatchState: () => ({ proofRoot: testBatches.proofRoot, active: testBatches.active, paused: testBatches.paused }),
@@ -1184,8 +1184,8 @@ const readiness = readinessGate({
 	claudeState: async () => {
 		const account = await claudeAccount();
 		if (!account.loggedIn) return { ok: false, detail: `Claude isn't signed in${account.error ? ` (${account.error})` : ""} — run \`claude auth login\`` };
-		if (!resolvePluginScript("QA_HARNESS_SCRIPT", "harness.py")) return { ok: false, detail: "the test-flow-recorder plugin (qa-driver) isn't installed" };
-		return { ok: true, detail: `${account.email ?? "signed in"} · qa-driver plugin found` };
+		if (!resolvePluginScript("TEST_FORGE_HARNESS_SCRIPT", "harness.py")) return { ok: false, detail: "the test-flow-recorder plugin (test-forge-driver) isn't installed" };
+		return { ok: true, detail: `${account.email ?? "signed in"} · test-forge-driver plugin found` };
 	},
 	claudeEnvState: claudeEnvCheck,
 	probeHarness: async () => {
@@ -1196,8 +1196,8 @@ const readiness = readinessGate({
 	},
 });
 let lastReadiness = null;
-setHarnessTarget(qaHarnessTarget);
-registerQaSetupRoutes(app, {
+setHarnessTarget(testForgeHarnessTarget);
+registerTestForgeSetupRoutes(app, {
 	readiness,
 	isTestInFlight: testInFlight,
 	harnessStop,
@@ -1324,7 +1324,7 @@ const runtimeName = (runtime) => String(runtime ?? "").split(".").pop().replace(
 const testDeviceView = (device) => device && { udid: device.udid, name: device.name, runtime: runtimeName(device.runtime), isBooted: device.state === "Booted", isChosen: device.udid === chosenTestDeviceUdid() };
 
 app.get("/api/test-device", async (_req, res) => {
-	const device = await findQaSimulator().catch(() => null);
+	const device = await findTestForgeSimulator().catch(() => null);
 	res.json({ device: testDeviceView(device) });
 });
 
@@ -1343,7 +1343,7 @@ app.get("/api/devices/physical", async (req, res) => {
 	}
 });
 
-/** `{ udid }` makes that simulator the test device; `{ udid: null }` goes back to the "QA · " clone. */
+/** `{ udid }` makes that simulator the test device; `{ udid: null }` goes back to the "TestForge · " clone. */
 app.post("/api/test-device", async (req, res) => {
 	if (refuseWhileTesting(res)) return;
 	const udid = req.body?.udid ?? null;
@@ -1351,7 +1351,7 @@ app.post("/api/test-device", async (req, res) => {
 	if (udid && !devices.some((device) => device.udid === udid)) return res.status(404).json({ error: "no such simulator" });
 	const before = deviceArg();
 	chooseTestDevice(udid);
-	const device = await findQaSimulator(devices);
+	const device = await findTestForgeSimulator(devices);
 	// The runner is bound to the simulator it was started on; the next test starts it on the new one.
 	if (device?.udid !== before) await harnessStop().catch(() => null);
 	// Every check depends on the device, so the cached result is redone at once rather than on the next poll.
@@ -1359,7 +1359,7 @@ app.post("/api/test-device", async (req, res) => {
 	stateHub.poke("readiness");
 	res.json({ ok: true, device: testDeviceView(device) });
 });
-findQaSimulator().catch(() => null);
+findTestForgeSimulator().catch(() => null);
 // The two Test Batch checks change with the batch, not with the 30 s readiness poll.
 testBatches.on("change", () => stateHub.poke("readiness"));
 scanSession.on("change", (scan) => {
@@ -1427,8 +1427,8 @@ const EXPLAIN_INTRO_MS = 6_000;
 
 /** D-164: the demo's folder, screen recording and timeline recorder; the recording starts with the macro's first step. */
 async function startDemo(macro, say, recorder) {
-	const root = process.env.QA_MEDIA_ROOT;
-	const qa = await findQaSimulator().catch(() => null);
+	const root = process.env.TEST_FORGE_MEDIA_ROOT;
+	const qa = await findTestForgeSimulator().catch(() => null);
 	if (!root || !qa) throw new Error("a demo needs the proof folder and the QA simulator");
 	const caseId = caseLinks(macro)[0] ?? macro.id;
 	const dir = join(root, "demos", `${String(caseId).replace(/[^\w.-]/g, "_")}-${new Date().toISOString().replace(/[:.]/g, "-")}`);
@@ -1453,7 +1453,7 @@ async function finishDemo(demo, { macro, verdict, say }) {
 
 /** The Mac app renders (AVFoundation); run headless from its binary. Missing app → the raw recording + timeline stay. */
 async function renderDemo(dir, say) {
-	const candidates = [process.env.TESTFORGE_BINARY, join(__dirname, "..", "testforge-mac", "build", "TestForge.app", "Contents", "MacOS", "TestForge"), "/Applications/TestForge.app/Contents/MacOS/TestForge"].filter(Boolean);
+	const candidates = [process.env.TEST_FORGE_BINARY, join(__dirname, "..", "mac-app", "build", "TestForge.app", "Contents", "MacOS", "TestForge"), "/Applications/TestForge.app/Contents/MacOS/TestForge"].filter(Boolean);
 	const binary = candidates.find((path) => existsSync(path));
 	if (!binary) return say("! no TestForge app found to render the demo — open the Mac app's Results to render it");
 	try {
@@ -1535,15 +1535,15 @@ function nextTurnEnd(session) {
 
 /**
  * D-068: what a QA Claude session drives — the QA simulator and the QA build, never the developer's
- * own simulator that their local `.claude/settings.json` may pin (`QA_DEVICE_UDID`).
+ * own simulator that their local `.claude/settings.json` may pin (`TEST_FORGE_DEVICE_UDID`).
  */
-async function qaSessionEnv() {
-	const target = await qaHarnessTarget().catch(() => ({}));
+async function testForgeSessionEnv() {
+	const target = await testForgeHarnessTarget().catch(() => ({}));
 	// NETWORKLENS_SIDECAR: the session's MCP sends to this server's queue instead of hosting a second one (D-127).
 	return {
 		...target,
 		NETWORKLENS_SIDECAR: controlQueue.endpoint,
-		...(target.QA_SIMULATOR_UDID && { QA_DEVICE_UDID: target.QA_SIMULATOR_UDID, NETWORKLENS_UDID: target.QA_SIMULATOR_UDID }),
+		...(target.TEST_FORGE_SIMULATOR_UDID && { TEST_FORGE_DEVICE_UDID: target.TEST_FORGE_SIMULATOR_UDID, NETWORKLENS_UDID: target.TEST_FORGE_SIMULATOR_UDID }),
 	};
 }
 
@@ -1587,7 +1587,7 @@ function describeRequires(requires) {
 	].filter(Boolean).join(", ");
 }
 
-tasks.register("qa-run", {
+tasks.register("test-forge-run", {
 	lane: "device",
 	executor: async (task, controls) => {
 		const { caseId, scenario, prompt, jobId, sessionId, purpose = "run" } = task.payload;
@@ -1601,7 +1601,7 @@ tasks.register("qa-run", {
 		const pick = isContinued ? null : pickModel(loadedCases.find((entry) => entry.id === caseId) ?? { id: caseId, scenario }, {
 			history: await listRuns(300).catch(() => []),
 			purpose,
-			override: task.payload.model ?? process.env.QA_RUN_MODEL ?? "auto",
+			override: task.payload.model ?? process.env.TEST_FORGE_RUN_MODEL ?? "auto",
 			buildId: (await buildStamp().catch(() => null))?.buildId ?? null,
 		});
 		const session = isContinued ? continued : sessions.create({
@@ -1611,8 +1611,8 @@ tasks.register("qa-run", {
 			meta: { taskId: task.id, caseId, branch: target?.branch, sha: target?.sha },
 			// Unattended only when this machine allows it; a batch may still choose "ask" (D-061).
 			options: {
-				...(process.env.QA_ALLOW_AUTONOMOUS_CLAUDE === "1" && task.payload.approval !== "ask" && { permissionMode: "bypassPermissions" }),
-				env: await qaSessionEnv(),
+				...(process.env.TEST_FORGE_ALLOW_AUTONOMOUS_CLAUDE === "1" && task.payload.approval !== "ask" && { permissionMode: "bypassPermissions" }),
+				env: await testForgeSessionEnv(),
 			},
 		});
 		const downshift = isContinued ? followUpModel(session.record.model, purpose) : null;
@@ -1707,7 +1707,7 @@ tasks.register("qa-run", {
 			}
 			return { verdict: "USAGE_LIMIT", error: result.result };
 		}
-		// A run that ends without a verdict line (e.g. /qa-run stopped in its preflight) is UNDECIDED,
+		// A run that ends without a verdict line (e.g. /test-forge-run stopped in its preflight) is UNDECIDED,
 		// not blank, so the results review asks a person (D-068).
 		const verdict = task.isCancelRequested ? "CANCELLED" : purpose === "run" ? (extractVerdict(result?.result, job?.lines ?? []) ?? "UNDECIDED") : (result && !result.is_error ? "DONE" : "ERROR");
 		let status = result && !result.is_error ? "done" : "error";
@@ -1924,16 +1924,16 @@ app.post("/api/testcases/:id/run", async (req, res) => {
 	if (refuseWhileTesting(res)) return;
 	if (await refuseUnlessReady(res, { needsClaude: true })) return;
 
-	const { job, task } = confirmAfterPass(testCase, enqueueQaRun(testCase, { techDocPath, model: req.body.model }));
+	const { job, task } = confirmAfterPass(testCase, enqueueTestForgeRun(testCase, { techDocPath, model: req.body.model }));
 	res.json({ ok: true, jobId: job.id, taskId: task.id });
 });
 
 // D-127: the script first — it goes through this dashboard (live in the app, state shown in the TestForge); the MCP stays as
 // the fallback for what the script does not cover yet (scenarios, script variants).
-const MOCK_HINT = `Mocks on this simulator: run \`${join(__dirname, "scripts", "qaw-lens.mjs")}\` with Bash `
+const MOCK_HINT = `Mocks on this simulator: run \`${join(__dirname, "scripts", "test-forge-lens.mjs")}\` with Bash `
 	+ "(state · mock \"GET /backend/…\" <variant> · off \"GET /backend/…\" · mocking on|off · calls --grep text · call <id> --curl · mock-call <id>); "
 	+ "the `networklens` MCP (lens_list, lens_set_variant, lens_set_mocking) is the fallback. "
-	+ "Ready-made rules for this app's APIs, with named variants, are on the device and in BlibliMobile-iOS/BlibliMobile_XCUITest/QAMacros/mocks/*.networklens-pack.json: "
+	+ "Ready-made rules for this app's APIs, with named variants, are on the device and in BlibliMobile-iOS/BlibliMobile_XCUITest/TestForgeMacros/mocks/*.networklens-pack.json: "
 	+ "when a case needs data the live backend lacks, arm the matching variant before judging. "
 	+ "Learned macros (BlibliMobile-iOS/BlibliMobile_XCUITest/**/macros/*.json) show proven routes into each screen — reuse their entry steps before exploring.";
 
@@ -1957,12 +1957,12 @@ const START_SCREEN_HINT = [
 	"Add one line before the verdict: `START: {\"startScreen\": \"home\"|\"anyScreen\"|\"freshLaunch\"|\"<Screen>\", \"environment\": …, \"session\": …}` with only what the case depends on.",
 ].join(" ");
 
-function enqueueQaRun(testCase, { techDocPath, approval, videoNote = "", model } = {}) {
-	// The source doc goes first so /qa-run reads the full row (precondition, steps, API) itself; the
+function enqueueTestForgeRun(testCase, { techDocPath, approval, videoNote = "", model } = {}) {
+	// The source doc goes first so /test-forge-run reads the full row (precondition, steps, API) itself; the
 	// case id narrows the run to this one row.
 	const caseDescription = `${testCase.id}: ${testCase.scenario || ""}`.trim();
 	const prompt = [
-		"/qa-run",
+		"/test-forge-run",
 		loadedSource,
 		techDocPath || "",
 		`— run only case ${caseDescription}.`,
@@ -1971,7 +1971,7 @@ function enqueueQaRun(testCase, { techDocPath, approval, videoNote = "", model }
 		caseRowText(testCase),
 		// D-180: the tester's override comments clarify what passing means; leniency says how strictly to judge.
 		reviewerNotesText(testCase.resultOverrides),
-		// Without this Claude never armed a mock (D-071); the plugin's `qa-mock` proxy is deleted (D-072).
+		// Without this Claude never armed a mock (D-071); the plugin's `test-forge-mock` proxy is deleted (D-072).
 		MOCK_HINT,
 		videoNote,
 		// D-185: the case's start screen and base UI needs are decided on the first run and kept for every replay.
@@ -2001,7 +2001,7 @@ function confirmAfterPass(testCase, enqueued, { approval } = {}) {
 /** One Claude turn in the device lane: a new session, or the next turn of `sessionId` (D-064). */
 function enqueueClaudeTurn({ caseId, scenario, prompt, title, approval, sessionId = null, purpose = "run", model }) {
 	const job = jobForTask({ kind: purpose, caseId }, title);
-	const task = tasks.enqueue({ kind: "qa-run", title, payload: { caseId, scenario, prompt, jobId: job.id, approval, sessionId, purpose, ...(model && { model }) }, links: { caseId } });
+	const task = tasks.enqueue({ kind: "test-forge-run", title, payload: { caseId, scenario, prompt, jobId: job.id, approval, sessionId, purpose, ...(model && { model }) }, links: { caseId } });
 	linkJobToTask(job, task);
 	return { job, task };
 }
@@ -2113,14 +2113,14 @@ function isUsageLimit(result) {
 
 const STEP_LINE = /^\s*(✓|✗|↷|→|▶|⚙|●|⏸)/;
 
-// The XCUITest runner writes its own screenshots under the folder baked into QADriver.xctestplan at build time
-// (`QA-Test` → ~/Documents/QA-Test), so it can't follow the Test Batch folder (D-109). Evidence is searched there
+// The XCUITest runner writes its own screenshots under the folder baked into TestForgeDriver.xctestplan at build time
+// (`TestForge-Test` → ~/Documents/TestForge-Test), so it can't follow the Test Batch folder (D-109). Evidence is searched there
 // too, and a case's files are copied into the batch folder.
-const RUNNER_MEDIA_ROOT = process.env.QA_RUNNER_MEDIA_ROOT || join(homedir(), "Documents", "QA-Test");
+const RUNNER_MEDIA_ROOT = process.env.TEST_FORGE_RUNNER_MEDIA_ROOT || join(homedir(), "Documents", "TestForge-Test");
 
-/** Folders proof may land in: the active batch folder (QA_MEDIA_ROOT) and the runner's, one level deep each. */
+/** Folders proof may land in: the active batch folder (TEST_FORGE_MEDIA_ROOT) and the runner's, one level deep each. */
 async function proofFolders() {
-	const roots = [...new Set([process.env.QA_MEDIA_ROOT, RUNNER_MEDIA_ROOT].filter(Boolean))];
+	const roots = [...new Set([process.env.TEST_FORGE_MEDIA_ROOT, RUNNER_MEDIA_ROOT].filter(Boolean))];
 	const folders = [];
 	for (const root of roots) {
 		const children = (await readdir(root, { withFileTypes: true }).catch(() => [])).filter((entry) => entry.isDirectory()).map((entry) => join(root, entry.name));
@@ -2135,7 +2135,7 @@ async function proofFolders() {
  */
 async function copyIntoBatchFolder(entries, caseId) {
 	const paths = entries.map((entry) => entry.path);
-	const target = process.env.QA_MEDIA_ROOT;
+	const target = process.env.TEST_FORGE_MEDIA_ROOT;
 	if (!target) return paths;
 	const folder = join(target, String(caseId).replace(/[^\w.-]/g, "_"));
 	const copied = [];
@@ -2155,7 +2155,7 @@ async function copyIntoBatchFolder(entries, caseId) {
 }
 let mediaCache = { at: 0, sinceMs: 0, path: null };
 
-/** The newest screenshot under QA_MEDIA_ROOT written since `sinceMs` (evidence from replay or Claude). */
+/** The newest screenshot under TEST_FORGE_MEDIA_ROOT written since `sinceMs` (evidence from replay or Claude). */
 async function latestScreenshot(sinceMs) {
 	if (Date.now() - mediaCache.at < 2000 && mediaCache.sinceMs === sinceMs) return mediaCache.path;
 	let best = null;
@@ -2175,7 +2175,7 @@ async function latestScreenshot(sinceMs) {
 let activeBatch = null;
 
 async function batchView() {
-	const canRunUnattended = process.env.QA_ALLOW_AUTONOMOUS_CLAUDE === "1";
+	const canRunUnattended = process.env.TEST_FORGE_ALLOW_AUTONOMOUS_CLAUDE === "1";
 	if (!activeBatch) return { batch: null, canRunUnattended };
 	const snapshot = activeBatch.snapshot();
 	for (const item of snapshot.items) if (item.jobId && !item.sessionId) item.sessionId = getJob(item.jobId)?.meta?.sessionId ?? null;
@@ -2196,7 +2196,7 @@ app.get("/api/batch", async (_req, res) => res.json(await batchView()));
 let liveScreen = { at: 0, pending: null, png: null };
 app.get("/api/simulator/screen.png", async (_req, res) => {
 	if (Date.now() - liveScreen.at > 2000 && !liveScreen.pending) {
-		const path = join(tmpdir(), `qa-live-screen-${process.pid}.png`);
+		const path = join(tmpdir(), `test-forge-live-screen-${process.pid}.png`);
 		liveScreen.pending = run("xcrun", ["simctl", "io", deviceArg(), "screenshot", "--type=png", path], { timeout: 10_000 })
 			.then(() => readFile(path))
 			.then((png) => (liveScreen = { at: Date.now(), pending: null, png }))
@@ -2278,7 +2278,7 @@ async function batchPlanFor(caseIds) {
 		items: planItems(cases, macros),
 		macroOf: (id) => byId.get(id),
 		currentEnvironment: await readEnvironment().catch(() => null),
-		canRunUnattended: process.env.QA_ALLOW_AUTONOMOUS_CLAUDE === "1",
+		canRunUnattended: process.env.TEST_FORGE_ALLOW_AUTONOMOUS_CLAUDE === "1",
 		usage: fiveHour ? { percent: fiveHour.usedPct, isNearLimit: fiveHour.usedPct >= 80 } : null,
 	});
 }
@@ -2305,7 +2305,7 @@ app.post("/api/batch", async (req, res) => {
 async function runManifest() {
 	const [stamp, simulator, environment] = await Promise.all([
 		buildStamp().catch(() => ({})),
-		findQaSimulator().catch(() => null),
+		findTestForgeSimulator().catch(() => null),
 		readEnvironment().catch(() => null),
 	]);
 	return { ...stamp, simulator: simulator ? `${simulator.name} (${simulator.udid})` : null, environment };
@@ -2339,8 +2339,8 @@ async function proofWrittenBetween(startedAtMs, endedAtMs) {
 async function collectEvidence(item, startedAtMs) {
 	// A case that didn't pass often stops before its own screenshot step: capture what the
 	// simulator shows at the end, so the reviewer sees the failure, not just its description.
-	if (item.status === "done" && !String(item.verdict ?? "").startsWith("PASS") && process.env.QA_MEDIA_ROOT) {
-		const folder = join(process.env.QA_MEDIA_ROOT, "failures");
+	if (item.status === "done" && !String(item.verdict ?? "").startsWith("PASS") && process.env.TEST_FORGE_MEDIA_ROOT) {
+		const folder = join(process.env.TEST_FORGE_MEDIA_ROOT, "failures");
 		const path = join(folder, `${String(item.caseId).replace(/[^\w.-]/g, "_")}-${new Date().toISOString().replace(/[:.]/g, "-")}.png`);
 		await mkdir(folder, { recursive: true }).catch(() => {});
 		await run("xcrun", ["simctl", "io", deviceArg(), "screenshot", "--type=png", path], { timeout: 15_000 }).catch(() => {});
@@ -2373,15 +2373,15 @@ async function collectEvidence(item, startedAtMs) {
 
 /** The case's own proof folder (`<batch folder>/<case>/`) when it has one; null otherwise (its proof sits in a shared folder). */
 async function proofFolderFor(caseId) {
-	const root = process.env.QA_MEDIA_ROOT;
+	const root = process.env.TEST_FORGE_MEDIA_ROOT;
 	const own = root ? join(root, String(caseId).replace(/[^\w.-]/g, "_")) : null;
 	return own && (await stat(own).catch(() => null))?.isDirectory() ? own : null;
 }
 
 /** R4k (D-110): records the QA simulator for one case into `<batch folder>/<case>/`; null when it can't start. */
 async function startCaseVideo(caseId) {
-	const qa = await findQaSimulator().catch(() => null);
-	const root = process.env.QA_MEDIA_ROOT;
+	const qa = await findTestForgeSimulator().catch(() => null);
+	const root = process.env.TEST_FORGE_MEDIA_ROOT;
 	if (!qa || qa.state !== "Booted" || !root) return null;
 	const safeId = String(caseId).replace(/[^\w.-]/g, "_");
 	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -2391,19 +2391,19 @@ async function startCaseVideo(caseId) {
 /**
  * D-113: `recordVideo` "auto" (the default) films only what a screenshot can't prove — `lib/video-plan.js` reads the
  * case's words. A replay is filmed by the server over the case's own action window; a Claude run is told whether and
- * when to film itself (qa_start_recording). `true` / `false` force it: true records the whole run on the server.
+ * when to film itself (test_forge_start_recording). `true` / `false` force it: true records the whole run on the server.
  */
 async function videoFor(item, recordVideo, macro) {
 	const testCase = loadedCases.find((entry) => entry.id === item.caseId) ?? (macro && { scenario: macro.name, steps: macro.description });
-	if (recordVideo === false) return { note: "Video: not wanted for this run; do not call qa_start_recording." };
-	if (recordVideo === true) return { whole: true, note: "Video: the dashboard records this whole run; do not call qa_start_recording." };
+	if (recordVideo === false) return { note: "Video: not wanted for this run; do not call test_forge_start_recording." };
+	if (recordVideo === true) return { whole: true, note: "Video: the dashboard records this whole run; do not call test_forge_start_recording." };
 	if (item.mode !== "replay") return { note: videoGuidance(testCase) };
 	const steps = await flattenSteps(macro ?? {}, findMacroV2).catch(() => []);
 	return { plan: planVideo({ testCase, steps }) };
 }
 
 async function launchBatch({ items, approval, techDocPath, rerunOf = null, recordVideo = "auto", model, noClaude = false, bundleId = null }) {
-	const policy = approval === "ask" || process.env.QA_ALLOW_AUTONOMOUS_CLAUDE !== "1" ? "ask" : "autonomous";
+	const policy = approval === "ask" || process.env.TEST_FORGE_ALLOW_AUTONOMOUS_CLAUDE !== "1" ? "ask" : "autonomous";
 	const batch = new RunBatch({
 		items,
 		approval: policy,
@@ -2421,7 +2421,7 @@ async function launchBatch({ items, approval, techDocPath, rerunOf = null, recor
 				} else {
 					const testCase = loadedCases.find((entry) => entry.id === item.caseId);
 					if (!testCase) throw new Error("the case is no longer loaded");
-					enqueued = enqueueQaRun(testCase, { techDocPath, approval: policy, videoNote: video.note, model });
+					enqueued = enqueueTestForgeRun(testCase, { techDocPath, approval: policy, videoNote: video.note, model });
 				}
 				} catch (error) {
 					await recording?.stop();
@@ -2589,7 +2589,7 @@ registerDemoRoutes(app, {
 		return (macro.steps ?? []).map((step) => ({ id: step.id, text: macroMap({ steps: [step] }, registry)[0]?.text ?? step.do, note: step.note }));
 	},
 	caseFor: (macro) => loadedCases.find((entry) => caseLinks(macro).includes(String(entry.id).toUpperCase())) ?? null,
-	mediaRoot: () => process.env.QA_MEDIA_ROOT || null,
+	mediaRoot: () => process.env.TEST_FORGE_MEDIA_ROOT || null,
 	guard: async (res) => refuseWhileTesting(res) || (await refuseUnlessReady(res, { needsClaude: false })),
 	enqueueDemo: (macro) => enqueueReplay(macro, { demo: true }),
 	runClaude,
@@ -2601,7 +2601,7 @@ async function currentSession() {
 	const [{ macros = [] }, history, demos, code] = await Promise.all([
 		ownApi("/api/macros"),
 		listRuns(Number.MAX_SAFE_INTEGER),
-		listDemoRecordings(process.env.QA_MEDIA_ROOT || null, DEMO_LANGUAGES),
+		listDemoRecordings(process.env.TEST_FORGE_MEDIA_ROOT || null, DEMO_LANGUAGES),
 		currentManifest().catch(() => null),
 	]);
 	const doc = { title: loadedTitle, source: loadedSource, cases: loadedCases };
@@ -2758,7 +2758,7 @@ app.post("/api/results/:id/rerun-failed", async (req, res) => {
 app.get("/api/results/:id/report.md", (req, res) => {
 	const run = results.get(req.params.id);
 	if (!run) return res.status(404).end();
-	res.set({ "Content-Type": "text/markdown; charset=utf-8", "Content-Disposition": `attachment; filename="qa-run-${run.createdAt.slice(0, 16).replace(/[:T]/g, "-")}.md"` }).send(buildReport(run));
+	res.set({ "Content-Type": "text/markdown; charset=utf-8", "Content-Disposition": `attachment; filename="test-forge-run-${run.createdAt.slice(0, 16).replace(/[:T]/g, "-")}.md"` }).send(buildReport(run));
 });
 
 /**
@@ -2874,7 +2874,7 @@ stateHub
 		const [{ macros = [] }, runs, proof] = await Promise.all([
 			ownApi("/api/macros"),
 			listRuns(),
-			caseProof(process.env.QA_MEDIA_ROOT || null, loadedCases.map((testCase) => testCase.id)),
+			caseProof(process.env.TEST_FORGE_MEDIA_ROOT || null, loadedCases.map((testCase) => testCase.id)),
 		]);
 		const isLoading = activeJobs().some((job) => job.meta.kind === "load");
 		const { current, staleFor } = await stalenessNow(runs);

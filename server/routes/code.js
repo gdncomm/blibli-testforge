@@ -1,7 +1,7 @@
 // Question 1 — "What code?" (workflow-plan §4 ①). Prepare runs as a job so the page shows the
 // progress list live and can re-attach after a reload.
 import { listProjects } from "../lib/projects.js";
-import { currentManifest, listBranches, localDrift, prepareBranch, snapshotLocal } from "../lib/qa-copy.js";
+import { currentManifest, listBranches, localDrift, prepareBranch, snapshotLocal } from "../lib/test-forge-copy.js";
 import { appendLine, createJob, finishJob } from "../lib/jobs.js";
 import { fastForward, fetchOrigin, repoStatus, restoreStash, switchBranch } from "../lib/git-control.js";
 

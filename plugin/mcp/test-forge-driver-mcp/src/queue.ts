@@ -1,4 +1,4 @@
-// The command queue the persistent QADriverSession XCUITest harness polls, hosted by this server.
+// The command queue the persistent TestForgeDriverSession XCUITest harness polls, hosted by this server.
 //
 // A near-identical sibling of networklens-mcp's own queue.ts (same design, same reasons — see
 // that file's header). Kept as a separate instance rather than sharing NetworkLens's queue: that
@@ -9,7 +9,7 @@
 
 import { createServer, Server } from "node:http";
 
-const PORT = Number(process.env.QADRIVER_CONTROL_PORT || 8789);
+const PORT = Number(process.env.TEST_FORGE_DRIVER_CONTROL_PORT || 8789);
 
 /** Bounded so a harness that never collects cannot grow this without limit. */
 const MAX_COMMANDS = 100;
@@ -124,7 +124,7 @@ class CommandQueue {
     if (request.method === "GET" && url.pathname === "/health") {
       return reply(200, {
         ok: true,
-        hostedBy: "qa-driver-mcp",
+        hostedBy: "test-forge-driver-mcp",
         queued: this.commands.length,
         lastPolledSecondsAgo: this.secondsSinceDrain,
       });

@@ -14,13 +14,13 @@ test("R1: macro step text loses review markers; mock steps read as plain mock li
 });
 
 test("R1: Claude's phone and network-mock tools become steps; other tools don't", () => {
-	assert.deepEqual(narrateToolCall("mcp__plugin_test-flow-recorder_qa-driver__qa_tap_by_label", { label: "Lihat Semua" }), { icon: "hand.tap", text: "Tap “Lihat Semua”" });
+	assert.deepEqual(narrateToolCall("mcp__plugin_test-flow-recorder_test-forge-driver__test_forge_tap_by_label", { label: "Lihat Semua" }), { icon: "hand.tap", text: "Tap “Lihat Semua”" });
 	assert.equal(narrateToolCall("mcp__networklens__lens_set_variant", { endpoint: "/flashsale", variant: "empty" }).text, "Mock: “/flashsale” → empty");
 	// Inputs as a real first run sent them (SF-028, D-077): string booleans, enabled:false to switch off.
 	assert.equal(narrateToolCall("x__lens_set_variant", { endpoint: "/configs", enabled: false }).text, "Mock off: “/configs”");
 	assert.equal(narrateToolCall("x__lens_set_mocking", { endpoint: "/configs", enabled: true }).text, "Network mocks on: “/configs”");
-	assert.equal(narrateToolCall("x__qa_assert_exists", { identifier: "FS_Title", exists: "false" }).text, "Check “FS_Title” is gone");
-	assert.equal(narrateToolCall("x__qa_assert_exists", { identifier: "FS_Title", exists: "true" }).text, "Check “FS_Title” is there");
+	assert.equal(narrateToolCall("x__test_forge_assert_exists", { identifier: "FS_Title", exists: "false" }).text, "Check “FS_Title” is gone");
+	assert.equal(narrateToolCall("x__test_forge_assert_exists", { identifier: "FS_Title", exists: "true" }).text, "Check “FS_Title” is there");
 	assert.equal(narrateToolCall("Read", { file_path: "/x" }), null);
 	assert.equal(narrateToolCall("mcp__networklens__lens_list", {}), null);
 });
@@ -54,7 +54,7 @@ test("R1: Claude tool calls close on their result; only 3 runs are kept", () => 
 	let clock = 0;
 	const narrator = new Narrator({ now: () => clock });
 	narrator.begin("c", { source: "claude" });
-	narrator.toolCall("c", { id: "t1", name: "x__qa_screenshot", input: {} });
+	narrator.toolCall("c", { id: "t1", name: "x__test_forge_screenshot", input: {} });
 	narrator.toolCall("c", { id: "t2", name: "Bash", input: {} });
 	clock = 300;
 	narrator.toolResult("c", { id: "t1", isError: false });

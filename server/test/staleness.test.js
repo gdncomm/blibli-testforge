@@ -30,7 +30,7 @@ test("stale only when a newer build changed covered code or dependencies", () =>
 });
 
 test("changed files: commit diff (app code only) plus local edits that differ", async () => {
-	const diffNames = async () => [`${promo}/A.swift`, "tools/qa-dashboard/README.md"];
+	const diffNames = async () => [`${promo}/A.swift`, "tools/test-forge-server/README.md"];
 	const from = { sha: "aaa", local: { [`${promo}/B.swift`]: "h1" } };
 	const to = { sha: "bbb", local: { [`${promo}/B.swift`]: "h2", [`${promo}/C.swift`]: "h3" } };
 	assert.deepEqual(await changedBetween(from, to, diffNames), [`${promo}/A.swift`, `${promo}/B.swift`, `${promo}/C.swift`]);

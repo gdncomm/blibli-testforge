@@ -1,28 +1,28 @@
 #!/usr/bin/env node
-// qaw-lens — NetworkLens from a terminal, a CI job or a Claude run (D-127). Talks to the QA dashboard's /api/lens, so it
+// test-forge-lens — NetworkLens from a terminal, a CI job or a Claude run (D-127). Talks to the QA dashboard's /api/lens, so it
 // needs nothing but Node; no MCP. Every command prints JSON.
 //
-//   qaw-lens state                                  health (queue owner, app polling) + mocking + rules and variants
-//   qaw-lens mocking on|off                         the master switch
-//   qaw-lens mock "<METHOD /path>" <variant> [--retime]   turn a rule on with that variant (repo pack variants included)
-//   qaw-lens off "<METHOD /path>"                   turn a rule off
-//   qaw-lens calls [--grep text] [--limit n]        captured calls, newest first
-//   qaw-lens call <id> [--curl]                     one call: headers, bodies, curl (or just the curl)
-//   qaw-lens mock-call <id>                         make a rule from that call's real response (+ empty/500/slow…)
-//   qaw-lens trackers [ID,ID…] [--contract file.json] [--all-sessions]   which TRMS IDs fired, missing, payload problems
-//   qaw-lens tracker <ID> [--contract file.json]    one ID's fires, newest first, with payloads
-//   qaw-lens trackers-report [ID,ID…] [--contract file.json] [--out file.md]   the DA-format markdown page (D-129)
-//   qaw-lens breakpoints                            breakpoints set + what is held right now (D-130, phase-D app build)
-//   qaw-lens hold "<METHOD /path>" [--stage request|response|both] [--once]   hold matching calls
-//   qaw-lens unhold ["<METHOD /path>"]              remove that endpoint's breakpoint (none = all)
-//   qaw-lens release <heldId> [--status 500] [--body '{}'] [--fail offline]   continue (edited) or fail a held call
-//   qaw-lens release-all
-//   qaw-lens replay <call id>                       send a captured request again from the app
-//   qaw-lens bubble hide|show                       the NetworkLens bubble, out of the way of a test
+//   test-forge-lens state                                  health (queue owner, app polling) + mocking + rules and variants
+//   test-forge-lens mocking on|off                         the master switch
+//   test-forge-lens mock "<METHOD /path>" <variant> [--retime]   turn a rule on with that variant (repo pack variants included)
+//   test-forge-lens off "<METHOD /path>"                   turn a rule off
+//   test-forge-lens calls [--grep text] [--limit n]        captured calls, newest first
+//   test-forge-lens call <id> [--curl]                     one call: headers, bodies, curl (or just the curl)
+//   test-forge-lens mock-call <id>                         make a rule from that call's real response (+ empty/500/slow…)
+//   test-forge-lens trackers [ID,ID…] [--contract file.json] [--all-sessions]   which TRMS IDs fired, missing, payload problems
+//   test-forge-lens tracker <ID> [--contract file.json]    one ID's fires, newest first, with payloads
+//   test-forge-lens trackers-report [ID,ID…] [--contract file.json] [--out file.md]   the DA-format markdown page (D-129)
+//   test-forge-lens breakpoints                            breakpoints set + what is held right now (D-130, phase-D app build)
+//   test-forge-lens hold "<METHOD /path>" [--stage request|response|both] [--once]   hold matching calls
+//   test-forge-lens unhold ["<METHOD /path>"]              remove that endpoint's breakpoint (none = all)
+//   test-forge-lens release <heldId> [--status 500] [--body '{}'] [--fail offline]   continue (edited) or fail a held call
+//   test-forge-lens release-all
+//   test-forge-lens replay <call id>                       send a captured request again from the app
+//   test-forge-lens bubble hide|show                       the NetworkLens bubble, out of the way of a test
 //
-// QAW_DASHBOARD (default http://127.0.0.1:4545) points at another dashboard.
+// TestForge_DASHBOARD (default http://127.0.0.1:4545) points at another dashboard.
 
-const base = (process.env.QAW_DASHBOARD || "http://127.0.0.1:4545").replace(/\/$/, "");
+const base = (process.env.TestForge_DASHBOARD || "http://127.0.0.1:4545").replace(/\/$/, "");
 const [command, ...rest] = process.argv.slice(2);
 const flags = new Map();
 const words = [];
@@ -44,7 +44,7 @@ async function call(method, path, body) {
 		headers: body ? { "content-type": "application/json" } : {},
 		body: body ? JSON.stringify(body) : undefined,
 	}).catch((error) => {
-		throw new Error(`no QA dashboard at ${base} (${error.message}) — start TestForge or tools/qa-dashboard/start.sh`);
+		throw new Error(`no QA dashboard at ${base} (${error.message}) — start TestForge or tools/test-forge-server/start.sh`);
 	});
 	const answer = await response.json().catch(() => ({}));
 	if (!response.ok) throw new Error(answer.error ?? `HTTP ${response.status}`);
@@ -66,30 +66,30 @@ async function main() {
 		case "state":
 			return call("GET", "/api/lens/state");
 		case "mocking":
-			if (!["on", "off"].includes(words[0])) throw new Error("usage: qaw-lens mocking on|off");
+			if (!["on", "off"].includes(words[0])) throw new Error("usage: test-forge-lens mocking on|off");
 			return call("POST", "/api/lens/mocking", { enabled: words[0] === "on" });
 		case "mock":
-			if (words.length < 2) throw new Error("usage: qaw-lens mock \"GET /backend/…\" <variant> [--retime]");
+			if (words.length < 2) throw new Error("usage: test-forge-lens mock \"GET /backend/…\" <variant> [--retime]");
 			return call("POST", "/api/lens/rule", { endpoint: words[0], variant: words[1], retime: flags.has("retime") });
 		case "off":
-			if (!words[0]) throw new Error("usage: qaw-lens off \"GET /backend/…\"");
+			if (!words[0]) throw new Error("usage: test-forge-lens off \"GET /backend/…\"");
 			return call("POST", "/api/lens/rule", { endpoint: words[0], enabled: false });
 		case "calls": {
 			const query = new URLSearchParams({ limit: String(flags.get("limit") ?? 30), grep: String(flags.get("grep") ?? "") });
 			return call("GET", `/api/lens/calls?${query}`);
 		}
 		case "call": {
-			if (!words[0]) throw new Error("usage: qaw-lens call <id> [--curl]");
+			if (!words[0]) throw new Error("usage: test-forge-lens call <id> [--curl]");
 			const detail = await call("GET", `/api/lens/calls/${encodeURIComponent(words[0])}`);
 			return flags.has("curl") ? { curl: detail.curl } : detail;
 		}
 		case "mock-call":
-			if (!words[0]) throw new Error("usage: qaw-lens mock-call <id>");
+			if (!words[0]) throw new Error("usage: test-forge-lens mock-call <id>");
 			return call("POST", `/api/lens/calls/${encodeURIComponent(words[0])}/mock`);
 		case "trackers":
 			return call("POST", "/api/lens/trackers", await trackerAsk(words[0]));
 		case "tracker":
-			if (!words[0]) throw new Error("usage: qaw-lens tracker <TRMS ID> [--contract file.json]");
+			if (!words[0]) throw new Error("usage: test-forge-lens tracker <TRMS ID> [--contract file.json]");
 			return call("POST", `/api/lens/trackers/${encodeURIComponent(words[0])}`, await trackerAsk(words[0]));
 		case "trackers-report": {
 			const { markdown } = await call("POST", "/api/lens/trackers-report", await trackerAsk(words[0]));
@@ -102,12 +102,12 @@ async function main() {
 		case "breakpoints":
 			return call("GET", "/api/lens/breakpoints");
 		case "hold":
-			if (!words[0]) throw new Error("usage: qaw-lens hold \"GET /backend/…\" [--stage request|response|both] [--once]");
+			if (!words[0]) throw new Error("usage: test-forge-lens hold \"GET /backend/…\" [--stage request|response|both] [--once]");
 			return call("POST", "/api/lens/breakpoints", { endpoint: words[0], stage: flags.get("stage") ?? "response", oneShot: flags.has("once") });
 		case "unhold":
 			return call("DELETE", `/api/lens/breakpoints${words[0] ? `?endpoint=${encodeURIComponent(words[0])}` : ""}`);
 		case "release": {
-			if (!words[0]) throw new Error("usage: qaw-lens release <heldId> [--status n] [--body text] [--fail offline|timedOut|…]");
+			if (!words[0]) throw new Error("usage: test-forge-lens release <heldId> [--status n] [--body text] [--fail offline|timedOut|…]");
 			const edit = {
 				...(flags.has("status") && { status: Number(flags.get("status")) }),
 				...(typeof flags.get("body") === "string" && { body: flags.get("body") }),
@@ -118,10 +118,10 @@ async function main() {
 		case "release-all":
 			return call("POST", "/api/lens/held/resume-all", {});
 		case "replay":
-			if (!words[0]) throw new Error("usage: qaw-lens replay <call id>");
+			if (!words[0]) throw new Error("usage: test-forge-lens replay <call id>");
 			return call("POST", `/api/lens/calls/${encodeURIComponent(words[0])}/replay`, {});
 		case "bubble":
-			if (!["hide", "show"].includes(words[0])) throw new Error("usage: qaw-lens bubble hide|show");
+			if (!["hide", "show"].includes(words[0])) throw new Error("usage: test-forge-lens bubble hide|show");
 			return call("POST", "/api/lens/bubble", { hidden: words[0] === "hide" });
 		default:
 			throw new Error("commands: state · mocking on|off · mock <endpoint> <variant> · off <endpoint> · calls · call <id> · mock-call <id>"
@@ -133,7 +133,7 @@ async function main() {
 main().then(
 	(value) => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`),
 	(error) => {
-		process.stderr.write(`qaw-lens: ${error.message}\n`);
+		process.stderr.write(`test-forge-lens: ${error.message}\n`);
 		process.exit(1);
 	},
 );

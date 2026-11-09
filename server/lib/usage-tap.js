@@ -1,5 +1,5 @@
 // D-149: the "usage tap" — one line in the Claude Code status-line script that copies the JSON Claude Code hands it to
-// ~/.testforge/usage.json, so the TestForge shows the same context / 5-hour / weekly figures as the CLI line.
+// ~/.test-forge/usage.json, so the TestForge shows the same context / 5-hour / weekly figures as the CLI line.
 // Opt-in from the Mac app (it asks first); idempotent; marked so it can be found and removed.
 import { readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";

@@ -1,6 +1,6 @@
 import Foundation
 
-protocol QABuildActing {
+protocol TestForgeBuildActing {
 	func status() async throws -> BuildStatusSnapshot
 
 	/// Builds the prepared QA copy for the QA simulator; the server refuses while a run holds the phone.
@@ -15,7 +15,7 @@ protocol QABuildActing {
 }
 
 /// The dashboard's own build pipeline (`/api/build/*`), so the Mac app and the web page build the same way.
-struct BuildServerService: QABuildActing {
+struct BuildServerService: TestForgeBuildActing {
 	private static let dataPrefix = "data: "
 	private static let endEvent = "event: end"
 	private static let runnerStartTimeout: TimeInterval = 300

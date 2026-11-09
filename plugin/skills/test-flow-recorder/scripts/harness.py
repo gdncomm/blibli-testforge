@@ -15,7 +15,7 @@ Two operations are deliberately separated, because only one of them is cheap and
                            network, no decisions. This is what gets restarted automatically.
 
 Readiness is proven the only way that means anything: a real command completes. A process being
-alive, a port listening and `qa_status` all report "up" for a harness that answers nothing.
+alive, a port listening and `test_forge_status` all report "up" for a harness that answers nothing.
 
 Usage:
     harness.py status            what is actually true right now
@@ -39,20 +39,20 @@ import time
 import urllib.error
 import urllib.request
 
-BASE = os.environ.get("QA_DRIVER_URL", "http://127.0.0.1:8789")
-SCHEME = os.environ.get("QA_SCHEME", "QADriver")
-CONFIGURATION = os.environ.get("QA_CONFIGURATION", "Debug")
+BASE = os.environ.get("TEST_FORGE_DRIVER_URL", "http://127.0.0.1:8789")
+SCHEME = os.environ.get("TEST_FORGE_SCHEME", "TestForgeDriver")
+CONFIGURATION = os.environ.get("TEST_FORGE_CONFIGURATION", "Debug")
 # Optional. Named, the runner app is matched exactly; unnamed, any `*-Runner.app` in the products
 # directory is taken, which is right whenever a project has one UI test target.
-RUNNER_TARGET = os.environ.get("QA_UITEST_TARGET")
+RUNNER_TARGET = os.environ.get("TEST_FORGE_UITEST_TARGET")
 RUNNER_PATTERN = f"{RUNNER_TARGET}-Runner" if RUNNER_TARGET else "-Runner"
 # Optional, for a build kept apart from the developer's (a QA copy): its own DerivedData, and a
 # named simulator rather than whichever one happens to be booted.
-DERIVED_DATA = os.environ.get("QA_DERIVED_DATA")
-SIMULATOR_UDID = os.environ.get("QA_SIMULATOR_UDID")
+DERIVED_DATA = os.environ.get("TEST_FORGE_DERIVED_DATA")
+SIMULATOR_UDID = os.environ.get("TEST_FORGE_SIMULATOR_UDID")
 BUILD_PATTERN = rf"xcodebuild test-without-building.*-scheme {SCHEME}"
-SCRATCH = pathlib.Path(os.environ.get("QA_SCRATCH", os.environ.get("TMPDIR", "/tmp")))
-LOG = SCRATCH / "qa-harness.log"
+SCRATCH = pathlib.Path(os.environ.get("TEST_FORGE_SCRATCH", os.environ.get("TMPDIR", "/tmp")))
+LOG = SCRATCH / "test-forge-harness.log"
 # A cold `test-without-building` installs the runner and waits for the app, which is comfortably
 # under two minutes on this project but nowhere near instant.
 READY_TIMEOUT = 210.0
@@ -63,16 +63,16 @@ def resolve_workspace() -> tuple[pathlib.Path, str]:
     """(project directory, workspace filename).
 
     Searched from the caller's cwd rather than from this file: shipped in a plugin, this script
-    lives nowhere near the project it drives. QA_PROJECT_DIR skips the search entirely.
+    lives nowhere near the project it drives. TEST_FORGE_PROJECT_DIR skips the search entirely.
     """
-    explicit = os.environ.get("QA_PROJECT_DIR")
+    explicit = os.environ.get("TEST_FORGE_PROJECT_DIR")
     starts = [pathlib.Path(explicit).expanduser()] if explicit else [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]
     for candidate in starts:
         found = sorted(candidate.glob("*.xcworkspace"))
         if found:
             return candidate, found[0].name
     where = explicit or f"{pathlib.Path.cwd()} or any parent"
-    raise SystemExit(f"no .xcworkspace in {where} — set QA_PROJECT_DIR to the project directory")
+    raise SystemExit(f"no .xcworkspace in {where} — set TEST_FORGE_PROJECT_DIR to the project directory")
 
 
 def repo_root() -> pathlib.Path:
@@ -150,7 +150,7 @@ def start(root: pathlib.Path, force: bool = False) -> int:
     udid = booted_udid()
     if SIMULATOR_UDID:
         if not is_booted(SIMULATOR_UDID):
-            print(f"  ! simulator {SIMULATOR_UDID} (QA_SIMULATOR_UDID) is not booted — boot it first")
+            print(f"  ! simulator {SIMULATOR_UDID} (TEST_FORGE_SIMULATOR_UDID) is not booted — boot it first")
             return 1
         udid = SIMULATOR_UDID
     if not udid:

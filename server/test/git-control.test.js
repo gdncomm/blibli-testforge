@@ -13,7 +13,7 @@ const sandbox = mkdtempSync(join(tmpdir(), "git-control-"));
 const origin = join(sandbox, "origin.git");
 const dev = join(sandbox, "dev");
 const other = join(sandbox, "other");
-const testForgeDir = join(dev, "tools", "qa-dashboard");
+const testForgeDir = join(dev, "tools", "test-forge-server");
 const sh = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", env: { ...process.env, ...IDENTITY } }).trim();
 
 before(() => {
@@ -30,9 +30,9 @@ before(() => {
 	sh(dev, "add", ".");
 	sh(dev, "commit", "-qm", "testforge");
 	sh(dev, "push", "-q", "-u", "origin", "qa");
-	sh(dev, "branch", "-q", "qa-two");
-	sh(dev, "push", "-q", "origin", "qa-two");
-	sh(dev, "branch", "-q", "-D", "qa-two");
+	sh(dev, "branch", "-q", "test-forge-two");
+	sh(dev, "push", "-q", "origin", "test-forge-two");
+	sh(dev, "branch", "-q", "-D", "test-forge-two");
 	execFileSync("git", ["clone", "-b", "qa", origin, other], { stdio: "ignore" });
 });
 
@@ -56,7 +56,7 @@ test("status reads branch, upstream and dirty files", async () => {
 });
 
 test("switch refuses uncommitted work unless asked to stash", async () => {
-	await assert.rejects(switchBranch(dev, { branch: "qa-two", testForgeDir }), (error) => error.code === "dirty" && error.files.length === 2);
+	await assert.rejects(switchBranch(dev, { branch: "test-forge-two", testForgeDir }), (error) => error.code === "dirty" && error.files.length === 2);
 	assert.equal(sh(dev, "branch", "--show-current"), "qa");
 });
 
@@ -67,11 +67,11 @@ test("switch refuses a branch that would delete the TestForge", async () => {
 });
 
 test("switch with stash: tracking branch from origin, then restore brings the work back", async () => {
-	const switched = await switchBranch(dev, { branch: "qa-two", stash: true, testForgeDir });
-	assert.equal(switched.branch, "qa-two");
-	assert.equal(switched.upstream, "origin/qa-two");
+	const switched = await switchBranch(dev, { branch: "test-forge-two", stash: true, testForgeDir });
+	assert.equal(switched.branch, "test-forge-two");
+	assert.equal(switched.upstream, "origin/test-forge-two");
 	assert.equal(switched.isDirty, false);
-	assert.match(switched.stashed, /qa → qa-two/);
+	assert.match(switched.stashed, /qa → test-forge-two/);
 	await switchBranch(dev, { branch: "qa", testForgeDir });
 	const restored = await restoreStash(dev);
 	assert.equal(restored.isDirty, true);

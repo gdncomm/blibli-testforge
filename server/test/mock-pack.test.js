@@ -12,10 +12,10 @@ const rule = (id, endpointKey, variants) => ({
 });
 
 test("export: one redacted, switched-off pack per rule; load reads them back by endpoint", async () => {
-	const root = await mkdtemp(join(tmpdir(), "qa-pack-"));
+	const root = await mkdtemp(join(tmpdir(), "test-forge-pack-"));
 	const written = await exportRules([rule("r1", "GET /backend/configs", ["revamp-on", "revamp-off"])], { root });
 	assert.deepEqual(written, ["get-backend-configs.networklens-pack.json"]);
-	const pack = JSON.parse(await readFile(join(root, "QAMacros", "mocks", written[0]), "utf8"));
+	const pack = JSON.parse(await readFile(join(root, "TestForgeMacros", "mocks", written[0]), "utf8"));
 	assert.equal(pack.formatVersion, 1);
 	const [stored] = pack.mocks;
 	assert.equal(stored.isEnabled, false);

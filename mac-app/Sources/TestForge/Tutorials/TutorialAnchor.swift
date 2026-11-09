@@ -85,7 +85,7 @@ enum TutorialAnchor: String {
 	case simulatorDeeplinks
 	case simulatorDefaults
 	case simulatorReset
-	case buildQASection
+	case buildTestForgeSection
 	case buildStartButton
 	case buildXcodeSection
 	case buildCleanSection

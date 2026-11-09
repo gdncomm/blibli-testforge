@@ -1,7 +1,7 @@
 // P4 — the Run step (workflow-plan §⑥, D-061). "Run selected" becomes a server-side batch: the
 // cases run one after another in the device lane, survive a page reload, and can be paused (finish
 // the current case, then hold), skipped or cancelled. Each case runs as a macro replay when one is
-// linked to it, otherwise as a Claude /qa-run (user decision). A case during which the app crashed
+// linked to it, otherwise as a Claude /test-forge-run (user decision). A case during which the app crashed
 // is BLOCKED with the crash report, and the batch holds until someone relaunches and continues.
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
@@ -186,7 +186,7 @@ export class RunBatch extends EventEmitter {
 	}
 }
 
-/** Picks how a case runs: its linked macro (free, fast) when there is one, else Claude /qa-run. */
+/** Picks how a case runs: its linked macro (free, fast) when there is one, else Claude /test-forge-run. */
 export function planItems(cases, macros) {
 	return cases.map((testCase) => {
 		const macro = macros.find((entry) => entry.schemaVersion === 2 && caseLinks(entry).includes(String(testCase.id).toUpperCase()));

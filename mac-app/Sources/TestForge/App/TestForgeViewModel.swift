@@ -26,7 +26,7 @@ struct TestForgeServices {
 	let notificationCenter: NotificationCenter
 	let tutorials: TutorialCoordinator
 	let simulatorControl: SimulatorControlling
-	let qaBuild: QABuildActing
+	let testForgeBuild: TestForgeBuildActing
 	let xcodeTools: XcodeToolsActing
 	let builtAppLauncher: BuiltAppLaunching
 	let reset: ResetActing
@@ -458,7 +458,7 @@ private extension TestForgeViewModel {
 	/// "Install & launch" targets the Simulator screen's device, so the Build screen reads that selection.
 	static func makeBuildViewModel(services: TestForgeServices, simulatorViewModel: SimulatorControlViewModel) -> BuildSectionViewModel {
 		let dependencies = BuildSectionDependencies(
-			qaBuild: services.qaBuild,
+			testForgeBuild: services.testForgeBuild,
 			tools: services.xcodeTools,
 			store: services.store,
 			launcher: services.builtAppLauncher,
@@ -476,7 +476,7 @@ private extension TestForgeViewModel {
 	) -> (GetReadySectionViewModel, GetReadyCompanions) {
 		let companions = GetReadyCompanions(
 			prerequisites: PrerequisitesViewModel(service: services.prerequisites, desktop: services.desktop),
-			prepareCode: PrepareCodeViewModel(service: services.tools.codePrepare, logFollower: services.qaBuild),
+			prepareCode: PrepareCodeViewModel(service: services.tools.codePrepare, logFollower: services.testForgeBuild),
 			runQueue: RunQueueViewModel(store: services.store, service: services.tools.runQueue),
 			git: GitControlViewModel(services: GitControlServices(git: services.tools.git, code: services.tools.codePrepare))
 		)

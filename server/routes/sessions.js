@@ -2,7 +2,7 @@
 // interrupt, close, and an SSE transcript stream per session.
 import { existsSync } from "node:fs";
 import { isAbsolute } from "node:path";
-import { openTestForgeSession } from "../lib/testforge-session.js";
+import { openTestForgeSession } from "../lib/test-forge-session.js";
 
 export function sse(res) {
 	res.set({ "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });

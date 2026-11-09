@@ -10,8 +10,8 @@ struct BuildSectionView: View {
 		ScrollViewReader { proxy in
 			Form {
 				BuildStatusSectionView(viewModel: viewModel)
-				BuildQASectionView(viewModel: viewModel)
-					.id(BuildScrollTarget.qaBuild)
+				BuildTestForgeSectionView(viewModel: viewModel)
+					.id(BuildScrollTarget.testForgeBuild)
 				BuildLogSectionView(lines: viewModel.logLines)
 				BuildXcodeSectionView(viewModel: viewModel)
 					.id(BuildScrollTarget.xcode)
@@ -36,14 +36,14 @@ struct BuildSectionView: View {
 }
 
 private enum BuildScrollTarget: Hashable {
-	case qaBuild
+	case testForgeBuild
 	case xcode
 	case clean
 
 	init?(anchor: TutorialAnchor) {
 		switch anchor {
-			case .buildQASection, .buildStartButton:
-				self = .qaBuild
+			case .buildTestForgeSection, .buildStartButton:
+				self = .testForgeBuild
 			case .buildXcodeSection:
 				self = .xcode
 			case .buildCleanSection:

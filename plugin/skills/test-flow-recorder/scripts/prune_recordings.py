@@ -3,7 +3,7 @@
 
 A live run produces recordings a report has no use for: a clip that was already rolling while the
 tree was dumped, a re-recording of an attempt that had to be restarted, a zero-byte file from a
-`qa_stop_recording` that never got a `qa_start_recording`. Left alone they accumulate at roughly a
+`test_forge_stop_recording` that never got a `test_forge_start_recording`. Left alone they accumulate at roughly a
 megabyte a second and a reviewer cannot tell which clip belongs to the verdict.
 
 The rule is one clip per **attempt**, because `evidence.md` treats the attempt sequence as the proof

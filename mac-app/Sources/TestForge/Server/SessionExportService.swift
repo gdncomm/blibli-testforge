@@ -56,7 +56,7 @@ struct SessionExportPreview: Decodable, Equatable {
 
 	init(from decoder: Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
-		fileName = (try? container.decodeIfPresent(String.self, forKey: .fileName)) ?? "qa-session.zip"
+		fileName = (try? container.decodeIfPresent(String.self, forKey: .fileName)) ?? "test-forge-session.zip"
 		summary = try container.decode(SessionExportSummary.self, forKey: .summary)
 		runs = (try? container.decodeIfPresent(Int.self, forKey: .runs)) ?? 0
 		mediaFiles = (try? container.decodeIfPresent(Int.self, forKey: .mediaFiles)) ?? 0

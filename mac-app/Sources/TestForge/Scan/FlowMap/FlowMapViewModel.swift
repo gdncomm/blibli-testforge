@@ -36,7 +36,7 @@ private struct PendingPress {
 }
 
 /// Scan › Flow map (D-117): turns the person's Simulator taps into screens and moves, from the Simulator's accessibility tree alone.
-/// Saved under `~/.testforge/flows/`; needs no harness and no app change.
+/// Saved under `~/.test-forge/flows/`; needs no harness and no app change.
 @MainActor
 final class FlowMapViewModel: ObservableObject {
 	@Published private(set) var state: FlowRecordingState = .idle

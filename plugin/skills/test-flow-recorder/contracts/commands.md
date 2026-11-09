@@ -149,7 +149,7 @@ for the instance, and the screen size the capture was taken at.
 
 | Platform | Driver | Status |
 |---|---|---|
-| iOS | `QADriverSession` (XCUITest) + `qa-driver` MCP | in use — see `platforms/ios.md` |
+| iOS | `TestForgeDriverSession` (XCUITest) + `test-forge-driver` MCP | in use — see `platforms/ios.md` |
 | Android | UiAutomator collector, same queue protocol | contract only — see `platforms/android.md` |
 | Web | CDP/Playwright collector, same queue protocol | contract only — see `platforms/web.md` |
 

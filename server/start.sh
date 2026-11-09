@@ -25,23 +25,23 @@ if [ -f .env.local ]; then
 fi
 
 export NETWORKLENS_BUNDLE_ID="${NETWORKLENS_BUNDLE_ID:-com.blibli.mobile}"
-export QA_DASHBOARD_PORT="${QA_DASHBOARD_PORT:-4545}"
-# The iOS project under test (the folder holding the .xcworkspace). Set QA_PROJECT_DIR to your clone of the app repo,
+export TEST_FORGE_SERVER_PORT="${TEST_FORGE_SERVER_PORT:-4545}"
+# The iOS project under test (the folder holding the .xcworkspace). Set TEST_FORGE_PROJECT_DIR to your clone of the app repo,
 # for example ~/Projects/BlibliIOSApp/BlibliMobile-iOS. When this server still sits inside that repo
-# (tools/qa-dashboard), the sibling BlibliMobile-iOS folder is used.
-if [ -z "${QA_PROJECT_DIR:-}" ]; then
+# (tools/test-forge-server), the sibling BlibliMobile-iOS folder is used.
+if [ -z "${TEST_FORGE_PROJECT_DIR:-}" ]; then
 	if [ -d "$SCRIPT_DIR/../../BlibliMobile-iOS" ]; then
-		QA_PROJECT_DIR="$(cd "$SCRIPT_DIR/../../BlibliMobile-iOS" && pwd)"
+		TEST_FORGE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../../BlibliMobile-iOS" && pwd)"
 	else
-		echo "QA_PROJECT_DIR is not set. Point it at BlibliMobile-iOS in your app clone (put it in .env.local)." >&2
+		echo "TEST_FORGE_PROJECT_DIR is not set. Point it at BlibliMobile-iOS in your app clone (put it in .env.local)." >&2
 		exit 1
 	fi
 fi
-export QA_PROJECT_DIR
-export QA_UITEST_TARGET="${QA_UITEST_TARGET:-BlibliMobile_XCUITest}"
-# The driver was consolidated onto the PerfTest scheme (default test plan QADriver.xctestplan);
-# harness.py's own defaults (scheme QADriver, config Debug) do not exist in this project.
-export QA_SCHEME="${QA_SCHEME:-BlibliMobile-iOS-PerfTest}"
-export QA_CONFIGURATION="${QA_CONFIGURATION:-PerformanceTest}"
+export TEST_FORGE_PROJECT_DIR
+export TEST_FORGE_UITEST_TARGET="${TEST_FORGE_UITEST_TARGET:-BlibliMobile_XCUITest}"
+# The driver was consolidated onto the PerfTest scheme (default test plan TestForgeDriver.xctestplan);
+# harness.py's own defaults (scheme TestForgeDriver, config Debug) do not exist in this project.
+export TEST_FORGE_SCHEME="${TEST_FORGE_SCHEME:-BlibliMobile-iOS-PerfTest}"
+export TEST_FORGE_CONFIGURATION="${TEST_FORGE_CONFIGURATION:-PerformanceTest}"
 
 exec node server.js

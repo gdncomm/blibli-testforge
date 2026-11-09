@@ -19,8 +19,8 @@ enum MarkdownConstants {
 	static let backgroundOpacity: Double = 0.08
 
 	enum Accessibility {
-		static let viewer = "QAW_Markdown_Viewer"
-		static let blockPrefix = "QAW_Markdown_Block_"
-		static let imagePrefix = "QAW_Markdown_Image_"
+		static let viewer = "TestForge_Markdown_Viewer"
+		static let blockPrefix = "TestForge_Markdown_Block_"
+		static let imagePrefix = "TestForge_Markdown_Image_"
 	}
 }

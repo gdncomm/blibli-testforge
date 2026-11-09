@@ -1,9 +1,9 @@
-// JS port of test-flow-recorder's queue_cli.py — a client for the QADriverRunner command queue the
+// JS port of test-flow-recorder's queue_cli.py — a client for the TestForgeDriverRunner command queue the
 // XCUITest harness hosts at 127.0.0.1:8789. See contracts/commands.md in the test-flow-recorder
 // plugin for the full command vocabulary (tap, type, swipe, screenshot, dumpTree, ...).
 import { harnessEnsure } from "./harness.js";
 
-const BASE = process.env.QA_DRIVER_URL || "http://127.0.0.1:8789";
+const BASE = process.env.TEST_FORGE_DRIVER_URL || "http://127.0.0.1:8789";
 const DEFAULT_TIMEOUT_MS = 180_000;
 const POLL_MS = 400;
 

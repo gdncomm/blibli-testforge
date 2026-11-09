@@ -27,14 +27,14 @@ function fakeSimctl({ writes }) {
 }
 
 test("stop sends SIGINT and returns the movie path", async () => {
-	const path = join(await mkdtemp(join(tmpdir(), "qa-video-")), "SF-001", "SF-001.mp4");
+	const path = join(await mkdtemp(join(tmpdir(), "test-forge-video-")), "SF-001", "SF-001.mp4");
 	const recording = await startVideo({ udid: "UDID", path, spawn: fakeSimctl({ writes: true }) });
 	assert.equal(await recording.stop(), path);
 	assert.deepEqual(fakeSimctl.last.signals, ["SIGINT"]);
 });
 
 test("no movie written → null", async () => {
-	const path = join(await mkdtemp(join(tmpdir(), "qa-video-")), "x.mp4");
+	const path = join(await mkdtemp(join(tmpdir(), "test-forge-video-")), "x.mp4");
 	const recording = await startVideo({ udid: "UDID", path, spawn: fakeSimctl({ writes: false }) });
 	assert.equal(await recording.stop(), null);
 });
@@ -43,7 +43,7 @@ test("trimToLast keeps the movie's end with a stream copy, and keeps the full mo
 	const { trimToLast } = await import("../lib/video-recorder.js");
 	const { existsSync } = await import("node:fs");
 	if (!["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg"].some((path) => existsSync(path))) return;
-	const path = join(await mkdtemp(join(tmpdir(), "qa-video-")), "SF-061.mp4");
+	const path = join(await mkdtemp(join(tmpdir(), "test-forge-video-")), "SF-061.mp4");
 	await writeFile(path, "full");
 	const calls = [];
 	assert.equal(await trimToLast(path, 60, { run: async (_bin, args) => (calls.push(args), writeFile(args.at(-1), "cut")) }), path);

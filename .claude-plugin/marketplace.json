@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "testforge",
+  "name": "test-forge",
   "owner": { "name": "gdncomm" },
   "metadata": {
     "description": "TestForge marketplace: the test-flow-recorder Claude Code plugin that drives the TestForge test runner",

@@ -1,5 +1,5 @@
 // Git control (D-200): fetch, fast-forward and switch the developer's own working repo from the Mac app.
-// The QA copy (lib/qa-copy.js) stays the only thing builds are made from; this module is for the
+// The QA copy (lib/test-forge-copy.js) stays the only thing builds are made from; this module is for the
 // developer's checkout. Every write is guarded: no force, no reset, no discard. Uncommitted work is
 // either kept (refuse) or stashed on request, and a switch that would remove the TestForge itself is refused.
 import { execFile } from "node:child_process";

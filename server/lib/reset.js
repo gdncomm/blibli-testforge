@@ -6,8 +6,8 @@ import { readdir, rm } from "node:fs/promises";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve, sep } from "node:path";
 import { promisify } from "node:util";
-import { currentManifest, freeDiskSpace, sizeMb, TESTFORGE_HOME, testForgeUsage } from "./qa-copy.js";
-import { findQaSimulator } from "./qa-simulator.js";
+import { currentManifest, freeDiskSpace, sizeMb, TEST_FORGE_HOME, testForgeUsage } from "./test-forge-copy.js";
+import { findTestForgeSimulator } from "./test-forge-simulator.js";
 
 const run = promisify(execFile);
 const XCODE_DERIVED = join(homedir(), "Library/Developer/Xcode/DerivedData");
@@ -19,7 +19,7 @@ const childrenOf = async (dir) => (await readdir(dir).catch(() => [])).filter((n
 
 /** The QA simulator's XCTest Attachments folders (runner screenshots; recordings on sims built before D-106). */
 async function attachmentFolders() {
-	const qa = await findQaSimulator().catch(() => null);
+	const qa = await findTestForgeSimulator().catch(() => null);
 	if (!qa) return [];
 	const daemons = join(homedir(), "Library/Developer/CoreSimulator/Devices", qa.udid, "data/Containers/Data/InternalDaemon");
 	return (await childrenOf(daemons)).map((dir) => join(dir, "Attachments"));
@@ -43,11 +43,11 @@ async function repoState() {
 }
 
 /**
- * The proof root (R4j: chosen in the app; QA_MEDIA_ROOT itself now points at the active Test Batch's folder),
+ * The proof root (R4j: chosen in the app; TEST_FORGE_MEDIA_ROOT itself now points at the active Test Batch's folder),
  * or null when unset or so broad (~, /Users) that emptying it would take the user's files.
  */
 function mediaRoot(stores) {
-	const root = stores?.testBatches ? stores.testBatches.proofRoot : process.env.QA_MEDIA_ROOT;
+	const root = stores?.testBatches ? stores.testBatches.proofRoot : process.env.TEST_FORGE_MEDIA_ROOT;
 	if (!root || !isAbsolute(root)) return null;
 	const path = resolve(root);
 	return path === homedir() || path.split(sep).length < 4 ? null : path;
@@ -68,18 +68,18 @@ const testForgeMb = async (filter) => (await testForgeUsage()).entries.filter(fi
  */
 const ITEMS = [
 	{
-		id: "qa-derived",
+		id: "test-forge-derived",
 		title: "QA build output",
-		detail: () => "~/.testforge/derived — Build for testing again afterwards",
+		detail: () => "~/.test-forge/derived — Build for testing again afterwards",
 		isDefault: true,
 		stopsRunner: true,
 		measure: () => testForgeMb((entry) => entry.kind === "derived"),
 		perform: async () => (await freeDiskSpace({ olderThanDays: 0, kinds: ["derived"], keepCurrent: false })).freedMb,
 	},
 	{
-		id: "qa-copies",
+		id: "test-forge-copies",
 		title: "Old QA copies",
-		detail: () => "~/.testforge/checkouts — the loaded copy is kept",
+		detail: () => "~/.test-forge/checkouts — the loaded copy is kept",
 		isDefault: true,
 		measure: () => testForgeMb((entry) => entry.kind === "copy" && !entry.isCurrent),
 		perform: async () => (await freeDiskSpace({ olderThanDays: 0, kinds: ["copy"] })).freedMb,
@@ -178,7 +178,7 @@ export async function performReset({ ids, stores, harnessStop, say }) {
 		freedMb += mb;
 		say(`✓ ${item.title} — ${formatMb(mb)} freed`);
 	}
-	return { freedMb, items: chosen.map((item) => item.id), testForgeHome: TESTFORGE_HOME };
+	return { freedMb, items: chosen.map((item) => item.id), testForgeHome: TEST_FORGE_HOME };
 }
 
 export const formatMb = (mb) => (mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`);

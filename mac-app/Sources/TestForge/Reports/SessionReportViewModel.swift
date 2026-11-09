@@ -138,7 +138,7 @@ final class SessionReportViewModel: ObservableObject {
 
 	private static func fileName(extension fileExtension: String) -> String {
 		let date = Date().formatted(.iso8601.year().month().day())
-		return "qa-session-report-\(date).\(fileExtension)"
+		return "test-forge-session-report-\(date).\(fileExtension)"
 	}
 
 	/// A standalone page, so a browser shows it and copy-paste into Confluence keeps the tables.

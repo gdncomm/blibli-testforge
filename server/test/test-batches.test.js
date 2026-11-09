@@ -9,7 +9,7 @@ import { batchCases, batchFolderName, batchProgress, compareBatches, proofRootPr
 import { testBatchChecks } from "../lib/readiness.js";
 import { batchReport } from "../routes/test-batches.js";
 
-const root = await mkdtemp(join(tmpdir(), "qa-batches-"));
+const root = await mkdtemp(join(tmpdir(), "test-forge-batches-"));
 
 test("proof root must be an existing, writable, specific folder", async () => {
 	assert.match(await proofRootProblem("relative/path"), /absolute/);
@@ -34,25 +34,25 @@ test("readiness blocks until a folder is chosen and a batch is active", () => {
 	assert.ok(testBatchChecks({ proofRoot: root, active: { name: "A", folder: "f" } }).every((check) => check.ok));
 });
 
-test("one active batch; attach; QA_MEDIA_ROOT follows it; end writes report.md", async () => {
+test("one active batch; attach; TEST_FORGE_MEDIA_ROOT follows it; end writes report.md", async () => {
 	const dataDir = join(root, "data");
 	const proof = join(root, "proof");
 	await mkdir(proof, { recursive: true });
 	const store = await new TestBatchStore(dataDir).restore();
 	await assert.rejects(store.start("A"), /proof folder/);
 	await store.setProofRoot(proof);
-	assert.equal(process.env.QA_MEDIA_ROOT, proof);
+	assert.equal(process.env.TEST_FORGE_MEDIA_ROOT, proof);
 	const batch = await store.start("Flash sale");
 	await assert.rejects(store.start("B"), /still active/);
 	await assert.rejects(store.setProofRoot(root), /end Test Batch/);
-	assert.equal(process.env.QA_MEDIA_ROOT, join(proof, batch.folder));
+	assert.equal(process.env.TEST_FORGE_MEDIA_ROOT, join(proof, batch.folder));
 	store.attach({ kind: "replay-v2", refId: "t1", title: "Open flash sale" });
 	store.attach({ kind: "replay-v2", refId: "t1", title: "duplicate" });
 	assert.equal(store.active.items.length, 1);
 	const fakes = { results: { get: () => null }, tasks: { get: () => ({ status: "done", verdict: "PASS" }) } };
 	const ended = await store.end(batch.id, { buildReport: (entry) => batchReport(entry, fakes) });
 	assert.equal(ended.status, "ended");
-	assert.equal(process.env.QA_MEDIA_ROOT, proof);
+	assert.equal(process.env.TEST_FORGE_MEDIA_ROOT, proof);
 	const report = await readFile(join(proof, batch.folder, "report.md"), "utf8");
 	assert.match(report, /# Test Batch — Flash sale/);
 	assert.match(report, /Macro replays \| Open flash sale \| done · PASS/);
@@ -63,8 +63,8 @@ test("one active batch; attach; QA_MEDIA_ROOT follows it; end writes report.md",
 });
 
 test("an ended batch reopens with its folder and items; never over another active batch", async () => {
-	const dataDir = await mkdtemp(join(tmpdir(), "qa-batches-reopen-"));
-	const proofRoot = await mkdtemp(join(tmpdir(), "qa-proof-reopen-"));
+	const dataDir = await mkdtemp(join(tmpdir(), "test-forge-batches-reopen-"));
+	const proofRoot = await mkdtemp(join(tmpdir(), "test-forge-proof-reopen-"));
 	const store = await new TestBatchStore(dataDir).restore();
 	await store.setProofRoot(proofRoot);
 	const first = await store.start("MICROSITE");
@@ -78,7 +78,7 @@ test("an ended batch reopens with its folder and items; never over another activ
 	assert.equal(reopened.folder, first.folder);
 	assert.equal(reopened.itemCount, 1);
 	assert.equal(reopened.reopenedAt.length, 1);
-	assert.equal(process.env.QA_MEDIA_ROOT, join(proofRoot, first.folder));
+	assert.equal(process.env.TEST_FORGE_MEDIA_ROOT, join(proofRoot, first.folder));
 	await assert.rejects(store.reopen(first.id), /already active/);
 	store.attach({ kind: "run", refId: "r2", title: "Run again" });
 	assert.equal(store.get(first.id).items.length, 2);
@@ -89,8 +89,8 @@ test("D-189: progress counts each case's latest outcome from settled items and b
 	const batch = {
 		items: [
 			{ kind: "replay-v2", refId: "t1", caseId: "4", status: "done", verdict: "FAIL" },
-			{ kind: "qa-run", refId: "t2", caseId: "4", status: "done", verdict: "PASS" },
-			{ kind: "qa-run", refId: "t3", caseId: "5", status: "done", verdict: "DONE" },
+			{ kind: "test-forge-run", refId: "t2", caseId: "4", status: "done", verdict: "PASS" },
+			{ kind: "test-forge-run", refId: "t3", caseId: "5", status: "done", verdict: "DONE" },
 			{ kind: "replay-v2", refId: "t4", caseId: "6", status: "running", verdict: null },
 			{ kind: "run", refId: "r1" },
 			{ kind: "scan", refId: "s1" },
@@ -137,8 +137,8 @@ test("D-201: a replay batch compares each replayed case with the batch it replay
 });
 
 test("D-212: a paused batch collects nothing, keeps its items, resumes, and can still end or be listed", async () => {
-	const dataDir = await mkdtemp(join(tmpdir(), "qa-batches-pause-"));
-	const proofRoot = await mkdtemp(join(tmpdir(), "qa-proof-pause-"));
+	const dataDir = await mkdtemp(join(tmpdir(), "test-forge-batches-pause-"));
+	const proofRoot = await mkdtemp(join(tmpdir(), "test-forge-proof-pause-"));
 	const store = await new TestBatchStore(dataDir).restore();
 	await store.setProofRoot(proofRoot);
 	const first = await store.start("MICROSITE");
@@ -146,7 +146,7 @@ test("D-212: a paused batch collects nothing, keeps its items, resumes, and can 
 	const paused = await store.pause(first.id);
 	assert.equal(paused.status, "paused");
 	assert.equal(store.active, null);
-	assert.equal(process.env.QA_MEDIA_ROOT, proofRoot);
+	assert.equal(process.env.TEST_FORGE_MEDIA_ROOT, proofRoot);
 	assert.equal(store.attach({ kind: "run", refId: "r-elsewhere", title: "Run" }), null);
 	await assert.rejects(store.pause(first.id), /already paused/);
 	await assert.rejects(store.reopen(first.id), /resume it instead/);
@@ -161,7 +161,7 @@ test("D-212: a paused batch collects nothing, keeps its items, resumes, and can 
 	assert.equal(resumed.itemCount, 1);
 	assert.equal(store.batches[0].id, first.id);
 	assert.ok(store.get(first.id).pauses[0].resumedAt);
-	assert.equal(process.env.QA_MEDIA_ROOT, join(proofRoot, first.folder));
+	assert.equal(process.env.TEST_FORGE_MEDIA_ROOT, join(proofRoot, first.folder));
 	store.attach({ kind: "run", refId: "r2", title: "Run again" });
 	assert.equal(store.get(first.id).items.length, 2);
 

@@ -20,7 +20,7 @@ protocol SimulatorScreenReading: Sendable {
 struct WindowSimulatorScreen: SimulatorScreenReading {
 	let locator: SimulatorLocating
 
-	/// Exact window title first: a "QA · " clone and its source can share a device name and runtime.
+	/// Exact window title first: a "TestForge · " clone and its source can share a device name and runtime.
 	func windowDevice() throws -> DeviceScreen {
 		let title = try locator.deviceWindowTitle()
 		let booted = try CoreSimulatorDevices.all().filter(\.isBooted)
@@ -40,7 +40,7 @@ struct WindowSimulatorScreen: SimulatorScreenReading {
 /// `simctl io <udid> screenshot` as PNG data — always a named device, never `booted`.
 enum SimctlScreenshot {
 	static func png(udid: String) async throws -> Data {
-		let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent("qaw-screen-\(UUID().uuidString).png")
+		let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent("test-forge-screen-\(UUID().uuidString).png")
 		defer {
 			try? FileManager.default.removeItem(at: fileURL)
 		}

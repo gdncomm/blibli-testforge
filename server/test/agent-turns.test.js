@@ -11,24 +11,24 @@ test("triage line: last one wins; markdown stripped; missing → UNKNOWN", () =>
 	assert.equal(parseLearnedMacroId("done\nMACRO: mc_N8G7DBVQB8 Engagement/FlashSale/macros/x.json"), "mc_N8G7DBVQB8");
 });
 
-test("snapshot: only macro, reference and QAMacros files; diff names added, changed, removed", async () => {
-	const root = await mkdtemp(join(tmpdir(), "qa-snap-"));
+test("snapshot: only macro, reference and TestForgeMacros files; diff names added, changed, removed", async () => {
+	const root = await mkdtemp(join(tmpdir(), "test-forge-snap-"));
 	await mkdir(join(root, "Engagement", "FlashSale", "macros"), { recursive: true });
-	await mkdir(join(root, "QAMacros"), { recursive: true });
+	await mkdir(join(root, "TestForgeMacros"), { recursive: true });
 	await writeFile(join(root, "Engagement", "FlashSale", "macros", "a.json"), "{}");
-	await writeFile(join(root, "QAMacros", "elements.json"), "{}");
+	await writeFile(join(root, "TestForgeMacros", "elements.json"), "{}");
 	await writeFile(join(root, "Engagement", "notes.json"), "{}");
 	const before = await snapshotMacroFiles(root);
-	assert.deepEqual([...before.keys()].sort(), ["Engagement/FlashSale/macros/a.json", "QAMacros/elements.json"]);
-	await writeFile(join(root, "QAMacros", "elements.json"), '{"elements":{}}');
+	assert.deepEqual([...before.keys()].sort(), ["Engagement/FlashSale/macros/a.json", "TestForgeMacros/elements.json"]);
+	await writeFile(join(root, "TestForgeMacros", "elements.json"), '{"elements":{}}');
 	await writeFile(join(root, "Engagement", "FlashSale", "macros", "b.json"), "{}");
 	assert.deepEqual(changedFiles(before, await snapshotMacroFiles(root)).sort((x, y) => x.path.localeCompare(y.path)), [
 		{ path: "Engagement/FlashSale/macros/b.json", change: "added" },
-		{ path: "QAMacros/elements.json", change: "changed" },
+		{ path: "TestForgeMacros/elements.json", change: "changed" },
 	]);
 });
 
 test("triage prompt names the macro file, the registry, the allowed edits and the answer line", () => {
 	const prompt = triagePrompt({ item: { caseId: "SF-084", verdict: "FAIL at step 5" }, macro: { id: "mc_1", name: "SF-084", path: "Engagement/FlashSale/macros/sf.json" }, root: "/r", log: "✗ 5. Wait", screenshot: "/m/t.png" });
-	for (const part of ["/r/Engagement/FlashSale/macros/sf.json", "/r/QAMacros/elements.json", "Never weaken", "TRIAGE: <APP_BUG|MACRO_BROKEN|ENVIRONMENT>", "/m/t.png"]) assert.ok(prompt.includes(part), part);
+	for (const part of ["/r/Engagement/FlashSale/macros/sf.json", "/r/TestForgeMacros/elements.json", "Never weaken", "TRIAGE: <APP_BUG|MACRO_BROKEN|ENVIRONMENT>", "/m/t.png"]) assert.ok(prompt.includes(part), part);
 });

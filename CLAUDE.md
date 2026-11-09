@@ -6,7 +6,7 @@ This repo is its own project. Settings for it live here (`.claude/settings.local
 
 ## Definition of done for a feature
 
-1. **A Mac app entry point.** The point of TestForge is to move work out of the command line. A feature that only works from `qaw` or the server API is not finished.
+1. **A Mac app entry point.** The point of TestForge is to move work out of the command line. A feature that only works from `test-forge` or the server API is not finished.
 2. **Visual feedback for every action.** A control that starts work shows progress at that control (spinner and "…ing", via `Views/ActionProgressLabel`, or an inline progress line) and its failure next to it. Disabling buttons is not feedback. Whatever the action changes refreshes everywhere it shows.
 3. **Accessibility IDs on everything.** Every container and every distinct inner element (text, badge, button, image) gets an ID, named `<Feature>_<Element>`, constants in the feature's constants file. Do not ask which elements.
 4. **Tutorials cover it.** Update all three before committing: the tip and tour line (`mac-app/Sources/TestForge/Tutorials/TutorialCatalog*.swift` plus an anchor), the welcome role flows (`Onboarding/OnboardingCatalog+Roles.swift`: QA "A testing day…" and developer "Check your feature before the PR"), and a new `R<n>` entry in `server/docs/tutorials.md`. A screen with no anchor, such as Setup, gets no tip; say so in the `R<n>` entry.
@@ -41,7 +41,7 @@ Say "mock" and "mocked" in anything a person reads (UI, tour, docs). Never "fake
 
 - `./setup.sh --check` checks tools; `./setup.sh` installs and builds.
 - Mac app: `cd mac-app && ./scripts/make-app.sh`, then open `build/TestForge.app`. Tests: `swift test`.
-- Server: `server/start.sh` (port 4545). It needs `QA_PROJECT_DIR`, the iOS app's `BlibliMobile-iOS` folder; the app passes it from Setup.
+- Server: `server/start.sh` (port 4545). It needs `TEST_FORGE_PROJECT_DIR`, the iOS app's `BlibliMobile-iOS` folder; the app passes it from Setup.
 - The Mac app shows Setup until both folders are chosen: this checkout and the iOS app clone.
 
 ## Known leftovers

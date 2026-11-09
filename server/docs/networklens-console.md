@@ -32,8 +32,8 @@ the simulator … reduce MCP dependency and use scripts instead if possible."_
              │  breakpoints · replay/curl · trackers · health               │
              └───────────────────────────┬──────────────────────────────────┘
                                          │ HTTP /api/lens/*  (+ SSE "lens" slice)
-  scripts/CI ── qaw-lens CLI ───────────►│
-  Claude ─────── qaw-lens CLI (Bash) ───►│◄── networklens MCP (optional, thin: forwards to /api/lens)
+  scripts/CI ── test-forge-lens CLI ───────────►│
+  Claude ─────── test-forge-lens CLI (Bash) ───►│◄── networklens MCP (optional, thin: forwards to /api/lens)
                                          │
                             QA dashboard = the only engine + the only queue owner (8788)
                                          │ files (session.json, trace) + control queue
@@ -46,9 +46,9 @@ the simulator … reduce MCP dependency and use scripts instead if possible."_
 2. **`/api/lens/*` becomes the single API** (superset of today's `/api/mocks`, `/api/trace`): state, rules, variants,
    body edits, scenarios, packs, trace + search, curl, diff, trackers, breakpoints, replay, bubble. The Mac console and
    the web page use it.
-3. **Reduce MCP dependency with a script, not more tools:** `tools/qa-dashboard/scripts/qaw-lens` (Node, no deps) —
-   `qaw-lens state`, `qaw-lens mock "GET /flashsale" --variant empty`, `qaw-lens scenario apply sf061`,
-   `qaw-lens trace --since 2m --grep range`, `qaw-lens curl <id>`, `qaw-lens pack import <file>` … Same verbs as the
+3. **Reduce MCP dependency with a script, not more tools:** `tools/test-forge-server/scripts/test-forge-lens` (Node, no deps) —
+   `test-forge-lens state`, `test-forge-lens mock "GET /flashsale" --variant empty`, `test-forge-lens scenario apply sf061`,
+   `test-forge-lens trace --since 2m --grep range`, `test-forge-lens curl <id>`, `test-forge-lens pack import <file>` … Same verbs as the
    API, JSON out. Uses:
    - **Claude runs** call it through Bash — one allowed command instead of 30 MCP tool schemas in every session's
      context (cheaper, fewer moving parts, and the dashboard's device lock/run log see every change).
@@ -79,7 +79,7 @@ the simulator … reduce MCP dependency and use scripts instead if possible."_
 
 | Phase | Scope | Size | Depends on |
 |---|---|---|---|
-| **A** | Dashboard owns 8788 + `/api/lens/*` + `qaw-lens` CLI; Claude runs use the CLI (MCP optional) | M | — |
+| **A** | Dashboard owns 8788 + `/api/lens/*` + `test-forge-lens` CLI; Claude runs use the CLI (MCP optional) | M | — |
 | **B** | Console v1: live traffic, mock this call, body editor, scenarios, health, time-shift, guardrails | L | A |
 | **C** | Bubble out of the way before runs (defaults now) | S | — (do first, it unblocks SF-024) |
 | **D** | Fork verbs: breakpoints, replay, `ui.bubble`; console v2 | L | QA fork tag + rebuild |

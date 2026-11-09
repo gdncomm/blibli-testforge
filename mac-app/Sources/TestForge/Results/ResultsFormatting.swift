@@ -64,10 +64,10 @@ enum ResultsFormatting {
 		["running", "paused"].contains(summary.status)
 	}
 
-	/// `.qawbundle.json`: still JSON, so the save and open panels accept it; the middle word says what it is.
+	/// `.test-forge-bundle.json`: still JSON, so the save and open panels accept it; the middle word says what it is.
 	static func bundleFileName(summary: ResultRunSummary) -> String {
 		let reportName = reportFileName(summary: summary)
-		return reportName.replacingOccurrences(of: ".md", with: ".qawbundle.json")
+		return reportName.replacingOccurrences(of: ".md", with: ".test-forge-bundle.json")
 	}
 
 	static func reportFileName(summary: ResultRunSummary) -> String {
@@ -76,7 +76,7 @@ enum ResultsFormatting {
 			formatter.dateFormat = "yyyy-MM-dd-HH-mm"
 			return formatter.string(from: date)
 		}
-		return "qa-run-\(stamp ?? summary.id).md"
+		return "test-forge-run-\(stamp ?? summary.id).md"
 	}
 
 	static func durationText(milliseconds: Double) -> String {

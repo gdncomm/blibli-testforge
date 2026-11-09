@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Thin CLI over the qa-driver command queue, so a big result can land in a file instead of context.
+"""Thin CLI over the test-forge-driver command queue, so a big result can land in a file instead of context.
 
   qa.py cmd '<json>'                 post one command, print its result JSON
   qa.py tree [identifier] [type]     dump the tree to tree.txt, print line count
@@ -10,7 +10,7 @@ import json, os, re, subprocess, sys, time, urllib.request, pathlib
 
 BASE = "http://127.0.0.1:8789"
 # Never beside the script: that is inside the repo, and a tree dump is scratch, not a deliverable.
-DUMP = pathlib.Path(os.environ.get("QA_SCRATCH", os.environ.get("TMPDIR", "/tmp"))) / "qa-tree.txt"
+DUMP = pathlib.Path(os.environ.get("TEST_FORGE_SCRATCH", os.environ.get("TMPDIR", "/tmp"))) / "test-forge-tree.txt"
 
 
 def post_once(command, timeout=180):

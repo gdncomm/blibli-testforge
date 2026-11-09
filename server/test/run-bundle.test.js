@@ -18,7 +18,7 @@ const ENDPOINT = "GET /backend/content-api/promotions/{id}";
 
 /** A developer's repo: a routine, a case macro that runs it and arms a mock, a registry, a pack. */
 async function developerRepo() {
-	const root = await mkdtemp(join(tmpdir(), "qa-bundle-dev-"));
+	const root = await mkdtemp(join(tmpdir(), "test-forge-bundle-dev-"));
 	await saveRegistry({ schemaVersion: 1, elements: { el_TAB0000001: element("tab_0"), el_HOME000001: element("home"), el_UNUSED0001: element("x") } }, root);
 	await saveMacroV2({ id: "mc_OPEN000001", name: "Open promo", kind: "routine", steps: [{ do: "wait", el: "el_HOME000001" }] }, { module: "Engagement", submodule: "Promo", root });
 	await saveMacroV2({
@@ -31,7 +31,7 @@ async function developerRepo() {
 
 const finishedRun = {
 	id: "run-1", createdAt: "2026-10-31T02:00:00.000Z", status: "done",
-	manifest: { branch: "feature/tabs", codeId: "9ec4017", hasLocalChanges: false, simulator: "QA · iPhone 12 (AC2A1B55-2C97-46EA-81AA-06C01819B753)" },
+	manifest: { branch: "feature/tabs", codeId: "9ec4017", hasLocalChanges: false, simulator: "TestForge · iPhone 12 (AC2A1B55-2C97-46EA-81AA-06C01819B753)" },
 	items: [
 		{ caseId: "18", scenario: "Anchor tap", mode: "claude", status: "done", verdict: "PASS", learned: { ok: true, macroId: "mc_CASE000018" }, evidence: { costUsd: 1.25, summary: "Checked /Users/someone/shot.png", screenshots: [] } },
 		{ caseId: "24", scenario: "Header collapse", mode: "claude", status: "done", verdict: "UNDECIDED", evidence: { costUsd: 1.92, screenshots: [] } },
@@ -55,7 +55,7 @@ test("build: carries the case macro, its routine, only the elements they use, th
 	assert.equal(judged.macroId, null);
 	assert.equal(judged.verdict, "UNDECIDED");
 	assert.equal(bundle.run.costUsd, 3.17);
-	assert.equal(bundle.run.simulator, "QA · iPhone 12");
+	assert.equal(bundle.run.simulator, "TestForge · iPhone 12");
 	assert.equal(bundle.source, "~/cases.md");
 	assert.deepEqual(bundle.code, { branch: "feature/tabs", codeId: "9ec4017", commit: "9ec4017", hasLocalChanges: false });
 	assert.equal(bundle.cases.length, 2);
@@ -63,14 +63,14 @@ test("build: carries the case macro, its routine, only the elements they use, th
 
 test("import: an empty repo gets every macro, element and mock; a second import changes nothing", async () => {
 	const bundle = await buildBundle({ run: finishedRun, cases, title: "T", root: await developerRepo(), thumbnails: false });
-	const qaRoot = await mkdtemp(join(tmpdir(), "qa-bundle-qa-"));
-	const first = await installBundle(bundle, { root: qaRoot });
+	const testForgeRoot = await mkdtemp(join(tmpdir(), "test-forge-bundle-qa-"));
+	const first = await installBundle(bundle, { root: testForgeRoot });
 	assert.equal(first.written.macros.length, 2);
 	assert.equal(first.written.elements, 2);
 	assert.equal(first.written.mocks.length, 1);
-	assert.deepEqual((await listMacrosV2(qaRoot)).map((macro) => macro.id).sort(), ["mc_CASE000018", "mc_OPEN000001"]);
-	assert.ok((await loadRegistry(qaRoot)).elements.el_TAB0000001);
-	const second = await installBundle(bundle, { root: qaRoot });
+	assert.deepEqual((await listMacrosV2(testForgeRoot)).map((macro) => macro.id).sort(), ["mc_CASE000018", "mc_OPEN000001"]);
+	assert.ok((await loadRegistry(testForgeRoot)).elements.el_TAB0000001);
+	const second = await installBundle(bundle, { root: testForgeRoot });
 	assert.deepEqual(second.written, { macros: [], elements: 0, mocks: [], mockNotes: 0 });
 	assert.equal(second.conflicts, 0);
 	assert.equal(second.counts.replayable, 1);
@@ -79,16 +79,16 @@ test("import: an empty repo gets every macro, element and mock; a second import 
 
 test("import: a local macro that differs is kept unless overwrite, and replaced where it lives", async () => {
 	const bundle = await buildBundle({ run: finishedRun, cases, title: "T", root: await developerRepo(), thumbnails: false });
-	const qaRoot = await mkdtemp(join(tmpdir(), "qa-bundle-qa-"));
-	await saveMacroV2({ id: "mc_CASE000018", name: "MT-018 anchor tap", links: { testCase: "18" }, steps: [{ do: "wait", el: "el_TAB0000001" }] }, { module: "Engagement", submodule: "Moved", root: qaRoot });
-	const kept = await installBundle(bundle, { root: qaRoot });
+	const testForgeRoot = await mkdtemp(join(tmpdir(), "test-forge-bundle-qa-"));
+	await saveMacroV2({ id: "mc_CASE000018", name: "MT-018 anchor tap", links: { testCase: "18" }, steps: [{ do: "wait", el: "el_TAB0000001" }] }, { module: "Engagement", submodule: "Moved", root: testForgeRoot });
+	const kept = await installBundle(bundle, { root: testForgeRoot });
 	assert.equal(kept.macros.find((entry) => entry.id === "mc_CASE000018").action, "differs");
 	assert.ok(!kept.written.macros.some((path) => path.includes("mt-018")));
-	const replaced = await installBundle(bundle, { root: qaRoot, overwrite: true });
+	const replaced = await installBundle(bundle, { root: testForgeRoot, overwrite: true });
 	assert.ok(replaced.written.macros.includes("Engagement/Moved/macros/mt-018-anchor-tap.json"));
-	const stored = JSON.parse(await readFile(join(qaRoot, "Engagement/Moved/macros/mt-018-anchor-tap.json"), "utf8"));
+	const stored = JSON.parse(await readFile(join(testForgeRoot, "Engagement/Moved/macros/mt-018-anchor-tap.json"), "utf8"));
 	assert.equal(stored.steps.length, 3);
-	assert.equal((await listMacrosV2(qaRoot)).filter((macro) => macro.id === "mc_CASE000018").length, 1);
+	assert.equal((await listMacrosV2(testForgeRoot)).filter((macro) => macro.id === "mc_CASE000018").length, 1);
 });
 
 test("inspect: tells whether the prepared code is the code the bundle tested", async () => {
@@ -100,7 +100,7 @@ test("inspect: tells whether the prepared code is the code the bundle tested", a
 	assert.equal(codeMatch({ ...code, hasLocalChanges: true }, { branch: "feature/tabs", snapshotId: "9ec4017" }).state, "localChanges");
 	assert.equal(commitOf("9ec4017+64e6"), "9ec4017");
 	const bundle = await buildBundle({ run: finishedRun, cases, title: "T", root: await developerRepo(), thumbnails: false });
-	const plan = await inspectBundle(bundle, { root: await mkdtemp(join(tmpdir(), "qa-bundle-qa-")) });
+	const plan = await inspectBundle(bundle, { root: await mkdtemp(join(tmpdir(), "test-forge-bundle-qa-")) });
 	assert.equal(plan.macros.every((entry) => entry.action === "add"), true);
 });
 
@@ -114,11 +114,11 @@ test("compare: the bundle's verdicts are the base for the replay", async () => {
 
 test("validate: refuses other files and newer formats", () => {
 	assert.throws(() => validateBundle({ format: "other" }), /not a TestForge bundle/);
-	assert.throws(() => validateBundle({ format: "testforge-bundle", formatVersion: 99 }), /newer/);
+	assert.throws(() => validateBundle({ format: "test-forge-bundle", formatVersion: 99 }), /newer/);
 });
 
 test("store: keeps imported bundles and rejects unsafe ids", async () => {
-	const store = new BundleStore(await mkdtemp(join(tmpdir(), "qa-bundle-store-")));
+	const store = new BundleStore(await mkdtemp(join(tmpdir(), "test-forge-bundle-store-")));
 	const bundle = await buildBundle({ run: finishedRun, cases, title: "T", root: await developerRepo(), thumbnails: false });
 	await store.save(bundle, { replayRunIds: [] });
 	await store.update(bundle.id, { replayRunIds: ["replay-1"] });
@@ -151,7 +151,7 @@ test("mocks: a recorded served variant wins; a macro case falls back to what its
 	assert.equal(bundle.items[1].macroId, null);
 	assert.equal(bundle.items[1].mocksUsed[0].variant, "anchor-mode");
 	assert.equal(bundle.mocks.length, 1);
-	const plan = await inspectBundle(bundle, { root: await mkdtemp(join(tmpdir(), "qa-bundle-qa-")) });
+	const plan = await inspectBundle(bundle, { root: await mkdtemp(join(tmpdir(), "test-forge-bundle-qa-")) });
 	assert.deepEqual(plan.caseMocks.map((entry) => [entry.caseId, entry.hasMacro, entry.mocks[0].variant]), [["18", true, "anchor-mode"], ["24", false, "anchor-mode"]]);
 });
 
@@ -172,9 +172,9 @@ test("demo notes travel: the macro's demo block and the server-answer notes reac
 	await mergeMockNotes({ [ENDPOINT]: { "anchor-mode": { en: "Tabs jump to sections", id: "Tab melompat ke bagian" } } }, { root });
 	const bundle = await buildBundle({ run: finishedRun, cases, title: "T", root, thumbnails: false });
 	assert.equal(bundle.macros.find((macro) => macro.id === "mc_CASE000018").demo.title.id, "Tab menggulir");
-	const qaRoot = await mkdtemp(join(tmpdir(), "qa-bundle-qa-"));
-	const report = await installBundle(bundle, { root: qaRoot });
+	const testForgeRoot = await mkdtemp(join(tmpdir(), "test-forge-bundle-qa-"));
+	const report = await installBundle(bundle, { root: testForgeRoot });
 	assert.equal(report.demoNotes, 1);
 	assert.equal(report.written.mockNotes, 1);
-	assert.equal((await loadMockNotes(qaRoot))[ENDPOINT]["anchor-mode"].en, "Tabs jump to sections");
+	assert.equal((await loadMockNotes(testForgeRoot))[ENDPOINT]["anchor-mode"].en, "Tabs jump to sections");
 });

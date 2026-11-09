@@ -4,7 +4,7 @@ import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { basename, join } from "node:path";
 import { promisify } from "node:util";
-import { currentManifest, TESTFORGE_HOME } from "./qa-copy.js";
+import { currentManifest, TEST_FORGE_HOME } from "./test-forge-copy.js";
 
 const run = promisify(execFile);
 const ACCOUNT_TTL_MS = 60_000;
@@ -51,4 +51,4 @@ export async function sessionProjectDir(fallback) {
 	return existsSync(nested) ? nested : target.projectDir;
 }
 
-export { TESTFORGE_HOME };
+export { TEST_FORGE_HOME };

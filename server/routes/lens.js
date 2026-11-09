@@ -1,5 +1,5 @@
 // D-127 (phase A of docs/networklens-console.md): one API for everything NetworkLens — the Mac console, the web page and
-// the `qaw-lens` script all use it, so nothing needs the networklens MCP. Changes go live when the app is polling the
+// the `test-forge-lens` script all use it, so nothing needs the networklens MCP. Changes go live when the app is polling the
 // control queue (owned by this server, port 8788), otherwise into session.json for the next launch; every answer says which.
 import { callDetail, callRows, responseOf } from "../lib/lens-calls.js";
 import {
@@ -252,7 +252,7 @@ export function registerLensRoutes(app, deps) {
 		const result = await sendLensCommand(command);
 		if (result.ok) return result.outcome ?? {};
 		if (/Unknown command/.test(result.error ?? "")) {
-			throw Object.assign(new Error("this app build predates NetworkLens phase D — Install for testing after the qa-mocker-testing-3 re-pin"), { status: 501 });
+			throw Object.assign(new Error("this app build predates NetworkLens phase D — Install for testing after the test-forge-driver-3 re-pin"), { status: 501 });
 		}
 		throw Object.assign(new Error(result.error ?? "the app did not answer"), { status: result.reachable ? 422 : 504 });
 	}

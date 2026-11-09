@@ -39,7 +39,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key><string>TestForge</string>
-	<key>CFBundleIdentifier</key><string>com.blibli.testforge</string>
+	<key>CFBundleIdentifier</key><string>com.blibli.test-forge</string>
 	<key>CFBundleName</key><string>TestForge</string>
 	<key>CFBundleDisplayName</key><string>TestForge</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
@@ -56,14 +56,14 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 PLIST
 
 # Ad-hoc by default. macOS ties the Accessibility grant (Arrange, step outline, Measure) to the signature, and an
-# ad-hoc one changes on every build, so the grant is lost. Set TESTFORGE_SIGN_IDENTITY to a certificate name
-# (`security find-identity -v -p codesigning`), or write it to ~/.testforge/sign-identity, to keep it across rebuilds.
-SIGN_IDENTITY_FILE="$HOME/.testforge/sign-identity"
+# ad-hoc one changes on every build, so the grant is lost. Set TEST_FORGE_SIGN_IDENTITY to a certificate name
+# (`security find-identity -v -p codesigning`), or write it to ~/.test-forge/sign-identity, to keep it across rebuilds.
+SIGN_IDENTITY_FILE="$HOME/.test-forge/sign-identity"
 DEFAULT_IDENTITY="-"
 if [ -f "$SIGN_IDENTITY_FILE" ]; then
 	DEFAULT_IDENTITY="$(head -n 1 "$SIGN_IDENTITY_FILE")"
 fi
-SIGN_IDENTITY="${TESTFORGE_SIGN_IDENTITY:-$DEFAULT_IDENTITY}"
+SIGN_IDENTITY="${TEST_FORGE_SIGN_IDENTITY:-$DEFAULT_IDENTITY}"
 codesign --force --sign "$SIGN_IDENTITY" "$APP" >/dev/null 2>&1 || echo "note: signing with '$SIGN_IDENTITY' failed; the app is unsigned"
 echo "signed with: $SIGN_IDENTITY"
 echo "built: $APP"

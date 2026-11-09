@@ -73,7 +73,7 @@ export function formatEvent(rawLine) {
 			const servers = event.mcp_servers ?? [];
 			const unhealthy = servers.filter((server) => server.status !== "connected");
 			const lines = [`● Claude session started · ${event.model} · permissions: ${event.permissionMode} · ${servers.length - unhealthy.length}/${servers.length} MCP servers connected`];
-			// Only a failed server is an error; pending / needs-auth servers are usually ones /qa-run never calls.
+			// Only a failed server is an error; pending / needs-auth servers are usually ones /test-forge-run never calls.
 			for (const server of unhealthy) {
 				lines.push(`${server.status === "failed" ? "!" : "  ·"} MCP ${server.name}: ${server.status}`);
 			}
@@ -118,7 +118,7 @@ export function formatEvent(rawLine) {
 			const cost = typeof result.costUsd === "number" ? ` · $${result.costUsd.toFixed(2)}` : "";
 			const lines = [`■ ${result.isError ? "Claude stopped with an error" : "Claude finished"} (${result.subtype}) · ${result.turns ?? "?"} turns · ${formatDuration(result.durationMs)}${cost}`];
 			if (result.permissionDenials.length) {
-				lines.push(`! ${result.permissionDenials.length} tool call(s) were denied permission: ${[...new Set(result.permissionDenials)].join(", ")} — allow them in .claude/settings.json or set QA_ALLOW_AUTONOMOUS_CLAUDE=1`);
+				lines.push(`! ${result.permissionDenials.length} tool call(s) were denied permission: ${[...new Set(result.permissionDenials)].join(", ")} — allow them in .claude/settings.json or set TEST_FORGE_ALLOW_AUTONOMOUS_CLAUDE=1`);
 			}
 			return { lines, result };
 		}

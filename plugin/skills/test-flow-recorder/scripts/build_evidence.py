@@ -4,7 +4,7 @@
 Inputs are `cases.json` (parse_test_cases.py) and a `results.json` the run produces. What comes
 out depends on `--layout`:
 
-  single   one `<Feature>QARun.md`, plus one `evidence.html` and one `attachments.txt`.
+  single   one `<Feature>TestForgeRun.md`, plus one `evidence.html` and one `attachments.txt`.
            For a feature whose test cases live on a single Confluence page.
 
   multi    a folder: `README.md` holding the bird's-eye view, one `pages/<slug>.md` per source
@@ -686,13 +686,13 @@ def unreasoned(results: list[dict[str, Any]]) -> list[str]:
 # built from these is a sequence, and a still frame can only show where it ended, not that the
 # gesture landed, what moved, or what the app did in between.
 ACTION_TOOLS = frozenset({
-    "qa_tap", "qa_tap_by_label", "qa_swipe", "qa_scroll_until_exists", "qa_scroll_to_top",
-    "qa_type", "qa_open_deeplink", "qa_relaunch_app", "qa_alert_tap",
+    "test_forge_tap", "test_forge_tap_by_label", "test_forge_swipe", "test_forge_scroll_until_exists", "test_forge_scroll_to_top",
+    "test_forge_type", "test_forge_open_deeplink", "test_forge_relaunch_app", "test_forge_alert_tap",
 })
 
 
 def tool_of(command: Any) -> str:
-    """A command is `{tool, args, result}`; older runs wrote it as the string `qa_tap(...)`."""
+    """A command is `{tool, args, result}`; older runs wrote it as the string `test_forge_tap(...)`."""
     if isinstance(command, dict):
         return str(command.get("tool") or "")
     return str(command).split("(", 1)[0].strip()
@@ -930,7 +930,7 @@ def case_section(result: dict[str, Any], case: dict[str, Any]) -> list[str]:
         lines.append(field("Recording", "⚠️ **none captured** — this case drove the app but has no "
                                         "clip of the run behind it. See `contracts/evidence.md`"))
 
-    steps = result.get("qaSteps") or []
+    steps = result.get("testForgeSteps") or []
     if steps:
         lines += ["", "<details><summary><b>Reproduce by hand</b></summary>", ""]
         lines += [f"{index}. {tilde(step)}" for index, step in enumerate(steps, start=1)]
@@ -1033,7 +1033,7 @@ def overview_document(feature: str, pages: dict[str, dict[str, Any]], cases: dic
     lines = [f"# {feature} — dev testing run", "",
              f"Run by **{md_cell(run['runner'])}** · {md_cell(run['label'])}", "",
              "Automated dev-side pass over the feature's Confluence test cases, driven from the "
-             "`QADriverSession` harness against NetworkLens fixtures. Every case carries evidence, pass or "
+             "`TestForgeDriverSession` harness against NetworkLens fixtures. Every case carries evidence, pass or "
              "fail. **The test case documents themselves are untouched by this run** — anything recommended "
              "against them is a recommendation only.", "",
              bar(counts), ""]
@@ -1098,7 +1098,7 @@ def page_body(title: str, results: list[dict[str, Any]], cases: dict[str, Any], 
     counts = summary_counts(results)
     parts: list[str] = [f"<h2>{escape(title)} — {escape(run['label'])}</h2>"]
     parts.append(f"<p>Run by <strong>{escape(run['runner'])}</strong>. Automated dev-side pass driven from the "
-                 "QADriverSession harness against NetworkLens fixtures. Every case carries a screenshot, pass "
+                 "TestForgeDriverSession harness against NetworkLens fixtures. Every case carries a screenshot, pass "
                  "or fail. The test case document itself is untouched by this run — anything this page "
                  "recommends changing there is a recommendation only.</p>")
     parts.append("<table><tbody><tr>" + "".join(f"<th>{verdict}</th>" for verdict in VERDICTS) + "</tr><tr>"
@@ -1158,7 +1158,7 @@ def page_body(title: str, results: list[dict[str, Any]], cases: dict[str, Any], 
                  "without the automation.</p>")
     for result in results:
         case = cases.get(result["caseId"], {})
-        steps = result.get("qaSteps") or []
+        steps = result.get("testForgeSteps") or []
         if not steps:
             continue
         listed = "".join(f"<li>{cell(step)}</li>" for step in steps)
@@ -1324,7 +1324,7 @@ def main() -> int:
 
     if layout == "single":
         page = next(iter(pages.values()), {"title": args.feature, "pageId": "?", "results": results, "total": len(cases)})
-        (args.out_dir / f"{slugify(args.feature)}-qa-run.md").write_text(
+        (args.out_dir / f"{slugify(args.feature)}-test-forge-run.md").write_text(
             page_document(page, cases, run, parent_link=None))
         (args.out_dir / "evidence.html").write_text(
             page_body(page["title"], page["results"], cases, run))
@@ -1415,7 +1415,7 @@ def main() -> int:
         print(f"  ! {len(missing_video)} interacting case(s) with no recording: "
               f"{', '.join(missing_video)}")
         print("    A case that taps, swipes, scrolls, types or navigates is bracketed by "
-              "qa_start_recording/qa_stop_recording. Re-run those cases, or pass "
+              "test_forge_start_recording/test_forge_stop_recording. Re-run those cases, or pass "
               "--allow-missing-video to accept the gap on the record.")
         return 1
     if missing_video:
