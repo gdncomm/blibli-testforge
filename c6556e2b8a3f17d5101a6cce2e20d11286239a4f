@@ -1,0 +1,37 @@
+server/test/session-terminal-mcp.test.js
+  b4ee79b94d3df648 1-81
+server/lib/claude-session.js
+  b4ee79b94d3df648 77-87,192-232
+mac-app/Sources/TestForge/Claude/ClaudeTerminalLauncher.swift
+  b4ee79b94d3df648 1-34
+mac-app/Sources/TestForge/Claude/ClaudeMcpSheetView.swift
+  b4ee79b94d3df648 1-171
+mac-app/Sources/TestForge/Claude/ClaudeMcpViewModel.swift
+  b4ee79b94d3df648 1-101
+mac-app/Sources/TestForge/Claude/ClaudeSectionView.swift
+  b4ee79b94d3df648 29-33,52-72,153-159
+mac-app/Tests/TestForgeTests/ClaudeTerminalMcpTests.swift
+  b4ee79b94d3df648 1-158
+server/routes/sessions.js
+  b4ee79b94d3df648 103-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "c6556e2b8a3f17d5101a6cce2e20d11286239a4f",
+  "prompts": {
+    "b4ee79b94d3df648": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d9b207d3-415d-4f4d-a05e-18864626f99e",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Darshan <darshan.telang@gdn-commerce.com>",
+      "messages": [],
+      "total_additions": 664,
+      "total_deletions": 0,
+      "accepted_lines": 664,
+      "overriden_lines": 0
+    }
+  }
+}
