@@ -41,6 +41,7 @@ enum ClaudeConstants {
 	enum Mcp {
 		static let sheetMinWidth: CGFloat = 520
 		static let sheetMinHeight: CGFloat = 360
+		static let pollIntervalNanoseconds: UInt64 = 2_000_000_000
 	}
 
 	enum Sessions {

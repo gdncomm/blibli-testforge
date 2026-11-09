@@ -11,10 +11,29 @@ final class ClaudeMcpViewModel: ObservableObject {
 	@Published private(set) var reconnectErrors: [String: String] = [:]
 
 	private let service: ClaudeSessionServing
+	private let pollIntervalNanoseconds: UInt64
 	private var sessionId: String?
+	private var pollTask: Task<Void, Never>?
 
-	init(service: ClaudeSessionServing) {
+	/// `pollIntervalNanoseconds`: how often the list asks again while a server is still connecting.
+	init(service: ClaudeSessionServing, pollIntervalNanoseconds: UInt64 = ClaudeConstants.Mcp.pollIntervalNanoseconds) {
 		self.service = service
+		self.pollIntervalNanoseconds = pollIntervalNanoseconds
+	}
+
+	deinit {
+		pollTask?.cancel()
+	}
+
+	/// A server still connecting (just after Claude started, or after Reconnect); the list keeps asking until none is.
+	var isAnyConnecting: Bool {
+		servers.contains { $0.status == "pending" }
+	}
+
+	/// The sheet closed: stop asking.
+	func stopRefreshing() {
+		pollTask?.cancel()
+		pollTask = nil
 	}
 
 	var connectedCount: Int {
@@ -32,6 +51,7 @@ final class ClaudeMcpViewModel: ObservableObject {
 	}
 
 	func load(sessionId: String) {
+		stopRefreshing()
 		self.sessionId = sessionId
 		isLoading = true
 		loadErrorMessage = nil
@@ -77,6 +97,37 @@ final class ClaudeMcpViewModel: ObservableObject {
 		}
 		isLoading = false
 		servers = newServers
+		refreshWhileConnecting()
+	}
+
+	/// Asks again after a pause while any server is connecting; a newer load or closing the sheet cancels it.
+	private func refreshWhileConnecting() {
+		guard isAnyConnecting, pollTask == nil, let sessionId else {
+			return
+		}
+		let service = service
+		let interval = pollIntervalNanoseconds
+		pollTask = Task { [weak self] in
+			while !Task.isCancelled {
+				try? await Task.sleep(nanoseconds: interval)
+				guard !Task.isCancelled,
+					let servers = try? await service.mcpServers(sessionId: sessionId)
+				else {
+					continue
+				}
+				guard let self, self.sessionId == sessionId, !Task.isCancelled else {
+					return
+				}
+				self.servers = servers
+				if !self.isAnyConnecting {
+					break
+				}
+			}
+			// A cancelled task was replaced or stopped; only a finished one clears its own slot.
+			if !Task.isCancelled {
+				self?.pollTask = nil
+			}
+		}
 	}
 
 	private func didFail(_ error: Error, for loadedId: String) {
@@ -94,7 +145,8 @@ final class ClaudeMcpViewModel: ObservableObject {
 			return
 		}
 		servers = newServers
-		if let server = newServers.first(where: { $0.name == name }), !server.isConnected {
+		refreshWhileConnecting()
+		if let server = newServers.first(where: { $0.name == name }), !server.isConnected, server.status != "pending" {
 			reconnectErrors[name] = server.error ?? String(localized: "Still \(server.statusTitle.lowercased()) after reconnecting")
 		}
 	}

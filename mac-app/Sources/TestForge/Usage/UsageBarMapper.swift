@@ -22,7 +22,7 @@ enum UsageBarMapper {
 		if let sevenDay = usage.sevenDay {
 			segments.append(windowSegment(id: "wk", label: String(localized: "wk"), window: sevenDay))
 		}
-		return .showing(segments: segments, model: usage.model, freshness: freshness(ageS: usage.ageS, isStale: usage.isStale))
+		return .showing(segments: segments, model: usage.model, freshness: freshness(ageS: usage.ageS, isStale: usage.isStale), isStale: usage.isStale)
 	}
 
 	private static func windowSegment(id: String, label: String, window: UsageWindow) -> UsageSegment {

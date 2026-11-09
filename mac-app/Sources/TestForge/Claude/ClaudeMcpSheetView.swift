@@ -31,6 +31,7 @@ struct ClaudeMcpSheetView: View {
 		}
 		.padding(TestForgeConstants.Spacing.large)
 		.frame(minWidth: ClaudeConstants.Mcp.sheetMinWidth, minHeight: ClaudeConstants.Mcp.sheetMinHeight)
+		.onDisappear(perform: viewModel.stopRefreshing)
 		.accessibilityElement(children: .contain)
 		.accessibilityIdentifier(Ids.mcpSheet)
 	}
@@ -58,7 +59,8 @@ struct ClaudeMcpSheetView: View {
 		if viewModel.servers.isEmpty {
 			return viewModel.isLoading ? String(localized: "Asking Claude…") : String(localized: "No servers listed")
 		}
-		return String(localized: "\(viewModel.connectedCount) of \(viewModel.servers.count) connected")
+		let counts = String(localized: "\(viewModel.connectedCount) of \(viewModel.servers.count) connected")
+		return viewModel.isAnyConnecting ? String(localized: "\(counts) · still connecting, updating…") : counts
 	}
 
 	@ViewBuilder

@@ -526,7 +526,7 @@ The preview line says whether any route in the app's list catches the link ("No 
 4. When an approval card arrives choose **Approve**, **Always allow** (this repo, from now on) or **Deny** (with a reason Claude reads). For a question, pick an option or type under **Other**, then **Send answer** (or **Skip**).
 5. **Details** opens every tool call and result. **Stop** ends the current turn. **New conversation** starts fresh in the same repo.
 6. The **session switcher** shows every Claude session: the assistant, each Claude run, each triage. One waiting on you is listed first and the sidebar shows a badge.
-7. **MCP** (or typing `/mcp` and sending) lists the MCP servers Claude sees: Connected, Failed, Needs sign-in, Connecting or Off, with the reason one failed. **Reconnect** starts one again (it shows "Reconnecting…", then the new state, or the reason it is still down next to the button). Fix what the reason names first, such as a missing folder.
+7. **MCP** (or typing `/mcp` and sending) lists the MCP servers Claude sees: Connected, Failed, Needs sign-in, Connecting or Off, with the reason one failed. While any server is still connecting, the list updates itself every 2 seconds ("still connecting, updating…"). **Reconnect** starts one again (it shows "Reconnecting…", then the new state, or the reason it is still down next to the button). Fix what the reason names first, such as a missing folder.
 8. **Open in Terminal** continues this conversation in Terminal with `claude --resume`, for `/plugin`, `/login` and every other terminal command. It is off while Claude is working. The app's own Claude process for the conversation ends; send a message in the app later and it resumes, terminal turns included. Don't type in both at once. If it fails, the reason shows next to the button (for example "Send a message first" on a conversation that never started Claude).
 
 **Remote Control**
@@ -655,6 +655,8 @@ Press ⇧⌘Y. It shows raw lines from the server and the app, the last 5,000 ke
 View › Show Claude Usage (⌥⌘U). It shows the model, `ctx: n%`, the 5-hour (`hr`) and weekly (`wk`) limits as used% / elapsed% with time to reset (orange when ahead of the time pace, red at 90% or more), your account, and `rc:` for Remote Control. "last seen `<age>` ago — may be out of date" after a minute without an update.
 
 If it says "Claude usage — nothing reported yet", click **Connect Claude Code status line…**. It asks first, then adds one marked line to your status-line script so it copies figures to `~/.test-forge/usage.json`. Remove that line to undo. Figures appear at Claude Code's next status-line update.
+
+If the figures say "last seen … ago — may be out of date", nothing has updated them for a while. Either no terminal Claude has been open, or your status-line script was replaced (for example by a status-line setup tool) and lost the TestForge line. **Reconnect status line…** puts the line back; it changes nothing when the line is still there.
 
 ---
 
