@@ -100,6 +100,40 @@ export function registerSessionRoutes(app, ctx) {
 		res.json({ ok: true });
 	});
 
+	// D-222: `/mcp` in the app — the session's MCP servers, and Reconnect for one of them.
+	app.get("/api/sessions/:id/mcp", async (req, res) => {
+		const session = find(req, res);
+		if (!session) return;
+		try {
+			res.json({ servers: await session.mcpServers() });
+		} catch (error) {
+			res.status(409).json({ error: error.message });
+		}
+	});
+
+	app.post("/api/sessions/:id/mcp/reconnect", async (req, res) => {
+		const session = find(req, res);
+		if (!session) return;
+		const name = req.body?.name?.trim();
+		if (!name) return res.status(400).json({ error: "which MCP server? name is empty" });
+		try {
+			res.json({ servers: await session.reconnectMcpServer(name) });
+		} catch (error) {
+			res.status(409).json({ error: error.message });
+		}
+	});
+
+	// D-222: Open in Terminal — ends the app's Claude process and returns the `claude --resume` line to run.
+	app.post("/api/sessions/:id/terminal", (req, res) => {
+		const session = find(req, res);
+		if (!session) return;
+		try {
+			res.json(session.handOffToTerminal());
+		} catch (error) {
+			res.status(409).json({ error: error.message });
+		}
+	});
+
 	app.post("/api/sessions/:id/close", (req, res) => {
 		const session = find(req, res);
 		if (!session) return;

@@ -471,3 +471,12 @@ Tour: QA step 14 "Re-check results after a new build".
   can't run without Claude. The separate **Replays anyone can follow** tip is gone with the Explain menu it pointed at.
 - Onboarding QA workflow step 2 names the ⚡ and ✨ icons and says a Claude pass counts once its recording replays;
   step 10 is now "Test Cases › hold Replay". Developer workflow "Replay what you touched" says the ⚡ cases replay free.
+
+### Revision R42 (D-222, 2026-11-09) — MCP servers and Open in Terminal in the Claude section
+
+- New tour line **MCP servers** (anchor `claudeMcp`, the MCP button in the Claude header): MCP, or typing /mcp, lists
+  the servers Claude sees and why one failed; Reconnect starts one again once its setup is fixed.
+- New tour line **Take it to Terminal** (anchor `claudeOpenInTerminal`): Open in Terminal continues the conversation
+  with `claude --resume`; a message in the app later picks it up again.
+- Onboarding: QA workflow step 25 and developer workflow step 17 "Fix an MCP server, or take the chat to Terminal"
+  (Claude · ⌘0 › MCP · Open in Terminal). Both need Claude.

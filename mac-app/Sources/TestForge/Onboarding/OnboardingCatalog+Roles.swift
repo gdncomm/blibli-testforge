@@ -218,6 +218,16 @@ extension OnboardingCatalog {
 					"""),
 				needsClaude: false
 			),
+			OnboardingFlowStep(
+				number: 25,
+				title: String(localized: "Fix an MCP server, or take the chat to Terminal"),
+				place: String(localized: "Claude · ⌘0 › MCP · Open in Terminal"),
+				text: String(localized: """
+					MCP (or typing /mcp) lists the servers Claude sees, why one failed, and Reconnect. Open in Terminal continues \
+					the same conversation with claude --resume for every terminal command; your next message here picks it up again.
+					"""),
+				needsClaude: true
+			),
 		]
 	)
 
@@ -347,6 +357,16 @@ extension OnboardingCatalog {
 					Links between docs open in place; open one in its own window on half the screen next to Xcode.
 					"""),
 				needsClaude: false
+			),
+			OnboardingFlowStep(
+				number: 17,
+				title: String(localized: "Fix an MCP server, or take the chat to Terminal"),
+				place: String(localized: "Claude · ⌘0 › MCP · Open in Terminal"),
+				text: String(localized: """
+					MCP (or typing /mcp) lists the servers Claude sees, why one failed, and Reconnect. Open in Terminal continues \
+					the same conversation with claude --resume for every terminal command; your next message here picks it up again.
+					"""),
+				needsClaude: true
 			),
 		]
 	)

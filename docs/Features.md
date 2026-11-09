@@ -74,6 +74,8 @@ One checklist that says whether tests can run. Green means ready. Only checks th
 | Composer | Message the session (⌘↩). A Screenshot toggle attaches the test phone's screen. |
 | Details | Opens every tool call and result in full. |
 | Stop, New conversation | Stop the current turn, or start a fresh conversation in the same repo. |
+| MCP | The MCP servers Claude sees, connected or not and why, with Reconnect for each. Typing /mcp does the same. |
+| Open in Terminal | Continues the conversation in Terminal with `claude --resume`, for /plugin, /login and every other terminal command. Your next message in the app picks it up again, terminal turns included. |
 | Remote Control | Run QA here from the Claude app's Code tab or claude.ai/code. Turn it on, then scan the QR code. Same folder or own worktree per session. |
 
 ### Tests (⌘2) · QA mostly · Claude: Partly

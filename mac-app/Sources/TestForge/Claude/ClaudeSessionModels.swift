@@ -148,3 +148,45 @@ enum ClaudeSectionState: Equatable {
 	case ready(ClaudeSessionSummary)
 	case failed(String)
 }
+
+/// One MCP server as the session's Claude sees it, as `/mcp` lists it in a terminal (D-222).
+struct ClaudeMcpServer: Decodable, Equatable, Identifiable {
+	let name: String
+	let status: String
+	let error: String?
+	let scope: String?
+
+	var id: String { name }
+
+	var isConnected: Bool {
+		status == "connected"
+	}
+
+	/// Plain words for the server's state.
+	var statusTitle: String {
+		switch status {
+			case "connected":
+				return String(localized: "Connected")
+			case "failed":
+				return String(localized: "Failed")
+			case "needs-auth":
+				return String(localized: "Needs sign-in")
+			case "pending":
+				return String(localized: "Connecting")
+			case "disabled":
+				return String(localized: "Off")
+			default:
+				return status
+		}
+	}
+}
+
+struct ClaudeMcpAnswer: Decodable {
+	let servers: [ClaudeMcpServer]
+}
+
+/// `/api/sessions/:id/terminal`: the shell line that continues the conversation in a terminal (D-222).
+struct ClaudeTerminalHandoff: Decodable, Equatable {
+	let claudeSessionId: String
+	let command: String
+}

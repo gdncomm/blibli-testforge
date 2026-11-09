@@ -517,6 +517,16 @@ enum TutorialCatalog {
 			message: "Details opens every tool call and result in full — what Claude sent and what came back."
 		),
 		TutorialStep(
+			anchor: .claudeMcp,
+			title: "MCP servers",
+			message: "MCP, or typing /mcp, lists the servers Claude sees and why one failed. Reconnect starts one again once its setup is fixed."
+		),
+		TutorialStep(
+			anchor: .claudeOpenInTerminal,
+			title: "Take it to Terminal",
+			message: "Open in Terminal continues this conversation with claude --resume, for /plugin and every other terminal command. Send a message here later to pick it up again."
+		),
+		TutorialStep(
 			anchor: .claudeComposer,
 			title: "Tell Claude what to do",
 			message: "Message the session you're looking at, or pick a quick reply such as 'Investigate what went wrong and fix it'. ⌘↩ sends."
