@@ -1,6 +1,6 @@
 import Foundation
 
-/// Where flow maps live: `~/.testforge/flows/<local time>/flow.json`, thumbnails beside it.
+/// Where flow maps live: `~/.test-forge/flows/<local time>/flow.json`, thumbnails beside it.
 protocol FlowMapStoring {
 	func makeFolder(now: Date) throws -> URL
 	func save(map: FlowMap, in folder: URL) throws
@@ -12,7 +12,7 @@ struct FileFlowMapStore: FlowMapStoring {
 
 	let root: URL
 
-	init(root: URL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".testforge/flows", isDirectory: true)) {
+	init(root: URL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".test-forge/flows", isDirectory: true)) {
 		self.root = root
 	}
 

@@ -14,7 +14,7 @@ struct ServerLocation {
 	let dashboardDirectory: URL
 	let baseURL: URL
 
-	/// The app clone's `BlibliMobile-iOS` folder, handed to the server as `QA_PROJECT_DIR`; nil leaves the server to its own default or error.
+	/// The app clone's `BlibliMobile-iOS` folder, handed to the server as `TEST_FORGE_PROJECT_DIR`; nil leaves the server to its own default or error.
 	var projectDirectory: URL?
 
 	var startScriptURL: URL { dashboardDirectory.appendingPathComponent("start.sh") }
@@ -178,7 +178,7 @@ final class ServerSupervisor: ServerSupervising {
 	/// Output goes to the log file, not a pipe: a pipe would break the server (SIGPIPE) once the app quits.
 	private func makeLaunchCommand() -> String {
 		let logPath = location.logURL.path.replacingOccurrences(of: "'", with: "'\\''")
-		let projectExport = location.projectDirectory.map { "export QA_PROJECT_DIR='\(shellQuoted($0.path))' && " } ?? ""
+		let projectExport = location.projectDirectory.map { "export TEST_FORGE_PROJECT_DIR='\(shellQuoted($0.path))' && " } ?? ""
 		return "mkdir -p .data && \(projectExport)exec ./start.sh >> '\(logPath)' 2>&1"
 	}
 

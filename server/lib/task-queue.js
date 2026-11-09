@@ -1,5 +1,5 @@
 // Task queue with two lanes (D-024): the device lane runs strictly one task at a time because every
-// task in it drives the one simulator; the general lane runs up to QA_GENERAL_CONCURRENCY tasks in
+// task in it drives the one simulator; the general lane runs up to TEST_FORGE_GENERAL_CONCURRENCY tasks in
 // parallel. Executors are registered per task kind; the queue only schedules and records.
 import { EventEmitter } from "node:events";
 import { mkdir, readFile, writeFile } from "node:fs/promises";

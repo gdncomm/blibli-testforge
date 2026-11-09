@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Audits whether the host project has the skill(s) this plugin's driver needs for one platform,
-before `/qa-init` finishes setup or a run starts.
+before `/test-forge-init` finishes setup or a run starts.
 
 `propose_skill_extension.py` already discovers a project's governing view-code skill(s) — a
 codegen-gate hook's `ALLOWED_SKILLS`, or a keyword heuristic over each skill's description — but only
@@ -10,7 +10,7 @@ there at all." This script adds exactly that, reusing that discovery rather than
 **The requirement is declared per platform, in that platform's own doc, never hardcoded here.**
 `platforms/<platform>.md` carries a `## Host-project skills required` section starting with
 `**Required: yes**` or `**Required: no**`. iOS declares yes (a view-code codegen skill; every
-accessibility-identifier retrofit and `QADriverKit` edit chains into it). Android and web declare no
+accessibility-identifier retrofit and `TestForgeDriverKit` edit chains into it). Android and web declare no
 today — their driver isn't built yet, so there's nothing to block on — but the same mechanism picks
 either up unchanged the moment a driver and a requirement are declared for it. This keeps the script
 platform-agnostic: it never hardcodes "swift-codegen" or any other skill name.
@@ -18,7 +18,7 @@ platform-agnostic: it never hardcodes "swift-codegen" or any other skill name.
 Four outcomes:
   found              a relevant skill exists. Delegates to `propose_skill_extension.py`'s existing
                       extension-proposal path, unchanged. Never blocking.
-  missing_blocking    nothing relevant found, and the platform requires it. `/qa-init` and Stage 1
+  missing_blocking    nothing relevant found, and the platform requires it. `/test-forge-init` and Stage 1
                       Preflight both stop here.
   missing_informational  nothing relevant found, platform does not require it (today: android, web).
                       Reported for visibility, never blocking.
@@ -35,8 +35,8 @@ in the same run: the skill still doesn't exist on disk. The only thing that clea
 `missing_blocking` is a later re-run finding it there.
 
 **Fingerprint, for "one-time per platform."** A successful, unchanged audit is recorded under
-`settings["qaSkillAudit"][<platform>]` in the host project's `.claude/settings.json` (a separate
-namespace from `settings["env"]`, which `qa_init.py` forwards into the launched app's own
+`settings["testForgeSkillAudit"][<platform>]` in the host project's `.claude/settings.json` (a separate
+namespace from `settings["env"]`, which `test_forge_init.py` forwards into the launched app's own
 environment — this bookkeeping must never end up there). A later run with the same discovery result
 skips re-prompting; a changed one (a skill renamed or deleted since) re-triggers it — "one-time" means
 "don't nag about state that hasn't changed," not "never look again."
@@ -139,14 +139,14 @@ def load_recorded_fingerprint(project_root: Path, platform: str) -> str | None:
     if not settings_path.exists():
         return None
     settings = json.loads(settings_path.read_text())
-    return settings.get("qaSkillAudit", {}).get(platform, {}).get("fingerprint")
+    return settings.get("testForgeSkillAudit", {}).get(platform, {}).get("fingerprint")
 
 
 def record_fingerprint(project_root: Path, platform: str, fp: str) -> None:
     settings_path = project_root / ".claude" / "settings.json"
     settings_path.parent.mkdir(parents=True, exist_ok=True)
     settings = json.loads(settings_path.read_text()) if settings_path.exists() else {}
-    audit_state = settings.setdefault("qaSkillAudit", {})
+    audit_state = settings.setdefault("testForgeSkillAudit", {})
     audit_state[platform] = {"fingerprint": fp}
     settings_path.write_text(json.dumps(settings, indent=2) + "\n")
 
@@ -200,7 +200,7 @@ def main() -> int:
     parser.add_argument("--check-only", action="store_true",
                         help="cheap presence re-check against the recorded fingerprint — no "
                              "discovery report, no scaffold, no settings.json write. For Stage 1 "
-                             "Preflight, not /qa-init.")
+                             "Preflight, not /test-forge-init.")
     args = parser.parse_args()
 
     project_root = args.project_root.resolve()
@@ -208,15 +208,15 @@ def main() -> int:
     if args.check_only:
         recorded = load_recorded_fingerprint(project_root, args.platform)
         if recorded is None:
-            print(f"! no recorded skill audit for {args.platform} — run /qa-init")
+            print(f"! no recorded skill audit for {args.platform} — run /test-forge-init")
             return 1
         result = audit(project_root, args.platform, args.platforms_dir)
         if result.fingerprint != recorded:
-            print(f"! skill audit state changed since /qa-init for {args.platform} "
-                  f"(recorded {recorded}, now {result.fingerprint}) — re-run /qa-init step 8")
+            print(f"! skill audit state changed since /test-forge-init for {args.platform} "
+                  f"(recorded {recorded}, now {result.fingerprint}) — re-run /test-forge-init step 8")
             return 1
         if result.status == "missing_blocking":
-            print(f"! {args.platform} still has no governing skill — re-run /qa-init step 8")
+            print(f"! {args.platform} still has no governing skill — re-run /test-forge-init step 8")
             return 1
         return 0
 
@@ -248,7 +248,7 @@ def main() -> int:
         return 0
 
     # missing_blocking
-    print(f"  ! nothing found, and {result.platform} requires it — this blocks /qa-init and any run")
+    print(f"  ! nothing found, and {result.platform} requires it — this blocks /test-forge-init and any run")
     if not args.dry_run:
         scaffold = draft_new_skill_scaffold(result, project_root, out_dir)
         print(f"  scaffold written to {scaffold}")

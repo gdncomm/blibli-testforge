@@ -2,17 +2,17 @@
 // history (D-044). Secrets reach `security` on stdin (`security -i`), never on a command line,
 // where any process could read them from `ps`.
 //
-// Each login is one generic-password item: service `testforge.login.<env>`, account `<profile>`,
+// Each login is one generic-password item: service `test-forge.login.<env>`, account `<profile>`,
 // secret = JSON {email, password, otp?}. A stored OTP is allowed only for environments with a
 // static test OTP (UATB); production OTPs are real and are asked of the person at run time.
 import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { TESTFORGE_HOME } from "./qa-copy.js";
+import { TEST_FORGE_HOME } from "./test-forge-copy.js";
 
 const run = promisify(execFile);
-const SERVICE_PREFIX = "testforge.login.";
+const SERVICE_PREFIX = "test-forge.login.";
 const NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
 const FIELDS = ["email", "password", "otp"];
 
@@ -20,7 +20,7 @@ const FIELDS = ["email", "password", "otp"];
 export const STATIC_OTP_ENVIRONMENTS = new Set(["uatb"]);
 
 /** Non-secret listing (env, profile, masked email, whether an OTP is stored), so the UI can list logins without touching the Keychain. */
-const indexPath = (home = TESTFORGE_HOME) => join(home, "credentials-index.json");
+const indexPath = (home = TEST_FORGE_HOME) => join(home, "credentials-index.json");
 
 export function maskEmail(email) {
 	const [user, domain] = String(email ?? "").split("@");
@@ -80,7 +80,7 @@ async function readIndex(home) {
 }
 
 async function writeIndex(rows, home) {
-	await mkdir(home ?? TESTFORGE_HOME, { recursive: true });
+	await mkdir(home ?? TEST_FORGE_HOME, { recursive: true });
 	await writeFile(indexPath(home), `${JSON.stringify(rows, null, 2)}\n`, { mode: 0o600 });
 }
 

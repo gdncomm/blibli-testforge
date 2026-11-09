@@ -90,7 +90,7 @@ is read-only to a run** and never gains an id it did not already have.
 | `screenshots` | list of paths. **This key, not `media`** — a wrong key stages zero files and every Evidence line silently disappears |
 | `video` | **required on every interacting `PASS`/`DISCREPANCY`** (see below) — one path, or a list of per-attempt recordings named `<caseId>-attempt<N>-<verdict>.mp4`. The failed attempts are the visual proof of what a heal changed, so they survive pruning; anything that is not an attempt does not. `build_evidence.py` fails the run when an interacting case is missing this key |
 | `interaction` | optional `true`/`false`, overriding what `commands` implies about whether the case drove the app. Set it when the command trail understates the case — absent **and** with no `commands`, the case is treated as interacting |
-| `qaSteps` | touch points for reproducing by hand, for the QA reader |
+| `testForgeSteps` | touch points for reproducing by hand, for the QA reader |
 | `commands` | `{tool, args, result}` — the machine-readable trail |
 | `expectationSources` | which of `testCases` · `techDoc` · `code` · `developer` the expectation actually came from. An `authority` of `app-wrong` without `techDoc` or `developer` here is not a supportable verdict |
 | `notes` | anything a later run needs to know but the case does not assert |
@@ -324,12 +324,12 @@ nothing.
 The line is drawn on the commands the case actually called. These are the interacting ones:
 
 ```
-qa_tap · qa_tap_by_label · qa_swipe · qa_scroll_until_exists · qa_scroll_to_top
-qa_type · qa_open_deeplink · qa_relaunch_app · qa_alert_tap
+test_forge_tap · test_forge_tap_by_label · test_forge_swipe · test_forge_scroll_until_exists · test_forge_scroll_to_top
+test_forge_type · test_forge_open_deeplink · test_forge_relaunch_app · test_forge_alert_tap
 ```
 
-Everything else — `qa_assert_exists`, `qa_wait_for_exists`, `qa_wait_for_not_exists`, `qa_get_label`,
-`qa_get_labels`, `qa_get_element_count`, `qa_get_frame`, `qa_dump_tree`, `qa_screenshot` — reads
+Everything else — `test_forge_assert_exists`, `test_forge_wait_for_exists`, `test_forge_wait_for_not_exists`, `test_forge_get_label`,
+`test_forge_get_labels`, `test_forge_get_element_count`, `test_forge_get_frame`, `test_forge_dump_tree`, `test_forge_screenshot` — reads
 without changing anything, and a case built only from those is settled by one still.
 
 Two rules keep the gate honest rather than guessable:
@@ -344,9 +344,9 @@ not forbid them.
 
 ### One clip per attempt, and nothing else
 
-A live run produces recordings no report has a use for: a clip left rolling through a `qa_dump_tree`
+A live run produces recordings no report has a use for: a clip left rolling through a `test_forge_dump_tree`
 diagnosis, a re-recording of an attempt that had to be restarted, a zero-byte file from a
-`qa_stop_recording` that never had a start. They accumulate at roughly a megabyte a second, and a
+`test_forge_stop_recording` that never had a start. They accumulate at roughly a megabyte a second, and a
 reviewer facing three clips in one case folder cannot tell which one the verdict came from.
 
 So a case folder is pruned to **one recording per attempt** before the report is built:

@@ -58,7 +58,7 @@ test("re-run candidates: failures not yet re-run, plus Needs re-run; a recorded 
 test("report: manifest, per-case table, FLAKY, review trail, evidence", () => {
 	const report = buildReport(snapshot([
 		{ caseId: "SF-084", scenario: "Tomorrow tab", mode: "replay", macroName: "SF-084 · m", status: "done", verdict: "FAIL at step 5", rerun: { verdict: "PASS" }, durationMs: 41000, review: { action: "accept" }, evidence: { screenshots: ["/m/1.png"], mocksServed: { "GET /backend/configs": 2 } } },
-	], { manifest: { branch: "qa", codeId: "abc1234", builtFrom: "abc1234", simulator: "QA · iPhone", environment: "prod" } }));
+	], { manifest: { branch: "qa", codeId: "abc1234", builtFrom: "abc1234", simulator: "TestForge · iPhone", environment: "prod" } }));
 	assert.match(report, /\*\*Code:\*\* qa @ abc1234/);
 	assert.match(report, /\| SF-084 Tomorrow tab \| macro SF-084 · m \| FAIL at step 5 → re-run PASS \| \*\*FLAKY\*\* \| accept \| 41 s \| 1 screenshot\(s\) \|/);
 	assert.match(report, /GET \/backend\/configs ×2/);

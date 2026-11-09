@@ -25,7 +25,7 @@ test("no QA simulator: blocked with the create fix, nothing probed", async () =>
 		probeHarness: async () => (probed = true),
 	});
 	assert.equal(state.ready, false);
-	assert.equal(state.checks[0].fix, "qa-sim-create");
+	assert.equal(state.checks[0].fix, "test-forge-sim-create");
 	assert.equal(state.checks[2].fix, "build-qa");
 	assert.match(state.checks[2].detail, /built from aaaaaaa, the code is at bbbbbbb/);
 	assert.equal(probed, false);
@@ -33,7 +33,7 @@ test("no QA simulator: blocked with the create fix, nothing probed", async () =>
 
 test("D-120: other booted simulators are left alone — every command names the test device", async () => {
 	const { checkReadiness } = await import("../lib/readiness.js");
-	const qa = { udid: "q", name: "QA · iPhone", state: "Booted" };
+	const qa = { udid: "q", name: "TestForge · iPhone", state: "Booted" };
 	const state = await checkReadiness({
 		bundleId: "x", configuration: "PerformanceTest",
 		simulatorState: async () => ({ qa, booted: [qa, { udid: "d", name: "iPhone" }], others: [{ udid: "d", name: "iPhone" }] }),
@@ -47,7 +47,7 @@ test("D-120: other booted simulators are left alone — every command names the 
 
 test("P7: a runner that stops answering on a good setup only warns — the next test restarts it", async () => {
 	const { checkReadiness } = await import("../lib/readiness.js");
-	const qa = { udid: "q", name: "QA · iPhone", state: "Booted" };
+	const qa = { udid: "q", name: "TestForge · iPhone", state: "Booted" };
 	const base = {
 		bundleId: "x", configuration: "PerformanceTest",
 		simulatorState: async () => ({ qa, booted: [qa], others: [] }),
@@ -62,7 +62,7 @@ test("P7: a runner that stops answering on a good setup only warns — the next 
 
 test("P3: warnings don't block, Claude only gates ▶ Run, low disk blocks", async () => {
 	const { checkReadiness } = await import("../lib/readiness.js");
-	const qa = { udid: "q", name: "QA · iPhone", state: "Booted" };
+	const qa = { udid: "q", name: "TestForge · iPhone", state: "Booted" };
 	const base = {
 		bundleId: "com.example.none", configuration: "PerformanceTest",
 		simulatorState: async () => ({ qa, booted: [qa], others: [] }),
@@ -85,7 +85,7 @@ test("P3: warnings don't block, Claude only gates ▶ Run, low disk blocks", asy
 
 test("D-156: claude-env is a warn-level check, scoped to all (it never gates a Run/Replay here)", async () => {
 	const { checkReadiness } = await import("../lib/readiness.js");
-	const qa = { udid: "q", name: "QA · iPhone", state: "Booted" };
+	const qa = { udid: "q", name: "TestForge · iPhone", state: "Booted" };
 	const base = {
 		bundleId: "com.example.none", configuration: "PerformanceTest",
 		simulatorState: async () => ({ qa, booted: [qa], others: [] }),
@@ -131,7 +131,7 @@ const memoInputs = (overrides = {}) => {
 	const calls = { installed: 0, matched: 0 };
 	const options = {
 		bundleId: "com.example", configuration: "PerformanceTest",
-		simulatorState: async () => ({ qa: { udid: "UDID-1", name: "QA · iPhone", state: "Booted" }, booted: [], others: [] }),
+		simulatorState: async () => ({ qa: { udid: "UDID-1", name: "TestForge · iPhone", state: "Booted" }, booted: [], others: [] }),
 		buildState: async () => ({ state: "current", build: { codeId: "abc1234", endedAt: "2026-10-13T10:00:00Z" }, codeId: "abc1234" }),
 		legacyBundle: async () => null,
 		probeHarness: async () => true,
@@ -169,7 +169,7 @@ test("D-082: a new build or simulator changes the fingerprint and re-runs the ch
 	const { calls, options } = memoInputs({ memo });
 	await checkReadiness(options);
 	await checkReadiness({ ...options, buildState: async () => ({ state: "current", build: { codeId: "def5678", endedAt: "2026-10-13T11:00:00Z" }, codeId: "def5678" }) });
-	await checkReadiness({ ...options, simulatorState: async () => ({ qa: { udid: "UDID-2", name: "QA · iPhone", state: "Booted" }, booted: [], others: [] }) });
+	await checkReadiness({ ...options, simulatorState: async () => ({ qa: { udid: "UDID-2", name: "TestForge · iPhone", state: "Booted" }, booted: [], others: [] }) });
 	assert.equal(calls.installed, 3);
 });
 
@@ -242,7 +242,7 @@ test("D-083: age warns only for a GitHub branch; an old prepare without drift in
 test("D-083: localDrift tells app-input changes from tools/macro changes", async () => {
 	const { execFileSync } = await import("node:child_process");
 	const { writeFile } = await import("node:fs/promises");
-	const { localDrift, localSnapshotId, buildInputId } = await import("../lib/qa-copy.js");
+	const { localDrift, localSnapshotId, buildInputId } = await import("../lib/test-forge-copy.js");
 	const repo = await mkdtemp(join(tmpdir(), "drift-"));
 	const git = (...args) => execFileSync("git", ["-C", repo, ...args], { stdio: "pipe" });
 	git("init", "-q");
@@ -271,7 +271,7 @@ test("D-083: localDrift tells app-input changes from tools/macro changes", async
 test("D-198: run notes beside macros aren't app code; drift names the changed app file", async () => {
 	const { execFileSync } = await import("node:child_process");
 	const { writeFile, cp } = await import("node:fs/promises");
-	const { localDrift, localSnapshotId, buildInputId } = await import("../lib/qa-copy.js");
+	const { localDrift, localSnapshotId, buildInputId } = await import("../lib/test-forge-copy.js");
 	const { checkReadiness } = await import("../lib/readiness.js");
 	const repo = await mkdtemp(join(tmpdir(), "drift-notes-"));
 	const git = (...args) => execFileSync("git", ["-C", repo, ...args], { stdio: "pipe" }).toString().trim();

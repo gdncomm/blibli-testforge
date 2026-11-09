@@ -117,7 +117,7 @@ export function watchForEscalation(session, { model, escalate, now = Date.now, t
 		}
 	};
 	const onResult = ({ name = "", text = "", isError }) => {
-		const isDriverStep = /qa[-_]driver|qaw|xcrun|simctl/i.test(name) || name === "Bash";
+		const isDriverStep = /qa[-_]driver|test-forge|xcrun|simctl/i.test(name) || name === "Bash";
 		const didFail = isError || (isDriverStep && FAILED_STEP.test(String(text).slice(0, 400)));
 		failuresInRow = didFail ? failuresInRow + 1 : 0;
 		if (failuresInRow >= STUCK_AFTER_ERRORS) moveUp(`${failuresInRow} failed steps in a row on ${MODEL_LABELS[current]}`);

@@ -3,7 +3,7 @@
 // macro. Replay is deterministic — no Claude — and every step reports its own result.
 //
 // Storage (D-038): macros at `<UITestRoot>/<Module>/<Submodule>/macros/<slug>.json`, the registry at
-// `<UITestRoot>/QAMacros/elements.json`. Both are data files next to the UI tests, never target
+// `<UITestRoot>/TestForgeMacros/elements.json`. Both are data files next to the UI tests, never target
 // members. v1 macros (macro_cli.py) keep replaying through lib/macro.js.
 import { execFile, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -25,7 +25,7 @@ const ANSWER_GRACE_S = 20;
 const SKIPPED_DIRS = new Set(["node_modules", ".git", "DerivedData", "build"]);
 
 export function uiTestRoot() {
-	return process.env.QA_UITEST_ROOT || `${process.env.QA_PROJECT_DIR || "."}/${process.env.QA_UITEST_TARGET || "BlibliMobile_XCUITest"}`;
+	return process.env.TEST_FORGE_UITEST_ROOT || `${process.env.TEST_FORGE_PROJECT_DIR || "."}/${process.env.TEST_FORGE_UITEST_TARGET || "BlibliMobile_XCUITest"}`;
 }
 
 /** Time-ordered, never derived from content, never reused: `el_` / `mc_` / `st_` + 10 base32 chars. */
@@ -39,7 +39,7 @@ export function newId(prefix) {
 // --- Storage ------------------------------------------------------------------
 
 export function registryPath(root = uiTestRoot()) {
-	return join(root, "QAMacros", "elements.json");
+	return join(root, "TestForgeMacros", "elements.json");
 }
 
 export async function loadRegistry(root = uiTestRoot()) {
@@ -308,7 +308,7 @@ export function planStep(step, registry) {
 	if (step.do === "alertTap") {
 		const check = (outcome) => (outcome?.found ? passed() : failed(`no alert button “${step.button}”`));
 		const waitS = Number(step.timeout ?? DEFAULT_WAIT_S);
-		// The runner (qa-mocker-testing-3+) also looks in SpringBoard, so system alerts are reachable.
+		// The runner (test-forge-driver-3+) also looks in SpringBoard, so system alerts are reachable.
 		return { attempts: [{ command: { kind: "alertTap", buttonTitle: step.button, timeout: waitS }, check }], waitS };
 	}
 	if (step.do === "screenshot") {
@@ -332,7 +332,7 @@ export function planStep(step, registry) {
 		case "tap": {
 			const attempts = [];
 			const extra = step.timeout === undefined ? {} : { timeout: Number(step.timeout) };
-			// One multi-tap gesture (qa-mocker-testing-4+), for `onTapGesture(count:)` handlers.
+			// One multi-tap gesture (test-forge-driver-4+), for `onTapGesture(count:)` handlers.
 			if (Number(step.taps) > 1) extra.taps = Number(step.taps);
 			// `force`: tap the element's coordinate even when something covers it — how a macro taps
 			// "outside" a sheet (on the dimmed area over a known element). The runner records `forced`.
@@ -340,7 +340,7 @@ export function planStep(step, registry) {
 			if (target.by === "identifier") attempts.push({ command: identifierCommand("tap", target, extra), check: checkGesture });
 			const sameType = new Set(target.labels.map((fallback) => fallback.type ?? "any")).size === 1;
 			if (target.labels.length > 1 && sameType) {
-				// One OR-ed query, as a hand-written XCUITest would (`anyOf`, qa-mocker-testing-3+); `label`
+				// One OR-ed query, as a hand-written XCUITest would (`anyOf`, test-forge-driver-3+); `label`
 				// keeps an older runner working on the first spelling.
 				const [first] = target.labels;
 				const anyOf = target.labels.map((fallback) => ({ label: fallback.label, labelMatch: runnerLabelMatch(fallback.match) }));
@@ -376,7 +376,7 @@ export function planStep(step, registry) {
 		case "waitForGone": {
 			const isGone = step.do === "waitForGone";
 			const kind = isGone ? "waitForNotExists" : "waitForExists";
-			// Label-only elements wait on one OR-ed predicate query (qa-mocker-testing-5+).
+			// Label-only elements wait on one OR-ed predicate query (test-forge-driver-5+).
 			const command = target.by === "identifier"
 				? identifierCommand(kind, target, { timeout: waitS })
 				: { kind, anyOf: target.labels.map((fallback) => ({ label: fallback.label, labelMatch: runnerLabelMatch(fallback.match) })), elementType: target.labels[0].type, timeout: waitS };
@@ -411,7 +411,7 @@ export function planStep(step, registry) {
 	}
 }
 
-/** The registry reads like a predicate (`==`, `CONTAINS`, `BEGINSWITH`); QADriverRunner's own names differ. */
+/** The registry reads like a predicate (`==`, `CONTAINS`, `BEGINSWITH`); TestForgeDriverRunner's own names differ. */
 function runnerLabelMatch(match) {
 	const normalized = String(match ?? "==").toUpperCase();
 	if (normalized === "CONTAINS") return "contains";
@@ -561,7 +561,7 @@ export async function flattenSteps(macro, loadMacro, depth = 0, trail = [], rout
 	return steps;
 }
 
-/** QADriverRunner answers `{id, value: {...}, at}` on success and `{id, error}` on failure. */
+/** TestForgeDriverRunner answers `{id, value: {...}, at}` on success and `{id, error}` on failure. */
 function unwrapOutcome(raw) {
 	if (raw && typeof raw.value === "object" && raw.value !== null && raw.error === undefined) return raw.value;
 	return raw;
@@ -593,7 +593,7 @@ async function isShowing(target, send, timeout) {
 		return probe?.exists === true;
 	}
 	if (target?.by !== "label") return false;
-	// Label-only: one OR-ed `hasMatch` query (qa-mocker-testing-5+). Never `getLabels` — reading each
+	// Label-only: one OR-ed `hasMatch` query (test-forge-driver-5+). Never `getLabels` — reading each
 	// label off a live login web page raised an XCTest failure that ended the runner session.
 	const [first] = target.labels;
 	const anyOf = target.labels.map((fallback) => ({ label: fallback.label, labelMatch: runnerLabelMatch(fallback.match) }));
@@ -889,7 +889,7 @@ function rememberOutcome(memo, step, result) {
 export async function macroDataInProject(projectFile) {
 	try {
 		const text = await readFile(projectFile, "utf8");
-		return /\/macros\/[^"]*\.json|QAMacros/.test(text);
+		return /\/macros\/[^"]*\.json|TestForgeMacros/.test(text);
 	} catch {
 		return false;
 	}

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Proof screenshots are local files under `QA_MEDIA_ROOT`; clicking one opens it in Preview.
+/// Proof screenshots are local files under `TEST_FORGE_MEDIA_ROOT`; clicking one opens it in Preview.
 struct ResultScreenshotStripView: View {
 	let urls: [URL]
 	let openScreenshot: (URL) -> Void

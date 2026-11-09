@@ -14,15 +14,15 @@ enum UpdateConstants {
 	static let batchSSH = "core.sshCommand=ssh -o BatchMode=yes"
 
 	enum Accessibility {
-		static let menuItem = "QAW_Update_MenuItem"
-		static let section = "QAW_Update_Section"
-		static let statusText = "QAW_Update_Status"
-		static let incomingList = "QAW_Update_Incoming"
-		static let incomingRowPrefix = "QAW_Update_Incoming_"
-		static let checkButton = "QAW_Update_Check"
-		static let updateButton = "QAW_Update_Apply"
-		static let progressText = "QAW_Update_Progress"
-		static let failureText = "QAW_Update_Failure"
-		static let hintText = "QAW_Update_Hint"
+		static let menuItem = "TestForge_Update_MenuItem"
+		static let section = "TestForge_Update_Section"
+		static let statusText = "TestForge_Update_Status"
+		static let incomingList = "TestForge_Update_Incoming"
+		static let incomingRowPrefix = "TestForge_Update_Incoming_"
+		static let checkButton = "TestForge_Update_Check"
+		static let updateButton = "TestForge_Update_Apply"
+		static let progressText = "TestForge_Update_Progress"
+		static let failureText = "TestForge_Update_Failure"
+		static let hintText = "TestForge_Update_Hint"
 	}
 }

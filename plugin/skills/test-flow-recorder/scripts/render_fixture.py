@@ -39,11 +39,11 @@ TOKEN_PATTERN = re.compile(r"\{\{\s*(now|anchor|startOfDay|endOfDay)\s*(?:([+-])
 EPOCH_MILLIS_PATTERN = re.compile(r"(?<![\d.])1[5-9]\d{11}(?![\d.])")
 UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
 
-# UTC unless QA_TIMEZONE_OFFSET_HOURS says otherwise. An app that renders date labels in local time
+# UTC unless TEST_FORGE_TIMEZONE_OFFSET_HOURS says otherwise. An app that renders date labels in local time
 # needs its own offset: a template anchored in the wrong zone puts a "starts today" schedule on the
 # wrong calendar day for a third of every day. Read from the environment rather than taken as a flag
 # because this module is imported as a library as well as run as a command.
-DEFAULT_TIMEZONE = timezone(timedelta(hours=float(os.environ.get("QA_TIMEZONE_OFFSET_HOURS", "0"))))
+DEFAULT_TIMEZONE = timezone(timedelta(hours=float(os.environ.get("TEST_FORGE_TIMEZONE_OFFSET_HOURS", "0"))))
 
 
 def parse_anchor(raw: str | None) -> datetime:

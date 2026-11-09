@@ -6,7 +6,7 @@ final class ServerLogTailer {
 	private let logURL: URL
 	private let fileManager: FileManager
 	private weak var console: ConsoleLogging?
-	private let queue = DispatchQueue(label: "testforge.log-tailer")
+	private let queue = DispatchQueue(label: "test-forge.log-tailer")
 	private var fileHandle: FileHandle?
 	private var watchSource: DispatchSourceFileSystemObject?
 	private var pendingFragment = ""

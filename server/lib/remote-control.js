@@ -1,6 +1,6 @@
 // D-150: the TestForge supervises one `claude remote-control` server in the repo, so QA can be driven from the Claude
-// mobile app (Code → session) or claude.ai/code. The sessions it spawns inherit TESTFORGE_REMOTE=1, which the
-// test-flow-recorder plugin's guard hook and the testforge-remote skill key on. Its output goes to a log file the
+// mobile app (Code → session) or claude.ai/code. The sessions it spawns inherit TEST_FORGE_REMOTE=1, which the
+// test-flow-recorder plugin's guard hook and the test-forge-remote skill key on. Its output goes to a log file the
 // server tails (a pipe would die with the server and take Remote Control with it), so it outlives a server restart and
 // is adopted again from its recorded pid; the log is what tells "Connecting" from "Connected" and gives the links.
 import { EventEmitter } from "node:events";
@@ -103,7 +103,7 @@ export class RemoteControl extends EventEmitter {
 		const logDescriptor = this.isTailingInjected ? null : openSync(this.logPath, "w");
 		this.child = this.spawnProcess(this.claudePath, args, {
 			cwd: this.projectDir,
-			env: { ...process.env, TESTFORGE_REMOTE: "1" },
+			env: { ...process.env, TEST_FORGE_REMOTE: "1" },
 			stdio: logDescriptor === null ? ["ignore", "pipe", "pipe"] : ["ignore", logDescriptor, logDescriptor],
 			detached: true,
 		});

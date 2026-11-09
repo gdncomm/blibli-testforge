@@ -1,9 +1,9 @@
 {
-  "name": "qa-driver-mcp",
+  "name": "test-forge-driver-mcp",
   "version": "0.1.0",
   "description": "MCP server driving a persistent XCUITest harness on a booted simulator",
   "type": "module",
-  "bin": { "qa-driver-mcp": "dist/index.js" },
+  "bin": { "test-forge-driver-mcp": "dist/index.js" },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js"

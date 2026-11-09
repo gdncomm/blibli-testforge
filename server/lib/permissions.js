@@ -7,12 +7,12 @@ import { dirname } from "node:path";
 /** Production test-case document: read-only, never commented on (see context-resumption.md). */
 export const PROTECTED_CONFLUENCE_PAGES = ["2396520535"];
 
-export const QA_DRIVER_TOOL = /^mcp__plugin_test-flow-recorder_qa-driver__/;
+export const TEST_FORGE_DRIVER_TOOL = /^mcp__plugin_test-flow-recorder_test-forge-driver__/;
 
 const PRE_ALLOWED = [
 	/^(Read|Grep|Glob|ToolSearch|WebSearch|WebFetch|LS|TodoWrite|TaskCreate|TaskUpdate|TaskList|TaskGet)$/,
-	QA_DRIVER_TOOL,
-	// Read-only NetworkLens tools; the plugin's `qa-mock` server is gone, the project `networklens` MCP is the only mock channel (D-072).
+	TEST_FORGE_DRIVER_TOOL,
+	// Read-only NetworkLens tools; the plugin's `test-forge-mock` server is gone, the project `networklens` MCP is the only mock channel (D-072).
 	/^mcp__networklens__lens_(list|mocks|stats|status)$/,
 	/^mcp__claude_ai_Atlassian_Rovo__(get|search|fetch|lookup|atlassianUserInfo)/,
 ];

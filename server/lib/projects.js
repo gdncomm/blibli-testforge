@@ -11,7 +11,7 @@ const CACHE_MS = 30_000;
 let cache = null;
 
 function roots() {
-	const configured = process.env.QA_PROJECT_ROOTS?.split(":").filter(Boolean);
+	const configured = process.env.TEST_FORGE_PROJECT_ROOTS?.split(":").filter(Boolean);
 	return configured?.length ? configured : [join(homedir(), "Projects")];
 }
 

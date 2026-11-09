@@ -1,7 +1,7 @@
 // Thin I/O boundary for lib/model-fuzz.js + lib/swift-decodable.js (D-155): resolves a type name to
 // its declaring file, reads the Swift source and the pack JSON, and writes the merged pack back
 // atomically. Deliberately has no HTTP route and no dependency on the dashboard server's
-// `QA_PROJECT_DIR` — that env var points at a detached QA clone (D-032: the developer's own working
+// `TEST_FORGE_PROJECT_DIR` — that env var points at a detached QA clone (D-032: the developer's own working
 // tree must never be read by the running server), so routing this through the server would risk
 // silently fuzzing a stale copy of whatever Swift file someone is actively editing. This module
 // resolves every path relative to wherever it's invoked from instead.
@@ -56,7 +56,7 @@ async function resolveSwiftFile({ type, file, root }, deps) {
 	return matches[0];
 }
 
-/** `qaw-fuzz fields` — parser-only preview, touches no pack file. */
+/** `test-forge-fuzz fields` — parser-only preview, touches no pack file. */
 export async function runFields(options, deps) {
 	const swiftPath = await resolveSwiftFile(options, deps);
 	const source = await deps.readFile(swiftPath, "utf8");
@@ -66,7 +66,7 @@ export async function runFields(options, deps) {
 
 const fieldSummary = ({ name, jsonKey, kind, isOptional, isArray, swiftType, skipReason }) => ({ name, jsonKey, kind, isOptional, isArray, swiftType, skipReason });
 
-/** `qaw-fuzz generate` — the full pipeline: parse, locate, generate, merge, write (unless `dryRun`). */
+/** `test-forge-fuzz generate` — the full pipeline: parse, locate, generate, merge, write (unless `dryRun`). */
 export async function runGenerate(options, deps) {
 	const { type, pack, baseline = "loaded", endpoint, ruleId, at, out, dryRun } = options;
 	const swiftPath = await resolveSwiftFile(options, deps);

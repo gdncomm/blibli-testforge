@@ -8,7 +8,7 @@ Record the accessibility surface of the screens an operator visits. **No test ca
 comes up with the harness attached, a person navigates it, and every screen they name is written to
 a map a later run reads instead of rediscovering.
 
-The harness must already be collecting — `/qa-harness ensure` — because scan mode drives nothing
+The harness must already be collecting — `/test-forge-harness ensure` — because scan mode drives nothing
 itself; the person drives, and it watches.
 
 ```bash

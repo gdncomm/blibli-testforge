@@ -44,5 +44,5 @@ test("D-193: the comment names result, build, batch, failed step and proof", () 
 	assert.match(text, /Build: develop @ 9ec4017/);
 	assert.match(text, /Failed at: Tap tab — not found/);
 	assert.match(text, /Proof \(1\): a\.png/);
-	assert.doesNotMatch(text, /QADriver|NetworkLens|TestForge/);
+	assert.doesNotMatch(text, /TestForgeDriver|NetworkLens|TestForge/);
 });

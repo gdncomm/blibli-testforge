@@ -2,7 +2,7 @@ import Foundation
 
 /// Which build "Install & launch last build" takes its app from.
 enum LaunchSource: String, CaseIterable, Identifiable {
-	case qaBuild
+	case testForgeBuild
 	case xcodeBuild
 
 	var id: String { rawValue }
@@ -20,7 +20,7 @@ enum BuiltAppError: LocalizedError {
 
 	var errorDescription: String? {
 		switch self {
-			case .noApp(.qaBuild):
+			case .noApp(.testForgeBuild):
 				return String(localized: "No QA build yet. Use Build for testing first.")
 			case .noApp(.xcodeBuild):
 				return String(localized: "No simulator build in Xcode's DerivedData. Build once in Xcode (⌘B).")

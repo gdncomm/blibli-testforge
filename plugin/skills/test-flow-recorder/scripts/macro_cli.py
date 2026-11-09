@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Records a named, reusable sequence of qa-driver commands, for a test-case precondition to
+"""Records a named, reusable sequence of test-forge-driver commands, for a test-case precondition to
 reference later instead of re-describing the same taps every time.
 
 This script never drives anything itself — it has no import of, and no call into, `queue_cli.py` or
-the qa-driver command queue. The actual driving happens the ordinary way, through real
-`mcp__qa-driver__*` tool calls Claude issues from an operator's narration (see `commands/qa-macro.md`);
+the test-forge-driver command queue. The actual driving happens the ordinary way, through real
+`mcp__test-forge-driver__*` tool calls Claude issues from an operator's narration (see `commands/test-forge-macro.md`);
 this script only records what already happened, one step at a time, and later hands a saved
 sequence back for splicing into a plan (see `SKILL.md`, Stage 3's "Rules for the plan itself").
 

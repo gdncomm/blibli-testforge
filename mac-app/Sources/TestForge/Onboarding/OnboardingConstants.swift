@@ -17,17 +17,17 @@ enum OnboardingConstants {
 	}
 
 	enum Accessibility {
-		static let sheet = "QAW_Onboarding"
-		static let stepPrefix = "QAW_Onboarding_Step_"
-		static let rolePrefix = "QAW_Onboarding_Role_"
-		static let rolePicker = "QAW_Onboarding_RolePicker"
-		static let cardPrefix = "QAW_Onboarding_Card_"
-		static let flowStepPrefix = "QAW_Onboarding_Flow_"
-		static let claudeMarkerPrefix = "QAW_Onboarding_ClaudeMarker_"
-		static let startActionPrefix = "QAW_Onboarding_Start_"
-		static let backButton = "QAW_Onboarding_Back"
-		static let nextButton = "QAW_Onboarding_Next"
-		static let skipButton = "QAW_Onboarding_Skip"
-		static let helpMenuItem = "QAW_Onboarding_HelpMenuItem"
+		static let sheet = "TestForge_Onboarding"
+		static let stepPrefix = "TestForge_Onboarding_Step_"
+		static let rolePrefix = "TestForge_Onboarding_Role_"
+		static let rolePicker = "TestForge_Onboarding_RolePicker"
+		static let cardPrefix = "TestForge_Onboarding_Card_"
+		static let flowStepPrefix = "TestForge_Onboarding_Flow_"
+		static let claudeMarkerPrefix = "TestForge_Onboarding_ClaudeMarker_"
+		static let startActionPrefix = "TestForge_Onboarding_Start_"
+		static let backButton = "TestForge_Onboarding_Back"
+		static let nextButton = "TestForge_Onboarding_Next"
+		static let skipButton = "TestForge_Onboarding_Skip"
+		static let helpMenuItem = "TestForge_Onboarding_HelpMenuItem"
 	}
 }

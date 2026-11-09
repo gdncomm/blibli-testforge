@@ -10,7 +10,7 @@ import { randomUUID } from "node:crypto";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { deviceLock } from "./device-lock.js";
 import { usageFeed } from "./usage.js";
-import { QA_DRIVER_TOOL, hardDenyReason, isPreAllowed } from "./permissions.js";
+import { TEST_FORGE_DRIVER_TOOL, hardDenyReason, isPreAllowed } from "./permissions.js";
 
 const CLAUDE_PATH = (() => {
 	try {
@@ -281,7 +281,7 @@ export class ClaudeSession extends EventEmitter {
 			this.#record({ type: "dashboard", kind: "hard-deny", toolName: hookInput.tool_name, text: reason });
 			return { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: reason } };
 		}
-		if (QA_DRIVER_TOOL.test(hookInput.tool_name) && deviceLock.holder?.ownerId !== this.id) {
+		if (TEST_FORGE_DRIVER_TOOL.test(hookInput.tool_name) && deviceLock.holder?.ownerId !== this.id) {
 			const waitFor = deviceLock.acquire(this.id, this.record.title);
 			if (deviceLock.isWaiting(this.id)) this.#setStatus("waiting-device");
 			await waitFor;

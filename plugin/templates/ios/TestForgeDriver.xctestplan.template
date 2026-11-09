@@ -11,11 +11,11 @@
   "defaultOptions" : {
     "environmentVariableEntries" : [
       {
-        "key" : "QA_BUNDLE_ID",
+        "key" : "TEST_FORGE_BUNDLE_ID",
         "value" : "{BUNDLE_ID}"
       },
       {
-        "key" : "QA_MEDIA_ROOT",
+        "key" : "TEST_FORGE_MEDIA_ROOT",
         "value" : "{MEDIA_ROOT}"
       }
     ],
@@ -24,7 +24,7 @@
   "testTargets" : [
     {
       "selectedTests" : [
-        "QADriverSession\/testLiveSession()"
+        "TestForgeDriverSession\/testLiveSession()"
       ],
       "target" : {
         "containerPath" : "container:{CONTAINER}",

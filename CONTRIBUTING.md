@@ -34,7 +34,7 @@ Semantic versions, tagged on `master`: `v<major>.<minor>.<patch>`.
 
 - **Patch**: fixes only.
 - **Minor**: new features, backward compatible with existing recordings and state.
-- **Major**: breaking change to recordings, `~/.testforge` state or the plugin contract. Ship a migration note.
+- **Major**: breaking change to recordings, `~/.test-forge` state or the plugin contract. Ship a migration note.
 
 Releasing is: bump the plugin and app versions, update the changelog, merge, tag, and push the tag.
 

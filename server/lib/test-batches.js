@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
 
 const NAME_LIMIT = 80;
 // The folder start.sh / .env.local configured before R4j: offered in the picker, never used until chosen.
-const ENV_SUGGESTION = process.env.QA_MEDIA_ROOT ?? null;
+const ENV_SUGGESTION = process.env.TEST_FORGE_MEDIA_ROOT ?? null;
 
 /** Why `path` can't be the proof root, or null. Too broad (`~`, `/Users`) would let Reset empty the user's files. */
 export async function proofRootProblem(path) {
@@ -228,11 +228,11 @@ export class TestBatchStore extends EventEmitter {
 		return summary(batch);
 	}
 
-	/** Every proof write in the server and in what it spawns (qa-driver MCP, harness) reads this variable. */
+	/** Every proof write in the server and in what it spawns (test-forge-driver MCP, harness) reads this variable. */
 	#applyMediaRoot() {
 		const dir = this.mediaDir;
-		if (dir) process.env.QA_MEDIA_ROOT = dir;
-		else delete process.env.QA_MEDIA_ROOT;
+		if (dir) process.env.TEST_FORGE_MEDIA_ROOT = dir;
+		else delete process.env.TEST_FORGE_MEDIA_ROOT;
 	}
 
 	#save() {
@@ -252,7 +252,7 @@ export function outcomeOf(verdict) {
 	return null;
 }
 
-const TEST_KINDS = new Set(["replay-v2", "replay", "qa-run"]);
+const TEST_KINDS = new Set(["replay-v2", "replay", "test-forge-run"]);
 
 /**
  * Where a batch stands, per case (its latest result counts): passed, failed, undecided, running. `runCases(refId)` gives a

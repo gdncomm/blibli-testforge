@@ -47,7 +47,7 @@ extension TestForgeOpening {
 		let deviceScreenService = DeviceScreenService(client: dashboardClient)
 		let overlayPresenter = StepOverlayPanelController()
 		let commandRunner = ProcessCommandRunner(console: consoleLog)
-		let qaBuildService = BuildServerService(client: dashboardClient, baseURL: location.baseURL, session: .shared)
+		let testForgeBuildService = BuildServerService(client: dashboardClient, baseURL: location.baseURL, session: .shared)
 		let layerCapture = SimulatorLayerCapture()
 		layerCapture.restoreIfInterrupted()
 		let services = TestForgeServices(
@@ -73,10 +73,10 @@ extension TestForgeOpening {
 			notificationCenter: .default,
 			tutorials: TutorialCoordinator(),
 			simulatorControl: SimulatorControlService(runner: commandRunner),
-			qaBuild: qaBuildService,
+			testForgeBuild: testForgeBuildService,
 			xcodeTools: XcodeToolsService(runner: commandRunner),
 			builtAppLauncher: BuiltAppLauncher(runner: commandRunner),
-			reset: ResetServerService(client: dashboardClient, jobStream: qaBuildService),
+			reset: ResetServerService(client: dashboardClient, jobStream: testForgeBuildService),
 			testBatch: TestBatchService(client: dashboardClient),
 			prerequisites: PrerequisitesService(client: dashboardClient),
 			simulatorScreen: WindowSimulatorScreen(locator: simulatorLocator),
@@ -107,16 +107,16 @@ extension TestForgeOpening {
 		return TestForgeViewModel(services: services)
 	}
 
-	/// Server folder order: `QA_DASHBOARD_DIR`, the checkout chosen in Setup, then the `server/` of the checkout this app was built in.
-	/// The app under test is `QA_PROJECT_DIR`, else the clone chosen in Setup.
+	/// Server folder order: `TEST_FORGE_SERVER_DIR`, the checkout chosen in Setup, then the `server/` of the checkout this app was built in.
+	/// The app under test is `TEST_FORGE_PROJECT_DIR`, else the clone chosen in Setup.
 	/// Nil for an app installed from a DMG before Setup ran (D-132).
 	func resolveServerLocation(
 		environment: [String: String] = ProcessInfo.processInfo.environment,
 		defaults: UserDefaults = .standard
 	) -> ServerLocation? {
 		let baseURL = serverBaseURL(environment: environment)
-		let explicitPath = environment["QA_DASHBOARD_DIR"] ?? defaults.string(forKey: TestForgeSettingsKey.dashboardDirectory)
-		let projectPath = environment["QA_PROJECT_DIR"] ?? defaults.string(forKey: TestForgeSettingsKey.projectDirectory)
+		let explicitPath = environment["TEST_FORGE_SERVER_DIR"] ?? defaults.string(forKey: TestForgeSettingsKey.dashboardDirectory)
+		let projectPath = environment["TEST_FORGE_PROJECT_DIR"] ?? defaults.string(forKey: TestForgeSettingsKey.projectDirectory)
 		let projectDirectory = projectPath.map { URL(fileURLWithPath: $0, isDirectory: true) }
 		if let explicitPath {
 			let directory = URL(fileURLWithPath: explicitPath, isDirectory: true)
@@ -128,7 +128,7 @@ extension TestForgeOpening {
 		return ServerLocation(dashboardDirectory: directory, baseURL: baseURL, projectDirectory: projectDirectory)
 	}
 
-	/// Setup shows when there is no TestForge checkout, or no iOS clone to test: the server cannot start without `QA_PROJECT_DIR`.
+	/// Setup shows when there is no TestForge checkout, or no iOS clone to test: the server cannot start without `TEST_FORGE_PROJECT_DIR`.
 	func isSetupNeeded(for location: ServerLocation?) -> Bool {
 		location?.projectDirectory == nil
 	}
@@ -139,7 +139,7 @@ extension TestForgeOpening {
 	}
 
 	private func serverBaseURL(environment: [String: String]) -> URL {
-		let port = environment["QA_DASHBOARD_PORT"] ?? "4545"
+		let port = environment["TEST_FORGE_SERVER_PORT"] ?? "4545"
 		return URL(string: "http://127.0.0.1:\(port)") ?? URL(fileURLWithPath: "/")
 	}
 

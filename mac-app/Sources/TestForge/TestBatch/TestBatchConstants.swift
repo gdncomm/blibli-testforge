@@ -7,14 +7,14 @@ extension TestForgeConstants.TestBatch {
 }
 
 extension TestForgeConstants.Accessibility {
-		static let testBatchReopenMenu = "QAW_TestBatch_ReopenMenu"
-		static let testBatchReopenItemPrefix = "QAW_TestBatch_ReopenItem_"
-		static let testBatchReopenConfirmButton = "QAW_TestBatch_ReopenConfirm"
-		static let testBatchPauseItem = "QAW_TestBatch_PauseItem"
-		static let testBatchStartAnotherItem = "QAW_TestBatch_StartAnotherItem"
-		static let testBatchStartNote = "QAW_TestBatch_StartNote"
-		static let testBatchResumeMenu = "QAW_TestBatch_ResumeMenu"
-		static let testBatchResumeItemPrefix = "QAW_TestBatch_ResumeItem_"
-		static let testBatchPausedList = "QAW_TestBatch_PausedList"
-		static let testBatchSheetResumePrefix = "QAW_TestBatch_SheetResume_"
+		static let testBatchReopenMenu = "TestForge_TestBatch_ReopenMenu"
+		static let testBatchReopenItemPrefix = "TestForge_TestBatch_ReopenItem_"
+		static let testBatchReopenConfirmButton = "TestForge_TestBatch_ReopenConfirm"
+		static let testBatchPauseItem = "TestForge_TestBatch_PauseItem"
+		static let testBatchStartAnotherItem = "TestForge_TestBatch_StartAnotherItem"
+		static let testBatchStartNote = "TestForge_TestBatch_StartNote"
+		static let testBatchResumeMenu = "TestForge_TestBatch_ResumeMenu"
+		static let testBatchResumeItemPrefix = "TestForge_TestBatch_ResumeItem_"
+		static let testBatchPausedList = "TestForge_TestBatch_PausedList"
+		static let testBatchSheetResumePrefix = "TestForge_TestBatch_SheetResume_"
 }

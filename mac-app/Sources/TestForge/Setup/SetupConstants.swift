@@ -27,13 +27,13 @@ enum SetupConstants {
 	}
 
 	enum Accessibility {
-		static let screen = "QAW_Setup"
-		static let chooseRepoButton = "QAW_Setup_ChooseRepo"
-		static let recheckButton = "QAW_Setup_Recheck"
-		static let continueButton = "QAW_Setup_Continue"
-		static let toolRowPrefix = "QAW_Setup_Tool_"
-		static let toolFixPrefix = "QAW_Setup_Fix_"
-		static let changeRepoButton = "QAW_Settings_ChangeRepo"
-		static let chooseAppRepoButton = "QAW_Setup_ChooseAppRepo"
+		static let screen = "TestForge_Setup"
+		static let chooseRepoButton = "TestForge_Setup_ChooseRepo"
+		static let recheckButton = "TestForge_Setup_Recheck"
+		static let continueButton = "TestForge_Setup_Continue"
+		static let toolRowPrefix = "TestForge_Setup_Tool_"
+		static let toolFixPrefix = "TestForge_Setup_Fix_"
+		static let changeRepoButton = "TestForge_Settings_ChangeRepo"
+		static let chooseAppRepoButton = "TestForge_Setup_ChooseAppRepo"
 	}
 }

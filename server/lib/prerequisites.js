@@ -14,13 +14,13 @@ export const TOOLS = [
 
 /** MCP servers, matched by name; any one spelling in `names` satisfies it. */
 export const MCP_SERVERS = [
-	{ id: "qa-driver", label: "qa-driver MCP (drives the simulator)", names: ["plugin:test-flow-recorder:qa-driver", "qa-driver"], isRequired: true, howTo: "claude plugin enable test-flow-recorder" },
+	{ id: "test-forge-driver", label: "test-forge-driver MCP (drives the simulator)", names: ["plugin:test-flow-recorder:test-forge-driver", "test-forge-driver"], isRequired: true, howTo: "claude plugin enable test-flow-recorder" },
 	{ id: "networklens", label: "NetworkLens MCP (mocks and traces)", names: ["networklens"], isRequired: true, howTo: "Registered in BlibliMobile-iOS/.mcp.json — open Claude Code in BlibliMobile-iOS once and approve it" },
 	{ id: "atlassian", label: "Atlassian MCP (loads Confluence test cases, posts to Jira)", names: ["claude.ai Atlassian Rovo", "plugin:atlassian:atlassian"], isRequired: false, howTo: "In Claude Code run /mcp and sign in to Atlassian" },
 ];
 
 export const PLUGINS = [
-	{ id: "test-flow-recorder", label: "test-flow-recorder plugin (qa-run, qa-macro skills)", name: "test-flow-recorder", isRequired: true, howTo: "claude plugin enable test-flow-recorder" },
+	{ id: "test-flow-recorder", label: "test-flow-recorder plugin (test-forge-run, test-forge-macro skills)", name: "test-flow-recorder", isRequired: true, howTo: "claude plugin enable test-flow-recorder" },
 ];
 
 /** `claude mcp list` lines: "name: target - ✔ Connected" / "! Needs authentication" / "✘ Failed to connect". */

@@ -493,7 +493,7 @@ def main() -> int:
                         help="default: auto — resolved from project markers, recorded as platformSource")
     parser.add_argument("--helper-root", action="append", type=Path, default=[],
                         help="extra directory to scan for identifier-wrapper declarations, for a "
-                             "wrapper declared outside the repo (repeatable; or $QA_A11Y_HELPER_ROOTS)")
+                             "wrapper declared outside the repo (repeatable; or $TEST_FORGE_A11Y_HELPER_ROOTS)")
     parser.add_argument("--format", choices=["markdown", "json"], default="markdown")
     parser.add_argument("-o", "--out", help="write the report here instead of stdout")
     parser.add_argument("--chain-out",
@@ -512,7 +512,7 @@ def main() -> int:
                          "the extractor parses Swift. Android and web need their own, emitting the "
                          "same keys.")
 
-    helper_roots = [Path(entry) for entry in os.environ.get("QA_A11Y_HELPER_ROOTS", "").split(":") if entry]
+    helper_roots = [Path(entry) for entry in os.environ.get("TEST_FORGE_A11Y_HELPER_ROOTS", "").split(":") if entry]
     helper_roots += list(args.helper_root)
     helper_roots = [root for root in helper_roots if root.is_dir()]
 

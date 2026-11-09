@@ -29,7 +29,7 @@ A how-to for each feature of the Mac app. For the list of everything the app doe
 
 ## Ground rules
 
-- **Your project stays yours.** Tests build and run on a QA copy in `~/.testforge` and a separate QA simulator. Your folder, branches, unsaved work and own simulator are not changed. TestForge never commits, pushes or rebases.
+- **Your project stays yours.** Tests build and run on a QA copy in `~/.test-forge` and a separate QA simulator. Your folder, branches, unsaved work and own simulator are not changed. TestForge never commits, pushes or rebases.
 - **Claude is optional.** A case's first successful run needs Claude. After that its recording, elements and mocks live in the repo and replay on the driver with no Claude.
 - **Actions that cost or change things ask first**: builds, Claude runs, erasing a simulator, deleting folders, posting to Jira, publishing to Confluence.
 - **Team pages are read-only.** The team's Confluence test-case page is only read. Reports go under your personal page, after you confirm.
@@ -82,9 +82,9 @@ A how-to for each feature of the Mac app. For the list of everything the app doe
 
 **Fix buttons.** Create QA simulator, Boot QA simulator, Shut down the others, Build the app, Start harness, Free disk space, Set up Claude Code, Choose folder… (proof folder), Start Test Batch…, Prepare code…, Show run queue, Show what's missing. Those that change things open a **Run this fix?** dialog first, for example:
 
-- Create QA simulator: "The simulator you test with shuts down for about a minute and is cloned as “QA · `<name>`”. Your own simulator stays untouched."
+- Create QA simulator: "The simulator you test with shuts down for about a minute and is cloned as “TestForge · `<name>`”. Your own simulator stays untouched."
 - Build the app: "A first build takes 10–25 min and may need the VPN."
-- Free disk space: "Only ~/.testforge/ is touched" (removes QA copies and build output unused for 14 days).
+- Free disk space: "Only ~/.test-forge/ is touched" (removes QA copies and build output unused for 14 days).
 
 **Prepare code**
 
@@ -334,7 +334,7 @@ While a scan runs the phone is kept for you, so tests wait. "Only the top of thi
 
 **Hand on a run.**
 
-1. **Export bundle…** saves one `.qawbundle.json`: cases, recordings, mocks, verdicts.
+1. **Export bundle…** saves one `.test-forge-bundle.json`: cases, recordings, mocks, verdicts.
 2. The next person clicks **Import bundle…**, chooses the file and reads the preview (cases, tested code, what it adds, the Claude spend it saves, logins it types).
 3. **Import** keeps their items where they differ; **Replace mine and import** uses the bundle's.
 4. Click **Replay N case(s) without Claude**. A comparison reads like "12 of 14 agree with the bundle".
@@ -585,7 +585,7 @@ Open with ⌘,. It remembers the last tab.
 
 **General.** Toggle **Show in menu bar** (default on), **Notify when a run finishes** (default on; turning it off clears the Dock badge), **Outline steps on the Simulator** (default off). Pick **Explanation language** (English or Bahasa Indonesia) and **Appearance** (Match the system, Light, Dark). The Claude usage bar is not here: use View › Show Claude Usage (⌥⌘U).
 
-**Project.** Shows the QA server folder (read-only). **Change checkout…** opens a folder picker; the folder must contain `server/start.sh` ("`<folder>` has no server/start.sh — choose the TestForge checkout's top folder"). TestForge reopens with the checkout you choose. The environment variables `QA_DASHBOARD_DIR` and `QA_PROJECT_DIR`, when set, still win. **Updates** is described in [Updating TestForge](#16-updating-testforge).
+**Project.** Shows the QA server folder (read-only). **Change checkout…** opens a folder picker; the folder must contain `server/start.sh` ("`<folder>` has no server/start.sh — choose the TestForge checkout's top folder"). TestForge reopens with the checkout you choose. The environment variables `TEST_FORGE_SERVER_DIR` and `TEST_FORGE_PROJECT_DIR`, when set, still win. **Updates** is described in [Updating TestForge](#16-updating-testforge).
 
 > The iOS app clone can only be chosen in Setup (first run). Some in-app tips say both folders can be changed in Settings › Project; today only the TestForge checkout can.
 
@@ -652,7 +652,7 @@ Press ⇧⌘Y. It shows raw lines from the server and the app, the last 5,000 ke
 
 View › Show Claude Usage (⌥⌘U). It shows the model, `ctx: n%`, the 5-hour (`hr`) and weekly (`wk`) limits as used% / elapsed% with time to reset (orange when ahead of the time pace, red at 90% or more), your account, and `rc:` for Remote Control. "last seen `<age>` ago — may be out of date" after a minute without an update.
 
-If it says "Claude usage — nothing reported yet", click **Connect Claude Code status line…**. It asks first, then adds one marked line to your status-line script so it copies figures to `~/.testforge/usage.json`. Remove that line to undo. Figures appear at Claude Code's next status-line update.
+If it says "Claude usage — nothing reported yet", click **Connect Claude Code status line…**. It asks first, then adds one marked line to your status-line script so it copies figures to `~/.test-forge/usage.json`. Remove that line to undo. Figures appear at Claude Code's next status-line update.
 
 ---
 
@@ -703,7 +703,7 @@ If it says "Claude usage — nothing reported yet", click **Connect Claude Code 
 
 Marked "Superseded (D-199)" at its top. It describes the removed browser page. Read it for the ideas (why replays are free, how repairs work, verdict meanings, safety), not for screens.
 
-- **Where to use it**: it opens "QA Dashboard.app" in a browser at `http://127.0.0.1:4545`. Today you use the Mac app; Setup and Update replace that start-up.
+- **Where to use it**: it opens "TestForge server.app" in a browser at `http://127.0.0.1:4545`. Today you use the Mac app; Setup and Update replace that start-up.
 - **Screens that no longer exist**: Home, Test Cases tab with three questions and a big **Run** button, Sessions, Queue and Projects tabs, the Macros tab, the Mocking tab, the Driver Console, **Show Simulator window**, **Pause after this test**, **Skip this test**. Their places now are the sidebar sections: Get ready, Tests, Scan, Results, Reports, Advanced, Simulator, Build, Network, Claude.
 - **Status marks**: the 🚧 "designed, not built" items (readiness checklist, Run on the QA copy, mocks attached to cases, Rebuild needed, saved setups) are built or replaced in the Mac app. The ✅ list is no longer a guide.
 - **Wording**: it calls mocks by an older word (§8, §11 glossary and §3 "More options"). Use "mock".

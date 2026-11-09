@@ -7,7 +7,7 @@
 import { newID, step } from "./variants.js";
 
 const GENERATED_PREFIX = "fuzz-";
-const UNKNOWN_ENUM_VALUE = "__QAW_FUZZ_UNKNOWN__";
+const UNKNOWN_ENUM_VALUE = "__TestForge_FUZZ_UNKNOWN__";
 
 function slug(value) {
 	return String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "value";

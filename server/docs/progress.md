@@ -1,4 +1,4 @@
-# QA Dashboard — Progress
+# TestForge server — Progress
 
 Status per phase and per feature. **Verified** = exercised against the real app / simulator /
 Confluence page. **Built** = code complete, syntax-checked, not yet exercised end to end.

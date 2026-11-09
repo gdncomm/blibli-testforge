@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // TestForge guard for Remote Control sessions (TestForge D-150). A session the TestForge started carries
-// TESTFORGE_REMOTE=1; anywhere else this hook does nothing. It keeps the TestForge's rules when QA is driven from the
+// TEST_FORGE_REMOTE=1; anywhere else this hook does nothing. It keeps the TestForge's rules when QA is driven from the
 // Claude mobile app: the production test-case page is never written, and pushing, building for testing or erasing a
 // simulator always asks the person first (the approval arrives on their phone).
 import { readFileSync } from "node:fs";
 
-if (process.env.TESTFORGE_REMOTE !== "1") process.exit(0);
+if (process.env.TEST_FORGE_REMOTE !== "1") process.exit(0);
 
-/** Mirrors PROTECTED_CONFLUENCE_PAGES in tools/qa-dashboard/lib/permissions.js. */
+/** Mirrors PROTECTED_CONFLUENCE_PAGES in tools/test-forge-server/lib/permissions.js. */
 const PROTECTED_CONFLUENCE_PAGES = ["2396520535"];
 const CONFLUENCE_WRITE = /^mcp__.*(atlassian|Atlassian).*__(update|create).*Confluence/;
 const ASK_COMMANDS = [

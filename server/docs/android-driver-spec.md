@@ -13,16 +13,16 @@ replay on both platforms wherever the screen is the same. Only the parts that to
 
 | Piece | iOS today | What it does |
 |---|---|---|
-| **Driver runner** | `QADriverKit/QADriverRunner.swift` (Blibli-Utility fork, ~1,100 lines), an XCUITest `XCTestCase`; the app repo adds a thin subclass in `BlibliMobile_XCUITest` | Polls the command queue, runs one command at a time against the app, posts a result. Reports outcomes instead of asserting, so one failed lookup never ends the session |
+| **Driver runner** | `TestForgeDriverKit/TestForgeDriverRunner.swift` (Blibli-Utility fork, ~1,100 lines), an XCUITest `XCTestCase`; the app repo adds a thin subclass in `BlibliMobile_XCUITest` | Polls the command queue, runs one command at a time against the app, posts a result. Reports outcomes instead of asserting, so one failed lookup never ends the session |
 | **Command queue** | `lib/driver-host.js` in the server, `127.0.0.1:8789` | `GET /health`, `GET /commands`, `POST /result`. The runner is the client; the server hosts |
-| **Runner lifecycle** | `harness.py` (test-flow-recorder plugin) → `xcodebuild test-without-building` | Start, health, restart, idle stop after 30 min (`QADRIVER_SESSION_MINUTES`) |
-| **Macros v2** | `<UITestRoot>/<Module>/<Submodule>/macros/*.json` + `QAMacros/elements.json` registry | Steps refer to elements by `el_…` id; the registry holds the locator chain (identifier, `within`, type, index, label fallbacks). Replay is deterministic, no Claude |
+| **Runner lifecycle** | `harness.py` (test-flow-recorder plugin) → `xcodebuild test-without-building` | Start, health, restart, idle stop after 30 min (`TEST_FORGE_DRIVER_SESSION_MINUTES`) |
+| **Macros v2** | `<UITestRoot>/<Module>/<Submodule>/macros/*.json` + `TestForgeMacros/elements.json` registry | Steps refer to elements by `el_…` id; the registry holds the locator chain (identifier, `within`, type, index, label fallbacks). Replay is deterministic, no Claude |
 | **Host steps** | `lib/macro-v2.js` + `lib/app-defaults.js` | `relaunch`, `openDeeplink`, `setAppDefault` / `clearAppDefault`, `mock`, `assertRequested`, `wait`, `manual`, `run` (routine), `typeSecret` |
-| **Device control** | `simctl` + CoreSimulator (`lib/qa-simulator.js`, `test-device.js`, Mac `SimulatorControl/`) | QA clone, boot, erase, deeplink, saved settings, permissions, Color Blended Layers, video |
-| **Build** | `lib/qa-build.js` → `xcodebuild build-for-testing` on a QA copy | Builds app + runner from the prepared code; Install for testing |
+| **Device control** | `simctl` + CoreSimulator (`lib/test-forge-simulator.js`, `test-device.js`, Mac `SimulatorControl/`) | QA clone, boot, erase, deeplink, saved settings, permissions, Color Blended Layers, video |
+| **Build** | `lib/test-forge-build.js` → `xcodebuild build-for-testing` on a QA copy | Builds app + runner from the prepared code; Install for testing |
 | **Network** | NetworkLens in the app; trace + session files in the app container; control queue on 8788 | Live traffic, mocks, scenarios, breakpoints, replay, trackers (D-127…D-131) |
 | **Readiness** | `lib/readiness.js` | server, stream, proof folder, test batch, code, simulator, app, installed build, harness, lens, device free, disk, Claude |
-| **Mac app** | `tools/testforge-mac` | Every screen above, plus Measure, Arrange, Scan, Claude |
+| **Mac app** | `tools/mac-app` | Every screen above, plus Measure, Arrange, Scan, Claude |
 
 ## 2. Decision: how the Android driver works
 
@@ -32,19 +32,19 @@ replay on both platforms wherever the screen is the same. Only the parts that to
   never needs the app's code. UiAutomator is the Android equivalent (`androidx.test.uiautomator`, `UiDevice` +
   `By` selectors + `Until` waits). Espresso runs inside the app's process, cannot touch permission dialogs or other
   apps, and ties the driver to the app's build.
-- **Self-instrumenting test APK** (`com.blibli.qadriver`, `android:targetPackage` = itself). The driver is a
+- **Self-instrumenting test APK** (`com.blibli.test-forge-driver`, `android:targetPackage` = itself). The driver is a
   separate app that drives Blibli from outside: installing or starting it never restarts the app under test, and
   one driver APK works with **any** build of the app, debug or release. On iOS the runner has to be built with the
   app; on Android "Build for testing" becomes "build the app" only. This is the biggest simplification the port gets.
 - **Same queue, unchanged.** The runner polls `http://127.0.0.1:8789`. On a device, loopback is the device itself,
   so the host runs `adb reverse tcp:8789 tcp:8789` (and `tcp:8788` for NetworkLens, already in `lib/android.js`
   `openControlTunnel`). That works for emulators **and** physical phones — iOS can't reach a physical device this way.
-- **Started with** `adb shell am instrument -w -e class com.blibli.qadriver.LiveSession#runLiveSession
-  -e QADRIVER_CONTROL_PORT 8789 -e QA_BUNDLE_ID com.blibli.mobile com.blibli.qadriver/androidx.test.runner.AndroidJUnitRunner`.
+- **Started with** `adb shell am instrument -w -e class com.blibli.test-forge-driver.LiveSession#runLiveSession
+  -e TEST_FORGE_DRIVER_CONTROL_PORT 8789 -e TEST_FORGE_BUNDLE_ID com.blibli.mobile com.blibli.test-forge-driver/androidx.test.runner.AndroidJUnitRunner`.
   `-e` arguments replace the iOS environment variables, read through `InstrumentationRegistry.getArguments()`.
-- **Where it lives:** a `qadriver-android` library (Kotlin) next to `QADriverKit` in the shared tools repo, published
+- **Where it lives:** a `qadriver-android` library (Kotlin) next to `TestForgeDriverKit` in the shared tools repo, published
   as an AAR; the Android app repo — or the plugin, since nothing in it is app-specific — adds a thin
-  `LiveSession : QADriverRunner()` with the app's configuration, as the iOS `BlibliMobile_XCUITest` subclass does.
+  `LiveSession : TestForgeDriverRunner()` with the app's configuration, as the iOS `BlibliMobile_XCUITest` subclass does.
 
 **Considered and rejected:** Appium (a separate server, slower, a second wire protocol to keep in step);
 Maestro (its own YAML flows — the macros would have to be translated, and replay would leave our queue); Espresso
@@ -69,7 +69,7 @@ names. A shared golden file of commands and expected result shapes runs against 
 | `dumpTree` | `debugDescription`, cut at 20,000 chars | `UiDevice.dumpWindowHierarchy` (XML), same cut | Server-side parsers learn one more format |
 | `assertSpacing` | frames A and B, axis, tolerance | same from `visibleBounds` in dp | |
 | `alertTap` | `app.alerts` / Springboard alerts | permission dialog (`com.android.permissioncontroller:id/permission_allow_*`), `AlertDialog` `android:id/button1/2/3`, else by text | Configured `dismissibleAlertTitles` work the same |
-| `screenshot` | written straight to the host's `~/Documents/QA-Test` (the simulator shares the Mac's disk) | `UiDevice.takeScreenshot` to `/sdcard/Android/data/com.blibli.qadriver/files/QA-Test/…`; result carries the device path; the **server pulls** it | A device can't write to the Mac — the one structural difference in the protocol's side effects |
+| `screenshot` | written straight to the host's `~/Documents/TestForge-Test` (the simulator shares the Mac's disk) | `UiDevice.takeScreenshot` to `/sdcard/Android/data/com.blibli.test-forge-driver/files/TestForge-Test/…`; result carries the device path; the **server pulls** it | A device can't write to the Mac — the one structural difference in the protocol's side effects |
 | `dismissKeyboard` | taps the keyboard's own Done/Return | IME window present (`uiAutomation.windows`, `TYPE_INPUT_METHOD`) → `pressBack()` once | Never a blind Back: it would navigate |
 | `relaunchApp` | `terminate()` + `launch()` | `am force-stop` + launch intent | |
 | `deviceInfo` | name, OS, UDID, screen points | `Build.MODEL`, `Build.VERSION.RELEASE`, serial / AVD name, screen in dp | `device` keys identical |
@@ -102,7 +102,7 @@ same identifier surfaces as different types.
 | `typeSecret` | Keychain → `type` | Same server side |
 | `wait`, `manual`, `run` | server only | unchanged |
 
-## 5. Server changes (`tools/qa-dashboard`)
+## 5. Server changes (`tools/test-forge-server`)
 
 One server, both platforms — the NetworkLens rule (`lib/android.js`: nothing Android runs unless asked).
 
@@ -110,12 +110,12 @@ One server, both platforms — the NetworkLens rule (`lib/android.js`: nothing A
   `install(app)`, `launch/terminate`, `openUrl`, `setPreference`, `screenshot`, `recordVideo`, `appContainer`. `ios.js`
   wraps today's simctl code unchanged; `android.js` implements it with adb + `emulator` + `avdmanager`.
 - **Test device = emulator or phone:** the D-120 test device gains `platform`. The Android "QA clone" is a dedicated
-  AVD (`QA · Pixel 7 · API 34`) made from a chosen system image, so the developer's own emulator is left alone —
+  AVD (`TestForge · Pixel 7 · API 34`) made from a chosen system image, so the developer's own emulator is left alone —
   the same rule as iOS. `ANDROID_SERIAL` pins adb to it (adb refuses to guess with two devices: keep that).
 - **Runner lifecycle:** `lib/android-harness.js` — `adb reverse`, install the driver APK if missing or older,
-  `am instrument …` in the background, health = the queue's `lastPolledAt`, stop = `am force-stop com.blibli.qadriver`.
+  `am instrument …` in the background, health = the queue's `lastPolledAt`, stop = `am force-stop com.blibli.test-forge-driver`.
   Idle stop stays inside the runner (30 min).
-- **Build:** Gradle on the QA copy — `./gradlew :app:assembleQaDebug` (flavor per §9) with `ANDROID_HOME`/JDK from
+- **Build:** Gradle on the QA copy — `./gradlew :app:assembleTestForgeDebug` (flavor per §9) with `ANDROID_HOME`/JDK from
   the environment; Install = `adb install -r`. "Build for testing" asks first, exactly as on iOS.
 - **Proof:** screenshots pulled into the Test Batch folder as they arrive; video via `adb shell screenrecord`
   (180 s cap per file — chained, then the existing `trimToLast` cut keeps the last 60 s).
@@ -123,7 +123,7 @@ One server, both platforms — the NetworkLens rule (`lib/android.js`: nothing A
   and current · `adb reverse` set for 8788 and 8789 · runner polling · NetworkLens polling (`isIdentified` by serial,
   as D-130 does by UDID) · disk · Claude. Same rows, same fix buttons where a fix exists.
 
-## 6. Mac app changes (`tools/testforge-mac`)
+## 6. Mac app changes (`tools/mac-app`)
 
 - **Device picker** lists simulators and emulators/phones with a platform badge; tests run on the chosen one.
 - **Simulator screen → Device screen:** the same cards backed by the platform interface — boot/shutdown (emulator),
@@ -173,7 +173,7 @@ A1 and A2 can run in parallel once A0 is answered; A3 needs both.
    Phase D verbs (breakpoints, replay, bubble, scenario removal) exist only in the iOS QA fork so far.
 5. **Devices:** emulators only for the MVP, or physical phones too? (`adb reverse` makes phones possible; Arrange and
    the outline don't apply to them.)
-6. **Where `qadriver-android` is published:** next to `QADriverKit` in the shared tools repo, or the Android repo.
+6. **Where `qadriver-android` is published:** next to `TestForgeDriverKit` in the shared tools repo, or the Android repo.
 7. **Login and saved passwords:** iOS QA clones inherit AutoFill; Android emulators start empty. Use `typeSecret`
    from the Keychain (already supported), or a debug login shortcut in the QA build?
 

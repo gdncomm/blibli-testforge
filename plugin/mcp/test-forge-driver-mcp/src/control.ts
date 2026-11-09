@@ -1,4 +1,4 @@
-// Drives the persistent QADriverSession XCUITest harness on a booted simulator/device.
+// Drives the persistent TestForgeDriverSession XCUITest harness on a booted simulator/device.
 //
 // The harness polls this queue; nothing here reaches it directly — same indirection
 // networklens-mcp/control.ts uses, for the same reason: this server is spawned and killed by its
@@ -17,7 +17,7 @@ import { queue } from "./queue.js";
  * mirroring NETWORKLENS_SIDECAR — the same benefit applies: only one process needs to own the
  * port even with several sessions open.
  */
-const EXPLICIT_SIDECAR = process.env.QADRIVER_SIDECAR?.replace(/\/$/, "") || null;
+const EXPLICIT_SIDECAR = process.env.TEST_FORGE_DRIVER_SIDECAR?.replace(/\/$/, "") || null;
 
 let hosting: Promise<boolean> | null = null;
 
@@ -127,6 +127,6 @@ export async function sendCommand(body: Record<string, unknown>): Promise<Driver
   return {
     ok: false,
     reachable: false,
-    error: "queued, but no harness collected it — is QADriverSession running (testLiveSession, built once via xcodebuild)?",
+    error: "queued, but no harness collected it — is TestForgeDriverSession running (testLiveSession, built once via xcodebuild)?",
   };
 }

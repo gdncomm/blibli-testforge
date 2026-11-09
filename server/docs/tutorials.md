@@ -23,8 +23,8 @@ _Design for R0 (D-076). Built in R4a with TipKit (D-098). **The tables below are
 |---|---|
 | Test | a test case (e.g. SF-011) |
 | Recorded steps | a learned macro, replayed by the driver |
-| First run with Claude | a Claude `/qa-run` session that records the steps |
-| Test robot | the QADriver XCUITest harness on the simulator |
+| First run with Claude | a Claude `/test-forge-run` session that records the steps |
+| Test robot | the TestForgeDriver XCUITest harness on the simulator |
 | Network Mocks | NetworkLens mock rules and variants |
 | Phone | the QA simulator |
 | Proof | screenshots and evidence saved with a result |

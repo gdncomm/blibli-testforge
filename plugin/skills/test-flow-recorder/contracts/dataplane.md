@@ -114,13 +114,13 @@ another otherwise disagrees on what was supposed to be secret.
 `proxy` is the only mode that reaches `WKWebView` traffic and the only one needing zero app
 cooperation. It stays a declared second mode because nothing in this plan's scope requires it yet.
 
-`scripts/dataplane.py` accepts `QA_DATA_PLANE=networklens` as an alias for `simctl` — both resolve
+`scripts/dataplane.py` accepts `TEST_FORGE_DATA_PLANE=networklens` as an alias for `simctl` — both resolve
 NetworkLens under the booted simulator's own container, so the driver-registry name above actually
-works as an env value rather than only "leave `QA_DATA_PLANE` unset" doing so. Those two are
-the only valid `QA_DATA_PLANE` values; anything else fails loudly. "Never vendored" is
+works as an env value rather than only "leave `TEST_FORGE_DATA_PLANE` unset" doing so. Those two are
+the only valid `TEST_FORGE_DATA_PLANE` values; anything else fails loudly. "Never vendored" is
 literal: this plugin registers no `networklens` MCP server of its own — a `networklens` run depends
 on the **host project** registering one in its own `.mcp.json` (as `BlibliMobile-iOS` does), the
-same kind of external prerequisite `qa-driver` already has in the harness process.
+same kind of external prerequisite `test-forge-driver` already has in the harness process.
 
 ### Fidelity matrix — five things only an in-process interceptor sees
 

@@ -6,15 +6,15 @@ import { EventEmitter } from "node:events";
 import { keychain } from "./credentials.js";
 
 // Microsoft's published public client for Graph command-line tools; IT can issue a dedicated one.
-const CLIENT_ID = process.env.QA_GRAPH_CLIENT_ID || "14d82eec-204b-4c2f-b7e8-296a70dab67e";
-const TENANT = process.env.QA_GRAPH_TENANT || "organizations";
+const CLIENT_ID = process.env.TEST_FORGE_GRAPH_CLIENT_ID || "14d82eec-204b-4c2f-b7e8-296a70dab67e";
+const TENANT = process.env.TEST_FORGE_GRAPH_TENANT || "organizations";
 const SCOPE = "openid profile offline_access Mail.Read";
 const AUTHORITY = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0`;
 const GRAPH = "https://graph.microsoft.com/v1.0";
-const KEYCHAIN_SERVICE = "testforge.graph";
+const KEYCHAIN_SERVICE = "test-forge.graph";
 const KEYCHAIN_ACCOUNT = "mail";
 
-export const OTP_SENDER = (process.env.QA_OTP_SENDER || "noreply@bliblitiket.com").toLowerCase();
+export const OTP_SENDER = (process.env.TEST_FORGE_OTP_SENDER || "noreply@bliblitiket.com").toLowerCase();
 /** How far before the OTP step a mail still counts: the code is sent when the password is submitted. */
 const LOOKBACK_MS = 120_000;
 const CODE_PATTERN = /\b(\d{6})\b/;

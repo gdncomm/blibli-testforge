@@ -1,7 +1,7 @@
 // Question 1 of the run flow — "What code?" (workflow-plan §4 ①, D-034, D-035).
 //
 // Tests never run in the developer's own working copy. Two sources, both ending in a separate QA
-// copy under ~/.testforge/checkouts/:
+// copy under ~/.test-forge/checkouts/:
 //   • GitHub branch → `<repo>`: a clone that borrows objects from the developer's repo
 //     (`--reference … --dissociate`), then a detached checkout of origin/<branch>.
 //   • Local repository → `<repo>-local`: a read-only snapshot of the working copy, uncommitted
@@ -15,9 +15,9 @@ import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/p
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
 
-export const TESTFORGE_HOME = process.env.TESTFORGE_HOME || join(homedir(), ".testforge");
-const CHECKOUTS = join(TESTFORGE_HOME, "checkouts");
-const STATE_PATH = join(TESTFORGE_HOME, "state.json");
+export const TEST_FORGE_HOME = process.env.TEST_FORGE_HOME || join(homedir(), ".test-forge");
+const CHECKOUTS = join(TEST_FORGE_HOME, "checkouts");
+const STATE_PATH = join(TEST_FORGE_HOME, "state.json");
 const READ_ONLY_ENV = { ...process.env, GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0" };
 const MAX_CHANGED_FILES = 200;
 
@@ -83,7 +83,7 @@ async function readState() {
 }
 
 async function writeState(state) {
-	await mkdir(TESTFORGE_HOME, { recursive: true });
+	await mkdir(TEST_FORGE_HOME, { recursive: true });
 	const temporary = `${STATE_PATH}.tmp-${process.pid}`;
 	await writeFile(temporary, JSON.stringify(state, null, 2));
 	await rename(temporary, STATE_PATH);
@@ -265,7 +265,7 @@ export async function prepareBranch({ repoPath, branch, onLine = () => {}, signa
  */
 // D-152: `.claude/` folders (Claude settings, skills, hooks) never go into the app either.
 // D-198: the notes Claude runs write next to the macros (`*-notes.md`) are results, not app code.
-const BUILD_IGNORED_PATHS = (process.env.QA_BUILD_IGNORED_PATHS ?? "tools/**,**/.claude/**,BlibliMobile-iOS/BlibliMobile_XCUITest/**/*.json,BlibliMobile-iOS/BlibliMobile_XCUITest/**/*.md")
+const BUILD_IGNORED_PATHS = (process.env.TEST_FORGE_BUILD_IGNORED_PATHS ?? "tools/**,**/.claude/**,BlibliMobile-iOS/BlibliMobile_XCUITest/**/*.json,BlibliMobile-iOS/BlibliMobile_XCUITest/**/*.md")
 	.split(",").map((path) => path.trim()).filter(Boolean);
 
 /**
@@ -423,7 +423,7 @@ async function appFilesChangedSince(manifest, now) {
 
 // --- Disk (workflow-plan §4 ① "Cleanup") -------------------------------------------------
 
-const DERIVED = join(TESTFORGE_HOME, "derived");
+const DERIVED = join(TEST_FORGE_HOME, "derived");
 
 export async function sizeMb(path) {
 	try {
@@ -434,7 +434,7 @@ export async function sizeMb(path) {
 	}
 }
 
-/** QA copies and their DerivedData, with size and last use. Only ever looks inside ~/.testforge/. */
+/** QA copies and their DerivedData, with size and last use. Only ever looks inside ~/.test-forge/. */
 export async function testForgeUsage() {
 	const state = await readState();
 	const current = state.current?.path;
@@ -461,7 +461,7 @@ export async function freeDiskSpace({ olderThanDays = 14, kinds = ["copy", "deri
 	const state = await readState();
 	for (const entry of entries) {
 		if (!kinds.includes(entry.kind) || (keepCurrent && entry.isCurrent) || Date.parse(entry.usedAt) > cutoff) continue;
-		if (!entry.path.startsWith(`${TESTFORGE_HOME}/`)) continue;
+		if (!entry.path.startsWith(`${TEST_FORGE_HOME}/`)) continue;
 		await rm(entry.path, { recursive: true, force: true });
 		if (entry.kind === "copy") delete state.checkouts[entry.path];
 		removed.push(entry);

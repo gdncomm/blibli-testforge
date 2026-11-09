@@ -1,5 +1,5 @@
 #!/bin/sh
-# Launcher for the qa-driver MCP server, referenced by the app repo's .mcp.json.
+# Launcher for the test-forge-driver MCP server, referenced by the app repo's .mcp.json.
 #
 # Same shape as tools/networklens-mcp/bin/start.sh, for the same reasons: dist/ is not committed,
 # an MCP client launches this with no terminal attached, and everything diagnostic must go to
@@ -14,12 +14,12 @@ PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 export PATH
 
 if ! command -v node >/dev/null 2>&1; then
-    echo "qa-driver-mcp: no node on PATH ($PATH) — install it (brew install node) or point PATH at it." >&2
+    echo "test-forge-driver-mcp: no node on PATH ($PATH) — install it (brew install node) or point PATH at it." >&2
     exit 1
 fi
 
 if [ ! -f dist/index.js ] || [ src/index.ts -nt dist/index.js ]; then
-    echo "qa-driver-mcp: building…" >&2
+    echo "test-forge-driver-mcp: building…" >&2
     if [ -d node_modules ]; then
         npm run build >&2
     else

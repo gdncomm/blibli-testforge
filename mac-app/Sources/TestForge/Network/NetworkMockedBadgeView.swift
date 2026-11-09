@@ -20,5 +20,5 @@ struct NetworkMockedBadgeView: View {
 }
 
 private extension NetworkMockedBadgeView {
-	static let badgeIdentifier = "QAW_Network_MockedBadge"
+	static let badgeIdentifier = "TestForge_Network_MockedBadge"
 }

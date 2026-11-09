@@ -11,14 +11,14 @@ import { sessionMarkdown } from "./session-report.js";
 
 const run = promisify(execFile);
 
-export const SESSION_FORMAT = "testforge-session";
+export const SESSION_FORMAT = "test-forge-session";
 export const SESSION_VERSION = 1;
 
 const CASE_FIELDS = ["id", "scenario", "precondition", "steps", "expected", "api", "evidence", "iosStatus"];
 
 const slug = (text) => String(text ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
 
-export const sessionFileName = (title, now = new Date()) => `${slug(title) || "qa-session"}-${now.toISOString().slice(0, 10)}.zip`;
+export const sessionFileName = (title, now = new Date()) => `${slug(title) || "test-forge-session"}-${now.toISOString().slice(0, 10)}.zip`;
 
 const keysFor = (testCase, macro) => new Set([String(testCase.id).toUpperCase(), macro?.id && String(macro.id).toUpperCase()].filter(Boolean));
 const matches = (keys, ...ids) => ids.some((id) => id && keys.has(String(id).toUpperCase()));
@@ -164,7 +164,7 @@ async function exists(path) {
  * `media/<case>/` and given a `file` path inside the zip; missing files are listed in `missingMedia`.
  */
 export async function writeSessionExport(session, { target, includeMedia = false }) {
-	const stage = await mkdtemp(join(tmpdir(), "qaw-session-"));
+	const stage = await mkdtemp(join(tmpdir(), "test-forge-session-"));
 	const folderName = basename(target, extname(target));
 	const root = join(stage, folderName);
 	const missingMedia = [];

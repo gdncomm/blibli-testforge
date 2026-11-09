@@ -12,7 +12,7 @@ protocol ResetActing {
 /// The dashboard's reset pipeline (`/api/reset*`); job output streams like a build's.
 struct ResetServerService: ResetActing {
 	let client: DashboardClient
-	let jobStream: QABuildActing
+	let jobStream: TestForgeBuildActing
 
 	func plan() async throws -> ResetPlanSnapshot {
 		let data = try await client.get(path: "api/reset/plan")

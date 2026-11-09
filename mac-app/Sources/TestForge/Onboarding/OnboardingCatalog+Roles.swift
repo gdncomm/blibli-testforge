@@ -1,7 +1,7 @@
 import Foundation
 
 extension OnboardingCatalog {
-	static let qaWorkflow = OnboardingPageContent(
+	static let testForgeWorkflow = OnboardingPageContent(
 		headline: String(localized: "A testing day, screen by screen"),
 		intro: String(localized: "Top to bottom the first time; after that you mostly live in Tests, Network and Results."),
 		cards: [],
@@ -351,7 +351,7 @@ extension OnboardingCatalog {
 		]
 	)
 
-	static let qaAdvantages = OnboardingPageContent(
+	static let testForgeAdvantages = OnboardingPageContent(
 		headline: String(localized: "What QA gains"),
 		intro: String(localized: "Less repetition, more coverage, proof you don't have to collect."),
 		cards: [
@@ -406,7 +406,7 @@ extension OnboardingCatalog {
 			OnboardingCard(
 				symbolName: "shippingbox",
 				title: String(localized: "Recordings live in the repo"),
-				text: String(localized: "Saved next to the code (BlibliMobile_XCUITest/QAMacros); anyone who pulls the branch can replay them.")
+				text: String(localized: "Saved next to the code (BlibliMobile_XCUITest/TestForgeMacros); anyone who pulls the branch can replay them.")
 			),
 			OnboardingCard(
 				symbolName: "stethoscope",

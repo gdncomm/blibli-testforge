@@ -80,9 +80,9 @@ final class GetReadySectionViewModel: ObservableObject {
 	private let expectedCheckCount = 12
 
 	private static let busyTitlesByPath = [
-		"api/qa-sim/create": String(localized: "Creating…"),
-		"api/qa-sim/boot": String(localized: "Booting…"),
-		"api/qa-sim/solo": String(localized: "Shutting down…"),
+		"api/test-forge-sim/create": String(localized: "Creating…"),
+		"api/test-forge-sim/boot": String(localized: "Booting…"),
+		"api/test-forge-sim/solo": String(localized: "Shutting down…"),
 		"api/build/qa": String(localized: "Starting the build…"),
 		"api/harness/ensure": String(localized: "Starting harness…"),
 		"api/code/free-space": String(localized: "Freeing space…"),

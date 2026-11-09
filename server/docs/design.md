@@ -1,4 +1,4 @@
-# QA Dashboard — Design
+# TestForge server — Design
 
 Source of truth for how the dashboard is built. Usage lives in `../README.md`; why things are the
 way they are lives in `decision.md`.
@@ -9,9 +9,9 @@ way they are lives in `decision.md`.
 
 **The TestForge**: one local page that is the GUI for working *with Claude* — talk to live
 Claude sessions both ways (messages, approvals, Claude's questions), queue tasks and watch each one,
-open Claude in any local project, track progress — with **QADriver at the core**: a status panel for
+open Claude in any local project, track progress — with **TestForgeDriver at the core**: a status panel for
 the QA simulator and a device lock that serialises everything that drives it. The original control panel (live NetworkLens mocks,
-traffic, every QADriver command, harness build/start, Confluence test cases) is still there.
+traffic, every TestForgeDriver command, harness build/start, Confluence test cases) is still there.
 
 ## Principles
 
@@ -43,7 +43,7 @@ Browser ──HTTP/SSE──▶ server.js (:4545)
      │                   │
  hosts :8788 ◀── app polls (NetworkLens ControlOptions)
  reads session.json / trace.ndjson in the app's simulator container
-                         └── QADriverRunner (XCUITest) polls :8789
+                         └── TestForgeDriverRunner (XCUITest) polls :8789
 ```
 
 ### Ports
@@ -52,7 +52,7 @@ Browser ──HTTP/SSE──▶ server.js (:4545)
 |---|---|---|
 | 4545 | dashboard (HTTP + SSE) | browser |
 | 8788 | dashboard (`lib/control-queue.js`, lazily bound on first status/edit) | the app — `ControlOptions()` in `NetworkLensBootstrap.swift` |
-| 8789 | QADriver queue — **the dashboard** (`lib/driver-host.js`, bound at start, D-040); a qa-driver MCP that started first keeps it and the dashboard re-binds within 2 s after it exits | `QADriverRunner` in the XCUITest process |
+| 8789 | TestForgeDriver queue — **the dashboard** (`lib/driver-host.js`, bound at start, D-040); a test-forge-driver MCP that started first keeps it and the dashboard re-binds within 2 s after it exits | `TestForgeDriverRunner` in the XCUITest process |
 
 Two channels, two ports: `contracts/commands.md` requires it — draining is destructive, so a shared
 queue would let each channel steal the other's commands.
@@ -75,14 +75,14 @@ queue would let each channel steal the other's commands.
 - **Traffic** — `trace.ndjson` in the app container, parsed and collapsed by exchange id, cached on
   mtime+size.
 
-## Screen plane — QADriver
+## Screen plane — TestForgeDriver
 
 - `POST /api/driver/command {kind, ...args}` → `postCommand` → enqueue on `:8789`, poll `/result`.
   On a *client-side* timeout only, run `harness.py ensure` once and retry (port of `queue_cli.py`).
 - The UI's `DRIVER_COMMANDS` table is the single list of kinds and their fields; it mirrors
   `contracts/commands.md`. Zero-field commands run on click; `relaunchApp` asks to confirm.
 - Harness: `status / ensure / stop / logs` shell out to `harness.py`. **Build test bundle** runs
-  `xcodebuild build-for-testing` for `QA_SCHEME` / `QA_CONFIGURATION` on the booted simulator,
+  `xcodebuild build-for-testing` for `TEST_FORGE_SCHEME` / `TEST_FORGE_CONFIGURATION` on the booted simulator,
   streamed (filtered to errors/results) through a job.
 - Evidence images are served by `GET /api/media?path=` (absolute path, media extensions only, no `..`).
 
@@ -99,7 +99,7 @@ queue would let each channel steal the other's commands.
   - Verified against the real "Sub Flashsale & Special Placement" page: 96 cases, all 9 columns mapped.
 - **Load from Confluence URL** (D-022) — without `CONFLUENCE_EMAIL`/`CONFLUENCE_TOKEN`,
   `POST /api/testcases/load` answers `202 {jobId, viaClaude}` and starts a `load` job:
-  `claude -p` (model `QA_LOADER_MODEL`, default haiku, cwd = dashboard dir) loads
+  `claude -p` (model `TEST_FORGE_LOADER_MODEL`, default haiku, cwd = dashboard dir) loads
   the Atlassian plugin's `getConfluenceContent` via ToolSearch and calls it once (cloudId = URL host,
   `content_id`, markdown, detail full); Rovo `getConfluencePage` only as fallback (D-080). Allowlist
   `ToolSearch` + both read tools; Confluence write/comment/execute tools disallowed; never
@@ -108,9 +108,9 @@ queue would let each channel steal the other's commands.
   case count or the error. The UI follows the job (status line = latest step + elapsed, transcript
   in Run output), then `GET /api/testcases` (`{cases, title, source}`). One load at a time (409).
   With credentials set, the old REST v2 storage-format path answers synchronously.
-- **▶ Run** — spawns `claude -p "/qa-run <source> [techDoc] — run only case <id>: <scenario>"` in
-  `QA_PROJECT_DIR` with `--output-format stream-json --verbose` and stdin ignored; adds
-  `--dangerously-skip-permissions` when `QA_ALLOW_AUTONOMOUS_CLAUDE=1`.
+- **▶ Run** — spawns `claude -p "/test-forge-run <source> [techDoc] — run only case <id>: <scenario>"` in
+  `TEST_FORGE_PROJECT_DIR` with `--output-format stream-json --verbose` and stdin ignored; adds
+  `--dangerously-skip-permissions` when `TEST_FORGE_ALLOW_AUTONOMOUS_CLAUDE=1`.
   - `lib/claude-stream.js` buffers stdout into whole lines (`lineSplitter`) and turns each event into
     console lines (`formatEvent`): `● session started · model · permissions · n/m MCP connected`
     (failed servers as `!`), assistant text verbatim, `→ <tool> <key arg>` per tool call,
@@ -121,7 +121,7 @@ queue would let each channel steal the other's commands.
     text, falling back to the last 40 console lines. `is_error` in `result` makes the job `error`.
   - History entries also store `turns`, `durationMs`, `costUsd`; the UI progress line shows the
     latest `→` tool call as the current step.
-- **⚡ Replay** — `macro_cli.py resolve <name> --search-root <QA_UITEST_ROOT>` → steps posted one by
+- **⚡ Replay** — `macro_cli.py resolve <name> --search-root <TEST_FORGE_UITEST_ROOT>` → steps posted one by
   one; stops at the first step whose outcome has `error` or `found/exists/hittable === false`.
   Unresolvable macro → `BLOCKED (macro not resolved)`.
 - **Run selected** — sequential (one shared XCUITest session).
@@ -133,7 +133,7 @@ queue would let each channel steal the other's commands.
 public/js/live.js ──SSE /api/state/stream──▶ routes/state.js ─▶ lib/state-hub.js   (every live slice, D-077)
 public/js/sessions.js ─SSE /api/sessions/:id/stream──▶ routes/sessions.js ─▶ lib/sessions.js ─▶ lib/claude-session.js
                          POST messages / answer / interrupt / close                       (Agent SDK query(), streaming input)
-public/js/queue.js ──▶ lib/task-queue.js (device lane: 1 · general lane: QA_GENERAL_CONCURRENCY)
+public/js/queue.js ──▶ lib/task-queue.js (device lane: 1 · general lane: TEST_FORGE_GENERAL_CONCURRENCY)
 public/js/projects.js ─▶ routes/projects.js ─▶ lib/projects.js
 public/js/device.js ─▶ routes/device.js ─▶ lib/device.js (simctl screenshot, single-flight) · lib/device-lock.js
 public/js/home.js  — overview + desktop notifications, from the same live state
@@ -142,20 +142,20 @@ public/js/home.js  — overview + desktop notifications, from the same live stat
 ### Sessions (`lib/claude-session.js`)
 
 - Agent SDK `query()` over the user's installed `claude` (`pathToClaudeCodeExecutable`), with
-  `settingSources: user, project, local` — plugins (qa-driver), the project `networklens` MCP, project `.claude/` and
+  `settingSources: user, project, local` — plugins (test-forge-driver), the project `networklens` MCP, project `.claude/` and
   claude.ai connectors all load. Input is an async queue, so messages can be sent mid-turn.
-- A session created with `options.env` (every `qa-run`, from `qaSessionEnv()`: QA simulator + QA
+- A session created with `options.env` (every `test-forge-run`, from `testForgeSessionEnv()`: QA simulator + QA
   build) gets it as the process env and as flag `settings.env`, which outrank the developer's
   settings files (D-068).
 - States: `idle → running → waiting-approval | waiting-answer | waiting-device → idle`, plus
   `closed` / `error`. Process ends → `idle`; the next message restarts it with `resume: <claude
   session id>` (verified across a dashboard restart).
 - `canUseTool`: hard deny (Confluence write tools on page 2396520535) → `AskUserQuestion` becomes a
-  `question` event, answered as `updatedInput.answers` → pre-allowed tools (read-only, QADriver,
+  `question` event, answered as `updatedInput.answers` → pre-allowed tools (read-only, TestForgeDriver,
   Atlassian reads) and per-project "Always allow" (`.data/permissions.json`) run → anything
   else is an `approval` event the UI answers.
 - `PreToolUse` hook (fires even for tools the user's settings allow): repeats the hard deny, and for
-  QADriver tools acquires the device lock first (`waiting-device` while another owner holds it).
+  TestForgeDriver tools acquires the device lock first (`waiting-device` while another owner holds it).
 - Transcript: every event (SDK message, clipped tool results ≤ 6 kB, plus `type: "dashboard"` events
   — user, approval, question, *-resolved, status, hard-deny, error) gets a `seq` and goes to memory
   (last 4000) and `.data/sessions/<id>.ndjson`. `GET /api/sessions/:id/stream?after=seq` replays then
@@ -165,20 +165,20 @@ public/js/home.js  — overview + desktop notifications, from the same live stat
 
 ### Queue (`lib/task-queue.js`)
 
-- Kinds: `qa-run` (device; a session whose first turn is `/qa-run …`, so you can chat with the run),
+- Kinds: `test-forge-run` (device; a session whose first turn is `/test-forge-run …`, so you can chat with the run),
   `replay` (device; macro, no Claude), `claude` (general; free-form prompt in any project).
-- Device lane = 1 running task; general lane ≤ `QA_GENERAL_CONCURRENCY` (default 3). Queued tasks can
+- Device lane = 1 running task; general lane ≤ `TEST_FORGE_GENERAL_CONCURRENCY` (default 3). Queued tasks can
   be moved, cancelled; finished ones retried. Persisted to `.data/tasks.json`; a task running when the
   server stopped becomes `failed (interrupted)`.
 - Test Cases ▶ Run / ⚡ Replay keep their job contract (`{jobId}` + line SSE): the job is created at
   enqueue time and the session's events are mirrored into it as console lines.
-- `lib/device-lock.js`: FIFO, re-entrant per owner. Owners: a session id (qa-run, or a chat calling
-  QADriver), a replay task id, or `driver-console` (`tryAcquire` — a click returns 409 "device busy"
+- `lib/device-lock.js`: FIFO, re-entrant per owner. Owners: a session id (test-forge-run, or a chat calling
+  TestForgeDriver), a replay task id, or `driver-console` (`tryAcquire` — a click returns 409 "device busy"
   instead of waiting).
 
 ### Projects
 
-`lib/projects.js` scans `QA_PROJECT_ROOTS` (default `~/Projects`) at `*/.git` and `*/*/.git`;
+`lib/projects.js` scans `TEST_FORGE_PROJECT_ROOTS` (default `~/Projects`) at `*/.git` and `*/*/.git`;
 workspaces = repo root + children with `CLAUDE.md` / `.claude`. Each row: branch, dirty flag,
 **Session** (opens the new-session form in the iOS workspace when present), **Terminal**, **Finder**.
 Jira and PR views were removed (D-030).
@@ -195,13 +195,13 @@ if a task holds the device).
 
 ## v3 Question 1 — "What code?" (P1, D-041)
 
-`lib/qa-copy.js` makes a separate QA copy; the developer's repo is only read (`GIT_OPTIONAL_LOCKS=0`,
+`lib/test-forge-copy.js` makes a separate QA copy; the developer's repo is only read (`GIT_OPTIONAL_LOCKS=0`,
 no fetch).
 
 | Source | Copy | How |
 |---|---|---|
-| GitHub branch | `~/.testforge/checkouts/<repo>` | first time `git clone --no-checkout --reference <repo> --dissociate <origin>`; then `fetch origin +refs/heads/<b>:refs/remotes/origin/<b>`, `checkout --force --detach <sha>`, `clean -ffd`, submodules if any. Skipped when the copy is already at the tip |
-| Local repository | `~/.testforge/checkouts/<repo>-local` | `ls-files -z --cached --others --exclude-standard` (existing files only) → `rsync -a --from0 --files-from=-`; files gone since the last snapshot are deleted from the copy. No `.git`. Skipped when the snapshot id is unchanged |
+| GitHub branch | `~/.test-forge/checkouts/<repo>` | first time `git clone --no-checkout --reference <repo> --dissociate <origin>`; then `fetch origin +refs/heads/<b>:refs/remotes/origin/<b>`, `checkout --force --detach <sha>`, `clean -ffd`, submodules if any. Skipped when the copy is already at the tip |
+| Local repository | `~/.test-forge/checkouts/<repo>-local` | `ls-files -z --cached --others --exclude-standard` (existing files only) → `rsync -a --from0 --files-from=-`; files gone since the last snapshot are deleted from the copy. No `.git`. Skipped when the snapshot id is unchanged |
 
 - **Snapshot id:** `<sha7>` clean · `<sha7>+<hash4>` with uncommitted changes (hash of
   `diff HEAD --binary` + untracked paths/contents). `GET /api/code/current` recomputes it for local
@@ -209,7 +209,7 @@ no fetch).
 - **Dependencies** (`dependencySteps`, per copy): Swift packages (`SwiftPackageList.txt` hash /
   `SwiftPackages/` missing → `sh SwiftPackages.sh download`), CocoaPods (`Pods/Manifest.lock` ≠
   `Podfile.lock` → `pod install`), Carthage (`Cartfile.resolved` → `carthage bootstrap`). Input
-  hashes in `~/.testforge/state.json`.
+  hashes in `~/.test-forge/state.json`.
 - **Manifest** (`state.json` → `current`): source, repo, branch, sha, snapshotId, hasLocalChanges,
   title, author, changedFiles (≤ 200; vs. `merge-base origin/develop` for GitHub, uncommitted files
   for local), path, depsRan, preparedAt.
@@ -222,18 +222,18 @@ no fetch).
 
 ## Macros v2 + replay without Claude (M0, D-040)
 
-- `lib/driver-host.js` — `DriverHost` (JS port of qa-driver-mcp `queue.ts`): `/health`
-  (`hostedBy: "testforge"`, `lastPolledSecondsAgo`), `/commands` (destructive drain), `/result`,
+- `lib/driver-host.js` — `DriverHost` (JS port of test-forge-driver-mcp `queue.ts`): `/health`
+  (`hostedBy: "test-forge"`, `lastPolledSecondsAgo`), `/commands` (destructive drain), `/result`,
   `/command`; ≤ 100 commands / results, 4 MB bodies. `start()` binds or stays a client; a 2 s
   watchdog re-binds when the port frees. `status()` reports whoever hosts it.
 - `lib/macro-v2.js`:
   - Storage: macros `<UITestRoot>/<Module>/<Submodule>/macros/<slug>.json` (`schemaVersion: 2`),
-    registry `<UITestRoot>/QAMacros/elements.json` (`{schemaVersion: 1, elements: {el_…: {alias,
+    registry `<UITestRoot>/TestForgeMacros/elements.json` (`{schemaVersion: 1, elements: {el_…: {alias,
     screen, quality, locator: {chain[], fallbacks[]}}}}`). Atomic writes. IDs `el_` / `mc_` + 10
     base32 chars (time + random).
   - Runner outcomes are unwrapped from `{id, value}` (`unwrapOutcome`); `{id, error}` is a failure.
   - Step fields: `optional` (absent → skipped), `unless: el_…` (2 s `waitForExists` probe; showing →
-    skipped), `timeout` (tap), `taps: n` (tap; one multi-tap gesture, runner `qa-mocker-testing-4`+,
+    skipped), `timeout` (tap), `taps: n` (tap; one multi-tap gesture, runner `test-forge-driver-4`+,
     for `onTapGesture(count:)`). Label-only `waitFor`/`waitForGone`/`unless` send one `waitForExists`
     with `anyOf` (runner `-5`+); so does a label-only `assert` (`waitForExists`/`waitForNotExists`, D-071) —
     reading a label other than the locator's own still needs an identifier. Host steps: `mock {endpoint, variant|enabled:false}` (live NetworkLens
@@ -270,14 +270,14 @@ no fetch).
     - A screenshot the runner doesn't answer falls back to `host.screenshot` (`simctl`).
     - References: `<slug>.ref.json` `{ref, name, links}`; `caseLinks()`, `saveMacroRef()`,
       `lintMacros()`.
-- Case requirements (D-153): `QAMacros/case-requirements.json` `{rules:[{match, requires, why}]}` — `lib/case-requirements.js` merges every rule whose regex matches the case id. Replays use mocks⇒NetworkLens, then case rules, then the macro's `requires`; Claude runs (`qa-run`, purpose run) resolve case rules via the shared `meetPreconditions` before the first turn and append a "preconditions already met" line to the prompt. `reloadHome: true` relaunches after a login.
-- Model-driven NetworkLens fuzzing (D-155): `lib/swift-decodable.js` `parseDecodableFields(source, typeName)` — parses a hand-written `init(from decoder:)`, both the explicit `decodeIfPresent(Type.self, forKey:)` form and this codebase's `KeyedDecodingContainer` subscript form (`values[.x]`, type read from the property's own declaration). `lib/model-fuzz.js` — `locateInstances`/`readAtPath`/`writeAtPath`/`decodeBaselineVariant`/`generateFieldVariants`/`selectRule`/`mergeGeneratedVariants` (pure; mutates by `jsonKey`, merges only `fuzz-`-prefixed variants). `lib/model-fuzz-io.js` — `runFields`/`runGenerate(options, deps)`, `realDeps()` for the CLI. `scripts/qaw-fuzz.mjs fields|generate` — fs-only, no dashboard server/HTTP route (`QA_PROJECT_DIR` is a detached clone, D-032); a `/api/lens/fuzz` route for a Mac button is a named v2.
-- Personal Claude Code settings (D-156): `lib/claude-local-env.js` — `detectLocalEnv({projectDir, mediaRoot, uitestTarget, bundleId, findQaSim})` works out this Mac's `LOCAL_ENV_KEYS` (`QA_BUNDLE_ID`, `NETWORKLENS_BUNDLE_ID`, `QA_PROJECT_DIR`, `QA_UITEST_TARGET`, `QA_DATA_PLANE`, `QA_MEDIA_ROOT`, `QA_DEVICE_UDID`) from what the server already knows, `diffLocalEnv(expected, actual)` compares against the current `.claude/settings.local.json` `env`, `writeLocalEnv(path, env, {examplePath}, deps)` merges just `env` in atomically (seeding from `settings.local.json.example` the first time). `routes/qa-setup.js`'s `claudeEnvCheck()` feeds a new `claude-env` readiness check (`lib/readiness.js`, `level: "warn"`, `scope: "all"`); its fix is `POST /api/claude-env/configure`. `.claude/settings.local.json` is no longer tracked (`.gitignore`); `.claude/settings.local.json.example` is the committed, generic baseline every developer's copy is seeded from. `.claude/settings.json` itself never carries an `env` block.
+- Case requirements (D-153): `TestForgeMacros/case-requirements.json` `{rules:[{match, requires, why}]}` — `lib/case-requirements.js` merges every rule whose regex matches the case id. Replays use mocks⇒NetworkLens, then case rules, then the macro's `requires`; Claude runs (`test-forge-run`, purpose run) resolve case rules via the shared `meetPreconditions` before the first turn and append a "preconditions already met" line to the prompt. `reloadHome: true` relaunches after a login.
+- Model-driven NetworkLens fuzzing (D-155): `lib/swift-decodable.js` `parseDecodableFields(source, typeName)` — parses a hand-written `init(from decoder:)`, both the explicit `decodeIfPresent(Type.self, forKey:)` form and this codebase's `KeyedDecodingContainer` subscript form (`values[.x]`, type read from the property's own declaration). `lib/model-fuzz.js` — `locateInstances`/`readAtPath`/`writeAtPath`/`decodeBaselineVariant`/`generateFieldVariants`/`selectRule`/`mergeGeneratedVariants` (pure; mutates by `jsonKey`, merges only `fuzz-`-prefixed variants). `lib/model-fuzz-io.js` — `runFields`/`runGenerate(options, deps)`, `realDeps()` for the CLI. `scripts/test-forge-fuzz.mjs fields|generate` — fs-only, no dashboard server/HTTP route (`TEST_FORGE_PROJECT_DIR` is a detached clone, D-032); a `/api/lens/fuzz` route for a Mac button is a named v2.
+- Personal Claude Code settings (D-156): `lib/claude-local-env.js` — `detectLocalEnv({projectDir, mediaRoot, uitestTarget, bundleId, findTestForgeSim})` works out this Mac's `LOCAL_ENV_KEYS` (`TEST_FORGE_BUNDLE_ID`, `NETWORKLENS_BUNDLE_ID`, `TEST_FORGE_PROJECT_DIR`, `TEST_FORGE_UITEST_TARGET`, `TEST_FORGE_DATA_PLANE`, `TEST_FORGE_MEDIA_ROOT`, `TEST_FORGE_DEVICE_UDID`) from what the server already knows, `diffLocalEnv(expected, actual)` compares against the current `.claude/settings.local.json` `env`, `writeLocalEnv(path, env, {examplePath}, deps)` merges just `env` in atomically (seeding from `settings.local.json.example` the first time). `routes/test-forge-setup.js`'s `claudeEnvCheck()` feeds a new `claude-env` readiness check (`lib/readiness.js`, `level: "warn"`, `scope: "all"`); its fix is `POST /api/claude-env/configure`. `.claude/settings.local.json` is no longer tracked (`.gitignore`); `.claude/settings.local.json.example` is the committed, generic baseline every developer's copy is seeded from. `.claude/settings.json` itself never carries an `env` block.
 - Before step 1, `replay-v2` resolves `requires` through `lib/preconditions.js` (D-051): env from the app plist → switch routine; `NetworkLensEnabled` + relaunch; session probe → login/logout routine. Failure = BLOCKED. Replays/runs are refused (409) while any test is queued or running.
 - Batch follow-up (D-064), wired in `launchBatch`:
   - a replay that isn't PASS → `triageFailure`: a Claude turn with `triagePrompt`; `MACRO_BROKEN` +
     changed files → `enqueueReplay` again; `ENVIRONMENT` → BLOCKED;
-  - a Claude case that PASSes → `learnMacro`: the next turn of the same session (`qa-run` payload
+  - a Claude case that PASSes → `learnMacro`: the next turn of the same session (`test-forge-run` payload
     `sessionId`, `purpose: learn`) → the new macro is found by `MACRO:` id or case link → replayed →
     kept only on PASS.
   - Item fields: `triage {kind, summary, changedFiles, costUsd, sessionId}`, `repaired`,
@@ -297,7 +297,7 @@ no fetch).
     `host.keystroke()` (osascript via stdin).
   - Routes: `GET/POST /api/credentials`, `DELETE /api/credentials/:env/:profile`.
 - Identity (D-045): `GET /api/identity` → `{account, target, sessionDir}`. `routes/sessions.js` and
-  the `qa-run` / `claude` executors default `projectDir` to `sessionProjectDir()`.
+  the `test-forge-run` / `claude` executors default `projectDir` to `sessionProjectDir()`.
 
 ## Jobs / SSE
 
@@ -337,32 +337,32 @@ One SSE connection per page replaces `/api/events` and every polling timer the p
   `cancelling`.
 - **`lib/narration.js`:** plain-words live steps with an SF Symbol name, status and duration.
   Replays narrate macro steps (`replayMacroV2` gained `onStepStart`); Claude runs narrate their
-  QADriver and NetworkLens tool calls (`mirrorSessionToJob`). `logIndex` is the job line a step
+  TestForgeDriver and NetworkLens tool calls (`mirrorSessionToJob`). `logIndex` is the job line a step
   starts at. The last 3 runs are kept.
 - **`lib/usage.js`:** Claude usage like the CLI status line. Every headless run streams a
   `rate_limit_event` (status `allowed` too) with `unifiedWindows.five_hour|seven_day` →
   `utilization`, `resetsAt`; `claude-session.js` and `claude-runner.js` feed every message to
   `usageFeed`. Context % = the run's input + cache tokens ÷ `modelUsage.contextWindow`. The optional
-  tap `~/.testforge/usage.json` wins when newer. Weekly elapsed % counts Mon–Fri only.
+  tap `~/.test-forge/usage.json` wins when newer. Weekly elapsed % counts Mon–Fri only.
 - **Page:** `public/js/live.js` exposes `onSlice(name, fn)` and the old `onState` (the `queue`
-  slice). `app.js` (a classic script) queues its subscriptions on `window.qaPendingSlices`. Only
+  slice). `app.js` (a classic script) queues its subscriptions on `window.testForgePendingSlices`. Only
   display clocks remain on timers (elapsed counters, relative times).
 
 ## Mac app shell (R2, D-081)
 
-`tools/testforge-mac/` — Swift package, macOS 14+, a client of this server; no server code changed.
+`tools/mac-app/` — Swift package, macOS 14+, a client of this server; no server code changed.
 
 - **Start:** `GET /api/state` (3 s timeout). 200 → attach (never stopped by the app). Else
   `/bin/bash -c "mkdir -p .data && exec ./start.sh >> .data/dashboard.log 2>&1"` in the dashboard
-  folder with `QA_DASHBOARD_NO_OPEN=1`; poll `/api/state` 1 s up to 90 s. `start.sh` and `node` both
+  folder with `TEST_FORGE_SERVER_NO_OPEN=1`; poll `/api/state` 1 s up to 90 s. `start.sh` and `node` both
   `exec`, so the app's `Process` *is* node — terminate = SIGTERM to the server.
 - **Stream:** `GET /api/state/stream`; dispatches on each `data:` line using the preceding `event:`
   (`snapshot` → replace all slices, `patch` → `slices[patch.slice]`). Backoff 1, 2, 4, 8, 10 s.
 - **Reads:** `readiness` (checks → rows), `queue` (any task not done/failed/cancelled → keep the server on quit).
-- **Writes:** Fix buttons POST the web UI's endpoints: `/api/qa-sim/{create,boot,solo}`, `/api/build/qa`,
+- **Writes:** Fix buttons POST the web UI's endpoints: `/api/test-forge-sim/{create,boot,solo}`, `/api/build/qa`,
   `/api/harness/ensure`, `/api/code/free-space {olderThanDays:14}`.
 - **Console:** tails `.data/dashboard.log` from its end (DispatchSource on extend/write) + app lines; 5 000-line cap.
-- **Config:** `QA_DASHBOARD_DIR` (else search upward from the .app for `tools/qa-dashboard`), `QA_DASHBOARD_PORT`.
+- **Config:** `TEST_FORGE_SERVER_DIR` (else search upward from the .app for `tools/test-forge-server`), `TEST_FORGE_SERVER_PORT`.
 - **Ownership (D-082):** a server the app starts is recorded in `.data/app-server.json` `{pid, port}`; on attach the app re-adopts it when that pid is still `node` (else it is someone else's and never stopped). Cleared when the app stops it or it dies.
 - **Code drift (D-083):** `localDrift` returns `hasDrifted` (snapshot moved — drives Run again) and `hasAppInputsChanged` (D-069 `buildInputId` moved — drives the "Code prepared" warning). D-198: when the prepared copy exists, `hasAppInputsChanged` comes from `appFiles` — candidate files (dirty now, dirty at prepare, committed since) outside `BUILD_IGNORED_PATHS` whose content differs from the copy; the id is the fallback.
 - **Readiness fingerprints (D-082):** `createCheckMemo` in `lib/readiness.js` reuses a passing `app` / `installed` result while `udid|codeId|endedAt` is unchanged (≤ 30 min), persisted in `.data/readiness-memo.json`; checks carry `durationMs`, reused ones `isReused` + `checkedAt`.
@@ -382,7 +382,7 @@ One SSE connection per page replaces `/api/events` and every polling timer the p
 ## Scan mode (D-086)
 
 - **Process:** `ScanSession.start()` spawns `python3 -u <scan_mode.py> --events --out .data/scans/scan-<stamp>.json`
-  (script resolved like the other plugin scripts; override `QA_SCAN_SCRIPT`). stdout lines starting
+  (script resolved like the other plugin scripts; override `TEST_FORGE_SCAN_SCRIPT`). stdout lines starting
   `EVENT ` are JSON folded by the pure `applyScanEvent`; other lines keep the last 60. stdin verbs:
   `mark <name>`, `skip`, `stop`. A non-zero exit sets `fatal` to the last line.
 - **Slice:** `{isActive, isStopping, startedAt, endedAt, out, device, current:{changedAt, elementCount,
@@ -554,16 +554,16 @@ device pt ◀─ ScreenMapping (scale = group.width / device width) ─▶ Mac p
 | POST | `/api/sessions/:id/messages` · `/answer` · `/interrupt` · `/close` | `{text, attachScreenshot?}` · `{requestId, behavior, message?, alwaysAllow?, answers?}` |
 | GET | `/api/sessions/:id/stream?after=` | SSE transcript events (replay + live), `event: summary` |
 | GET/POST | `/api/tasks` | list (+ device lock) · enqueue `{kind, title?, payload, links?}` |
-| GET | `/api/qa-sim` | `{qa, booted, others}` (D-053) |
-| POST | `/api/qa-sim/create` · `/boot` · `/solo` | job: clone the booted sim as "QA · <name>" · boot it · shut down the other simulators |
+| GET | `/api/test-forge-sim` | `{qa, booted, others}` (D-053) |
+| POST | `/api/test-forge-sim/create` · `/boot` · `/solo` | job: clone the booted sim as "TestForge · <name>" · boot it · shut down the other simulators |
 | GET | `/api/build/status` | manifest, profile, `state` current/stale/none/no-code, last build, override (D-054) |
 | POST | `/api/build/qa` | job: `build-for-testing` in the QA copy (confirmed click only) |
 | POST | `/api/build/profile` | save scheme/configuration/runnerTarget for the repo |
 | POST/DELETE | `/api/build/override` | `{reason}` → test the installed app anyway, stamped UNVERIFIED BUILD |
-| GET/POST | `/api/code/usage` · `/api/code/free-space` | `~/.testforge` sizes · remove entries unused for 14 days |
+| GET/POST | `/api/code/usage` · `/api/code/free-space` | `~/.test-forge` sizes · remove entries unused for 14 days |
 | GET | `/api/test-batches` | `{proofRoot, suggestedRoot, active, batches}` — also the `testBatch` state slice (R4j, D-109) |
 | POST | `/api/settings/proof-root` | `{path}` → validated proof root; refused while a test runs or a batch is active |
-| POST | `/api/batch` `{caseIds, approval?, techDocPath?, recordVideo?}` — each case's evidence carries `folder` (D-115) | `recordVideo`: "auto" (default) films per `lib/video-plan.js` — replay: server films the planned step window (`videoWindow` in the replay-v2 task, safety stop 300 s, longer than 60 s → `trimToLast` keeps the last 60 s via ffmpeg stream copy; `job.meta.videoPath`); Claude: prompt carries the case row (`caseRowText`, D-114) and `videoGuidance`, its `qa_start_recording` .mov is collected as a video (D-113). `true` records each whole case with `simctl recordVideo` into `<batch>/<case>/` (R4k, D-110); `false` none |
+| POST | `/api/batch` `{caseIds, approval?, techDocPath?, recordVideo?}` — each case's evidence carries `folder` (D-115) | `recordVideo`: "auto" (default) films per `lib/video-plan.js` — replay: server films the planned step window (`videoWindow` in the replay-v2 task, safety stop 300 s, longer than 60 s → `trimToLast` keeps the last 60 s via ffmpeg stream copy; `job.meta.videoPath`); Claude: prompt carries the case row (`caseRowText`, D-114) and `videoGuidance`, its `test_forge_start_recording` .mov is collected as a video (D-113). `true` records each whole case with `simctl recordVideo` into `<batch>/<case>/` (R4k, D-110); `false` none |
 | POST | `/api/test-batches` · `/:id/end` | start `{name}` (one active) · end → writes `<root>/<folder>/report.md` |
 | GET | `/api/test-batches/:id/report.md` | the batch report, live; a replay batch adds "Compared with …" (D-201) |
 | POST | `/api/test-batches/:id/replay` | D-201: recorded cases of the batch → new batch `replayOf {id, name, caseIds, build}` + driver-only run; `{batch, ended, caseIds, skipped}`. Summaries carry `comparison {regressed, fixed, same, missing, cases}` |
@@ -586,7 +586,7 @@ device pt ◀─ ScreenMapping (scale = group.width / device width) ─▶ Mac p
 | GET | `/api/macros` | v2 macros (with `anchors`) + v1 macros from `macro_cli.py` |
 | GET | `/api/macros/v2/:id` | macro + review map + anchors (id, name or alias name) |
 | GET | `/api/macros/lint` | D-064: `{errors, warnings, macros, references}` — duplicate ids, dangling refs, same steps, case linked twice |
-| GET · POST | `/api/mocks/pack` (Macros tab **💾 Save mocks to repo**) | D-064: per endpoint a macro mocks: in repo / on device · save the device's rules to `QAMacros/mocks/` (redacted) |
+| GET · POST | `/api/mocks/pack` (Macros tab **💾 Save mocks to repo**) | D-064: per endpoint a macro mocks: in repo / on device · save the device's rules to `TestForgeMacros/mocks/` (redacted) |
 | GET | `/api/launch-inputs` | D-064: launch-time inputs armed vs. what the app launched with, `needsRelaunch` |
 | POST | `/api/macros/v2/:id/replay` | → `{jobId, taskId}`; device lane |
 
@@ -628,29 +628,29 @@ time (409), `busy` field on harness status.
 
 ## Launcher
 
-`Launcher.applescript` → `QA Dashboard.app` (`osacompile`). Probes `:4545`; if down, runs
-`start.sh` with `QA_DASHBOARD_NO_OPEN=1`, waits ≤20 s, `activate`s itself, shows the status dialog
+`Launcher.applescript` → `TestForge server.app` (`osacompile`). Probes `:4545`; if down, runs
+`start.sh` with `TEST_FORGE_SERVER_NO_OPEN=1`, waits ≤20 s, `activate`s itself, shows the status dialog
 (30 s timeout), opens the browser. `start.sh` repairs the GUI-launch PATH, sources `.env.local`,
 installs deps, sets defaults.
 
 ## Configuration
 
 See the table in `../README.md#configuration`. Defaults specific to this repo:
-`QA_SCHEME=BlibliMobile-iOS-PerfTest`, `QA_CONFIGURATION=PerformanceTest`,
-`QA_UITEST_TARGET=BlibliMobile_XCUITest`, `QA_PROJECT_DIR=../../BlibliMobile-iOS`.
+`TEST_FORGE_SCHEME=BlibliMobile-iOS-PerfTest`, `TEST_FORGE_CONFIGURATION=PerformanceTest`,
+`TEST_FORGE_UITEST_TARGET=BlibliMobile_XCUITest`, `TEST_FORGE_PROJECT_DIR=../../BlibliMobile-iOS`.
 
 ## File map
 
-> **D-199:** `public/` (the browser UI), `QA Dashboard.app` and `Launcher.applescript` were removed; the server no longer serves static files. The TestForge Mac app, `qaw` and Claude Code are its clients. `public/js/*` names in the data-flow notes above are historical — their Mac counterparts: Prepare code `GetReady/PrepareCode/`, Run queue `GetReady/RunQueue/`, Logins `Settings/Logins/`, run popups `RunPrompt/` (the new `prompts` state slice, re-read on every PromptHub change).
+> **D-199:** `public/` (the browser UI), `TestForge server.app` and `Launcher.applescript` were removed; the server no longer serves static files. The TestForge Mac app, `test-forge` and Claude Code are its clients. `public/js/*` names in the data-flow notes above are historical — their Mac counterparts: Prepare code `GetReady/PrepareCode/`, Run queue `GetReady/RunQueue/`, Logins `Settings/Logins/`, run popups `RunPrompt/` (the new `prompts` state slice, re-read on every PromptHub change).
 
 | File | Responsibility |
 |---|---|
 | `server.js` | all routes, `applyEdit`, run/replay/build job wiring |
 | `start.sh` | PATH, `.env.local`, deps, defaults, launch |
-| `Launcher.applescript` / `QA Dashboard.app` | double-click entry |
-| `lib/session.js variants.js trace.js container.js redact.js control.js control-queue.js android.js` | copied from the NetworkInterceptor MCP build by `scripts/sync-networklens.sh` (revision in `lib/NETWORKLENS_REVISION`) — never hand-edit; change upstream on the QA branch (D-050). Since D-065 that branch sits on NetworkInterceptor 1.0.0 (tag `qa-mocker-testing-2`) |
+| `Launcher.applescript` / `TestForge server.app` | double-click entry |
+| `lib/session.js variants.js trace.js container.js redact.js control.js control-queue.js android.js` | copied from the NetworkInterceptor MCP build by `scripts/sync-networklens.sh` (revision in `lib/NETWORKLENS_REVISION`) — never hand-edit; change upstream on the QA branch (D-050). Since D-065 that branch sits on NetworkInterceptor 1.0.0 (tag `test-forge-driver-2`) |
 | `lib/endpoint.js` | URL → endpoint key |
-| `lib/driver-queue.js` | QADriver queue client with one harness-restart retry |
+| `lib/driver-queue.js` | TestForgeDriver queue client with one harness-restart retry |
 | `lib/harness.js` | `harness.py` wrapper |
 | `lib/macro.js` | `macro_cli.py` wrapper + v1 replay loop |
 | `lib/macro-v2.js` | macro schema v2: storage, element registry, step planner, replay, review map |
@@ -662,8 +662,8 @@ See the table in `../README.md#configuration`. Defaults specific to this repo:
 | `lib/lens-check.js` | failure note: mocks that answered during the run, from the trace (D-043, D-059) |
 | `lib/results.js` | P5 results store (`.data/results.json`), review, FLAKY, Markdown report (D-062); `runSummary`, `branchHistory`, `compareRuns`, `defaultBaseRun`, `isProbeShot` (D-087) |
 | `lib/setups.js` | P9 saved setups (`.data/setups.json`): `makeSetup` validation, `needsPrepare`, `SetupStore` (D-067) |
-| `lib/driver-host.js` | dashboard-hosted QADriver queue on `:8789` |
-| `lib/qa-copy.js` | Question 1: QA copies (GitHub branch / local snapshot), dependencies, manifest, drift, `buildInputId` (D-069) |
+| `lib/driver-host.js` | dashboard-hosted TestForgeDriver queue on `:8789` |
+| `lib/test-forge-copy.js` | Question 1: QA copies (GitHub branch / local snapshot), dependencies, manifest, drift, `buildInputId` (D-069) |
 | `lib/plugin-paths.js` | locate test-flow-recorder scripts (bounded-depth globs, cached) |
 | `lib/scan-session.js` · `routes/scan.js` | scan mode process, `scan` slice, `/api/scan/*` (D-086) |
 | `lib/testcases.js` | markdown + HTML table parsing, Confluence fetch |
@@ -681,10 +681,10 @@ See the table in `../README.md#configuration`. Defaults specific to this repo:
 
 ## Claude run prompt (D-071)
 
-`enqueueQaRun` (server.js) builds `/qa-run <doc> [<tech doc>] — run only case <id>`, then
+`enqueueTestForgeRun` (server.js) builds `/test-forge-run <doc> [<tech doc>] — run only case <id>`, then
 `MOCK_HINT`, then the `VERDICT:` line request (D-070). `MOCK_HINT` tells the session that mocks go
 through the `networklens` MCP only, that ready rules with named variants are on the device and in
-`<UITestRoot>/QAMacros/mocks/*.networklens-pack.json`, and that learned macros
+`<UITestRoot>/TestForgeMacros/mocks/*.networklens-pack.json`, and that learned macros
 (`<UITestRoot>/**/macros/*.json`) show proven routes into each screen. A batch's `techDocPath` is
 passed through to every case.
 
@@ -712,7 +712,7 @@ passed through to every case.
 
 ## Build screen (R4e, D-101)
 
-- `Build/BuildServerService` (`QABuildActing`): `GET /api/build/status`, `POST /api/build/qa`,
+- `Build/BuildServerService` (`TestForgeBuildActing`): `GET /api/build/status`, `POST /api/build/qa`,
   `POST /api/jobs/:id/cancel`, `POST /api/harness/ensure|stop`; `followLog` reads the job's SSE stream
   (`data:` lines, stops at `event: end`). The build is the server's QA pipeline, so web and Mac build identically.
 - `Build/XcodeToolsService` (`XcodeToolsActing`, on `ProcessCommandRunner`): `xcodebuild -version`,
@@ -720,7 +720,7 @@ passed through to every case.
   Run Without Building on Xcode's menu bar; activates Xcode first because it disables Product items in the
   background, waits ≤3 s for the item to enable, then reactivates TestForge; refuses when the item stays
   disabled, Xcode is closed or AX isn't allowed),
-  `du -sk`, `rm -rf` only for `CleanTarget` (`~/.testforge/derived`, `~/Library/Developer/Xcode/DerivedData`),
+  `du -sk`, `rm -rf` only for `CleanTarget` (`~/.test-forge/derived`, `~/Library/Developer/Xcode/DerivedData`),
   `open <workspace>` (the user's own clone, not the QA copy).
 - `BuildSectionViewModel`: status state, presentation (ready / needs build / building), log lines (last 200),
   one action at a time (sizes and deleting moved to Free space and reset, D-214), lock from `queue`/`scan`; reloads status when the `jobs` slice changes so a build
@@ -742,7 +742,7 @@ passed through to every case.
 ## Proof folder + Test Batches (R4j, D-109)
 
 - `lib/test-batches.js` `TestBatchStore`: settings + batches persisted under `.data/`; `mediaDir` = root/active
-  folder, mirrored into `process.env.QA_MEDIA_ROOT` on restore and every change (server proof writes and spawned
+  folder, mirrored into `process.env.TEST_FORGE_MEDIA_ROOT` on restore and every change (server proof writes and spawned
   children read that variable). `attach({kind, refId, title})` is a no-op without an active batch or for a repeat id.
 - Hooks in `server.js`: `tasks.on("enqueued")` (TaskQueue now emits it), `sessions.on("created")` (chats without a
   `taskId`), the Results run start, `scanSession` change (scan `out` path as id). `readiness` gets
@@ -757,7 +757,7 @@ passed through to every case.
 - Server `lib/reset.js`: `ITEMS` (id, title, detail, isDefault, stopsRunner, `measure`, `perform`) — the only place
   reset paths exist. `resetPlan` measures all items in parallel + `git status --porcelain` of the prepared repo
   (info only). `performReset` stops the runner once if any chosen item needs it, then deletes in display order.
-  Route in `routes/qa-setup.js` shares `refuseWhileBusy` (test, build, reset) and checks the device lock (scan).
+  Route in `routes/test-forge-setup.js` shares `refuseWhileBusy` (test, build, reset) and checks the device lock (scan).
 - Mac `Build/Reset/`: `ResetServerService` (`ResetActing`: plan, start, followLog via the build job stream),
   `ResetSectionViewModel` (`ResetSectionPresenting`; `ResetPlanState`, `ResetRunState`; defaults ticked on first
   load; lock from `queue`/`scan`; follows a reset already running on (re)open; `onFinished` → Build reloads),
@@ -766,9 +766,9 @@ passed through to every case.
 ## Test device (D-120)
 
 - Server: `lib/test-device.js` (`configureTestDevice`, `chosenTestDeviceUdid`, `chooseTestDevice`, `noteTestDevice` →
-  `NETWORKLENS_UDID`, `deviceArg`), `findQaSimulator` = chosen else "QA · " clone. Routes `GET/POST /api/test-device`.
+  `NETWORKLENS_UDID`, `deviceArg`), `findTestForgeSimulator` = chosen else "TestForge · " clone. Routes `GET/POST /api/test-device`.
 - Mac: `Server/TestDeviceService` (`TestDeviceActing`), `SimulatorControlViewModel.testDevice`, `useSelectedForTests`,
-  `useQACloneForTests`; `Simulator/CoreSimulatorDevices` (private CoreSimulator via the ObjC runtime),
+  `useTestForgeCloneForTests`; `Simulator/CoreSimulatorDevices` (private CoreSimulator via the ObjC runtime),
   `Simulator/SimulatorWindowScreen` (`SimulatorScreenReading`: `windowDevice()`, `screenshot(udid:)`, `SimctlScreenshot`).
   Measure (`MeasureDependencies.screenReader`) and the flow map use it; the server's `/api/device/screen` is no longer
   needed by either.
@@ -783,17 +783,17 @@ passed through to every case.
 ## Scan flow map (D-117)
 
 - `Scan/ScanContainerView` (mode switch) → `Scan/FlowMap/`: `FlowMapViewModel` (deps `FlowMapDependencies`: locator,
-  simulatorControl, `FlowMapStoring` = `FileFlowMapStore` at `~/.testforge/flows/`, `SimulatorGestureMonitoring` =
+  simulatorControl, `FlowMapStoring` = `FileFlowMapStore` at `~/.test-forge/flows/`, `SimulatorGestureMonitoring` =
   `GlobalPointerMonitor`, desktop), pure `FlowScreenMatcher` + `FlowTreeBuilder`, models `FlowMap/FlowScreen/FlowEdge/
   FlowAction`, views `FlowMapSectionView`, `FlowMapHeaderView`, `FlowTreeView`, `FlowTreeRowView`, `FlowScreenDetailView`.
-  Constants `TestForgeConstants.FlowMap`; identifiers `QAW_FlowMap_*`, `QAW_Scan_ModePicker`. No server involvement.
+  Constants `TestForgeConstants.FlowMap`; identifiers `TestForge_FlowMap_*`, `TestForge_Scan_ModePicker`. No server involvement.
 
 ## Proof viewer (D-118)
 
 - `ProofViewer/`: `ProofViewerViewModel` (items, selection, open/reveal through `DesktopActing`) → `ProofImageViewModel`
   + `ProofVideoViewModel`. Window scene `proof` in `TestForgeApp`; Results opens it with
   `ResultCaseDetailModel.proofViewerRequest(selecting:)` + `openWindow(id:)`. Constants under
-  `TestForgeConstants.ProofViewer`; identifiers `QAW_ProofViewer_*`.
+  `TestForgeConstants.ProofViewer`; identifiers `TestForge_ProofViewer_*`.
 
 ## Simulator screen (R4d, D-100)
 
@@ -809,13 +809,13 @@ passed through to every case.
   then an adaptive grid (min 380 pt) of `SimulatorCardView` cards with tinted symbol headers: App, Display, Saved
   settings, Reset. Copy UDID goes through `DesktopActing` (injected in `SimulatorControlDependencies`).
 
-## NetworkLens API + `qaw-lens` (D-127)
+## NetworkLens API + `test-forge-lens` (D-127)
 
 - `server.js` calls `controlQueue.listen()` at start and owns port 8788; a wrapper around the queue's drain stamps
-  `lensLastPollAt`, so `queueHealth()` reports polling (fresh < 5 s). `qaSessionEnv` passes `NETWORKLENS_SIDECAR`.
+  `lensLastPollAt`, so `queueHealth()` reports polling (fresh < 5 s). `testForgeSessionEnv` passes `NETWORKLENS_SIDECAR`.
 - `routes/lens.js` gets `{readState, setMocking, armVariant, upsertQuickMock, currentTrace, queueHealth}` injected;
   `lib/lens-calls.js` is pure (rows, detail, curl, response → mock source).
-- `scripts/qaw-lens.mjs` → `/api/lens/*`; the Claude run prompt (`MOCK_HINT`) names it with its absolute path.
+- `scripts/test-forge-lens.mjs` → `/api/lens/*`; the Claude run prompt (`MOCK_HINT`) names it with its absolute path.
 - `lib/app-defaults.js`: `appPreferencesDomain` = `<data container>/Library/Preferences/<bundle id>`; read/write/delete via
   `simctl spawn <udid> defaults <verb> <domain>`. Used by preconditions, macro host `setDefault`/`clearDefault`,
   `lens-bubble.js`; mirrored in the Mac `SimulatorControlService` (falls back to the bundle id when the app has no container).
@@ -826,7 +826,7 @@ passed through to every case.
   health every tick, rules + scenarios + guardrails every third, any change refreshes all), section VMs `NetworkHealth…`,
   `NetworkGuardrails…`, `NetworkTraffic…`, `NetworkRules…`, `NetworkScenarios…` (each `…Presenting` protocol +
   `NetworkSectionState`), `NetworkVariantEditorViewModel` (sheet), `NetworkConsoleMapper` (all wording),
-  `NetworkConsoleModels` (wire types), `NetworkConsoleConstants` (sizes + `QAW_Network_*` identifiers).
+  `NetworkConsoleModels` (wire types), `NetworkConsoleConstants` (sizes + `TestForge_Network_*` identifiers).
 - `Server/NetworkConsoleService.swift`: one transport (`NetworkTrafficReading & NetworkRuleEditing &
   NetworkScenarioManaging & NetworkGuarding`); `DashboardClient` gained `put` / `delete`.
 - Server side: `lib/lens-console.js` is pure (views, edits, time-shift, scenarios, guardrails with key-sorted compare);
@@ -847,9 +847,9 @@ passed through to every case.
 
 ## Install from a DMG + first-run Setup (D-132)
 
-- `tools/testforge-mac/scripts/make-dmg.sh` wraps `make-app.sh release` into `build/TestForge-<version>.dmg`.
-- Folder resolution (`TestForgeOpening.resolveServerLocation`): `QA_DASHBOARD_DIR` → `dashboardDirectory` default →
-  walk up from the bundle for `tools/qa-dashboard/server.js`; nil → `TestForgeServices.isSetupNeeded`, the window shows
+- `tools/mac-app/scripts/make-dmg.sh` wraps `make-app.sh release` into `build/TestForge-<version>.dmg`.
+- Folder resolution (`TestForgeOpening.resolveServerLocation`): `TEST_FORGE_SERVER_DIR` → `dashboardDirectory` default →
+  walk up from the bundle for `tools/test-forge-server/server.js`; nil → `TestForgeServices.isSetupNeeded`, the window shows
   `SetupView`, `start()` returns early.
 - `Setup/`: `SetupViewModel` (`SetupPresenting`), `ToolCheckService` (`/bin/zsh -lc` with start.sh's PATH),
   `RepoFolderResolver`, `SetupSystem` (relaunch = open a new instance then terminate; Claude sign-in = Terminal
@@ -857,8 +857,8 @@ passed through to every case.
 
 ## Claude section (D-133)
 
-- Route: `POST /api/sessions/testforge {fresh?}` → `{session}` (`lib/testforge-session.js`, `pickTestForgeSession` /
-  `openTestForgeSession`); session cwd = `QA_PROJECT_DIR`. Everything else is the existing `/api/sessions/:id/*`
+- Route: `POST /api/sessions/testforge {fresh?}` → `{session}` (`lib/test-forge-session.js`, `pickTestForgeSession` /
+  `openTestForgeSession`); session cwd = `TEST_FORGE_PROJECT_DIR`. Everything else is the existing `/api/sessions/:id/*`
   surface: `messages {text, attachScreenshot}`, `answer {requestId, behavior, alwaysAllow, answers, message}`,
   `interrupt`, `stream?after=<seq>` (SSE: unnamed events = transcript records, `summary` = status).
 - Mac `Claude/`: `ClaudeSessionService` (transport + SSE, maps off the main actor) → `ClaudeTranscriptMapper`
@@ -916,7 +916,7 @@ passed through to every case.
 ## Claude usage bar (D-149)
 
 - Server: `usageFeed.watchTap()` (5 s), `usage.model`; `POST /api/usage/tap` → `lib/usage-tap.js installTap()`; slice
-  `claudeCli` (5 s) ← `lib/claude-cli-sessions.js listCliSessions()`; `QA_USAGE_TAP` overrides the tap path.
+  `claudeCli` (5 s) ← `lib/claude-cli-sessions.js listCliSessions()`; `TEST_FORGE_USAGE_TAP` overrides the tap path.
 - Mac `Usage/`: `UsageState`, `ClaudeAccountState` (identity), `ClaudeCliState` → `UsageBarMapper` (`state`,
   `accountSummary`) → `UsageBarViewModel` (lazy on `TestForgeViewModel`) → `UsageBarView` / `UsageSegmentView`, inset at
   the bottom of `TestForgeView` when `TestForgePreferences.isUsageBarShown`; View menu toggle in `TestForgeCommands`.
@@ -924,13 +924,13 @@ passed through to every case.
 ## Remote Control (D-150)
 
 - Server: `RemoteControl` (`lib/remote-control.js`) — spawn `claude remote-control --name … --spawn …` detached in
-  `QA_PROJECT_DIR` with `TESTFORGE_REMOTE=1`, stdout/stderr → `.data/remote-control.log` (tailed every 500 ms →
+  `TEST_FORGE_PROJECT_DIR` with `TEST_FORGE_REMOTE=1`, stdout/stderr → `.data/remote-control.log` (tailed every 500 ms →
   `plainText` → `readOutput`: phase, capacity, session / environment URLs, problem); `.data/remote-control.json` holds
   the pid for `adopt()`; `stop()` kills the process group and waits for exit. Routes `/api/remote-control[/start|/stop]`,
   slice `remoteControl`.
-- Plugin (test-flow-recorder): `hooks/hooks.json` → `testforge-guard.mjs` (PreToolUse `Bash|mcp__.*`),
-  `testforge-session.mjs` (SessionStart); both no-ops without the marker.
-- `scripts/qaw.mjs`; repo skill `BlibliMobile-iOS/.claude/skills/testforge-remote/SKILL.md`.
+- Plugin (test-flow-recorder): `hooks/hooks.json` → `test-forge-guard.mjs` (PreToolUse `Bash|mcp__.*`),
+  `test-forge-session.mjs` (SessionStart); both no-ops without the marker.
+- `scripts/test-forge.mjs`; repo skill `BlibliMobile-iOS/.claude/skills/test-forge-remote/SKILL.md`.
 - Mac `RemoteControl/`: `RemoteControlState` → `RemoteControlMapper` → `RemoteControlViewModel` (lazy on
   `TestForgeViewModel`; `QRCodeRenderer` for the link) → `RemoteControlButtonView` (Claude header) /
   `RemoteControlPanelView` (popover).
@@ -942,7 +942,7 @@ passed through to every case.
   `<repo>/BlibliMobile-iOS/BlibliMobile-iOS/Common/Deeplink/DeeplinkList.txt`. Routes: `GET /api/deeplinks` (`routes`,
   `saved`, `history`, `source`, `appVersion` of the installed QA build or null — D-205), `POST /api/deeplinks/match {url}` (answers the normalized `url`: UAT-B web links → `blibli://`), `POST /api/deeplinks/open {url}` (refuseWhileTesting
   + `deviceLock.tryAcquire("deeplink")`, `xcrun simctl openurl <deviceArg()> <url>`), `POST /api/deeplinks/saved
-  {name,url}`, `DELETE /api/deeplinks/saved/:id`. `qaw link routes [text] | match <url> | open <url>`.
+  {name,url}`, `DELETE /api/deeplinks/saved/:id`. `test-forge link routes [text] | match <url> | open <url>`.
 - Mac: `Server/DeeplinkService.swift` (`DeeplinkProviding`) → `SimulatorControl/Deeplinks/DeeplinksSectionViewModel`
   (built by `SimulatorControlViewModel`, lock from the `queue`/`scan` slices, 300 ms debounced match) →
   `DeeplinksSectionView` (card) + `DeeplinkRoutePickerView`, `DeeplinkParamFieldsView`, `DeeplinkLinkRowView`,
@@ -952,19 +952,19 @@ passed through to every case.
 
 - `lib/model-pick.js`: `pickModel(case, {history, purpose, override})` → `{model, score, reasons, isAuto}`;
   `watchForEscalation(session, {model, escalate})` listens to `tool-result` events + a 15 s clock; `describePick`.
-- qa-run executor (`server.js`): pick before `sessions.create({model})` with the current `buildStamp().buildId` (history
+- test-forge-run executor (`server.js`): pick before `sessions.create({model})` with the current `buildStamp().buildId` (history
   counts only same-build runs); a continued session keeps its model, except save/learn turns drop Opus → Sonnet
   (`followUpModel`); log
   `● model: …`, `narrator.setModel(jobId, {model, reason})` (narration runs carry `model`, `modelReason`), escalate via
   `ClaudeSession.setModel` (`lib/claude-session.js` → SDK `query.setModel`, recorded as a `dashboard/model` event),
   history `model` + `modelPick`. Override: request `model` (`/api/testcases/:id/run`, `/api/batch` → `launchBatch` →
-  `enqueueQaRun` → task payload) > `QA_RUN_MODEL` > `auto`.
+  `enqueueTestForgeRun` → task payload) > `TEST_FORGE_RUN_MODEL` > `auto`.
 - Mac: `Tests/ClaudeRunModel.swift`; `TestCaseService.runWithClaude(caseId:model:)`; `NarratedRun.model/modelReason`
   → `LiveRunModel.modelText` → live-steps header.
 
 ## Usage limit in a batch (D-161)
 
-- `server.js` qa-run executor: `isUsageLimit(result)` → no `appendRun`, job ends `USAGE_LIMIT` with
+- `server.js` test-forge-run executor: `isUsageLimit(result)` → no `appendRun`, job ends `USAGE_LIMIT` with
   `job.meta.usageLimit`; `jobDone` returns `{status, verdict, usageLimit}`.
 - `lib/run-batch.js`: an outcome with `usageLimit` → `#requeueForLimit` (item reset to `queued`, keeps caseId,
   scenario, mode, macro, rerunIndex) + `requestPause(reason)`; `run()` loops on `#nextQueued()`.
@@ -1031,14 +1031,14 @@ passed through to every case.
 ## Demo videos (D-164)
 
 - Notes: macro `demo = {title, checks, why, setup?, steps: {<top-level step id>: {en, id}}, writtenAt}`;
-  `QAMacros/mocks/notes.json` = `{<endpoint>: {<variant>: {en, id}}}`. `demoNotesPrompt` / `parseDemoNotes(text,
+  `TestForgeMacros/mocks/notes.json` = `{<endpoint>: {<variant>: {en, id}}}`. `demoNotesPrompt` / `parseDemoNotes(text,
   stepIds, endpoints)` / `saveMacroNotes(path, notes)` / `mergeMockNotes(additions, {overwrite})`.
 - Recording: `createDemoRecorder({fetchFrame, screen, holdMs})` — `begin()` at `simctl recordVideo` start;
   `onStepStart` frames actions (and `waitForGone`) then holds 1.5 s; `onStep` frames checks then holds 2.5 s;
   `timeline({…})` → `{schema 1, caseId, macroId, macroName, recordedAt, screen, verdict, languages, notes, mocks
   [{endpoint, variant, note}], events [{id, do, text, from, startMs, endMs, holdUntilMs?, ok, skipped, frame?}],
-  video}`. Folder: `$QA_MEDIA_ROOT/demos/<case>-<iso>/` (`raw.mp4`, `timeline.json`, `demo-en|id.mp4|vtt`).
-- Render: server runs `$TESTFORGE_BINARY`, else `tools/testforge-mac/build/TestForge.app/…/TestForge`,
+  video}`. Folder: `$TEST_FORGE_MEDIA_ROOT/demos/<case>-<iso>/` (`raw.mp4`, `timeline.json`, `demo-en|id.mp4|vtt`).
+- Render: server runs `$TEST_FORGE_BINARY`, else `tools/mac-app/build/TestForge.app/…/TestForge`,
   else `/Applications/…`, with `--render-demo <folder>` (10 min timeout). `DemoScript`: intro 6 s (first frame held),
   trimmed recording (from 1.5 s before the first explained step), outro 4 s (last frame held); cues = explained
   top-level events (`from == nil`), min 2.5 s, cut at the next cue. `DemoPainter` draws each cue / card as a
@@ -1069,8 +1069,8 @@ passed through to every case.
   editable field or an empty scenario) and `DELETE /api/testcases/:id/edit`; both poke the `testcases` slice.
 - Mac: `TestCaseDraft`, `EditTestCaseSheetView` + `EditTestCaseFieldView`, `TestCaseEditNoticeView`;
   `TestsSectionViewModel.beginEditingSelected / saveEdit / requestRevertSelected / confirmRevert`;
-  `TestCaseService.saveEdit / revertEdit`; IDs in `Tests/TestsSectionConstants.swift` (`QAW_Tests_Edit*`,
-  `QAW_Tests_EditSheet_*`, `QAW_Tests_DocumentText_<field>`, `QAW_Tests_Field_<field>`).
+  `TestCaseService.saveEdit / revertEdit`; IDs in `Tests/TestsSectionConstants.swift` (`TestForge_Tests_Edit*`,
+  `TestForge_Tests_EditSheet_*`, `TestForge_Tests_DocumentText_<field>`, `TestForge_Tests_Field_<field>`).
 
 ## Session export (D-173)
 
@@ -1079,13 +1079,13 @@ passed through to every case.
   its macro id; a same-run batch review override replaces the verdict), `history`, `batchResults` (results store,
   `finalVerdict`), `media {screenshots, videos, demoVideos}`. `writeSessionExport(session, {target, includeMedia})`
   stages `<name>/session.json`, `report.md`, `media/<case>/…` in a temp dir and zips with `ditto -c -k --keepParent`.
-  `listDemoRecordings(mediaRoot, languages)` reads `<QA_MEDIA_ROOT>/demos/*/timeline.json`.
+  `listDemoRecordings(mediaRoot, languages)` reads `<TEST_FORGE_MEDIA_ROOT>/demos/*/timeline.json`.
 - Routes (server.js): `GET /api/session/export` → `{fileName, summary, runs, mediaFiles, mediaBytes}`;
   `POST /api/session/export {path, includeMedia}` → `{path, bytes, cases, mediaFiles, mediaBytes, missingMedia}`.
   409 when no document is loaded.
 - Mac: `SessionExportService` (`SessionExporting`), `SessionExportViewModel` (phases loading/ready/exporting/finished/
   failed; `DesktopActing.chooseSaveLocation` asks where, the server writes), `SessionExportSheetView` via
-  `SessionExportSheetModifier` on the Tests section; header button `QAW_Tests_ExportSessionButton`.
+  `SessionExportSheetModifier` on the Tests section; header button `TestForge_Tests_ExportSessionButton`.
 
 ## Scan saved macros + Start/End recording (D-174)
 
@@ -1140,12 +1140,12 @@ passed through to every case.
 - Mac: `TestBatchStatus`, `TestBatchSummary.status/pausedAt/pauseCount`, `TestBatchSnapshot.pausedBatches`;
   `TestBatchActing.start(name:isPausingActive:)`, `pause`, `resume`; `TestBatchViewModel.pause()/resume(batch:)/startNote`;
   pill menu Pause / Start another / Resume ▸; `TestBatchPausedListView` in the start sheet; Reports › Batches row icon
-  and header buttons per status (`BatchReportsViewModel.pauseSelected/resumeSelected`). `qaw batch pause|resume`.
+  and header buttons per status (`BatchReportsViewModel.pauseSelected/resumeSelected`). `test-forge batch pause|resume`.
 
 ## Reopen Test Batch (D-184)
 
 - `lib/test-batches.js reopen(id)`: refuses an unknown/active batch or while another is active; recreates the folder,
-  sets `status: active`, appends `reopenedAt`, clears `endedAt`, moves it to the top, saves (re-applies `QA_MEDIA_ROOT`).
+  sets `status: active`, appends `reopenedAt`, clears `endedAt`, moves it to the top, saves (re-applies `TEST_FORGE_MEDIA_ROOT`).
 - `routes/test-batches.js`: `POST /api/test-batches/:id/reopen` → ends the other active batch (with report) first →
   `{batch, ended}`; refused while a test runs.
 - Mac: `TestBatchSnapshot.endedBatches` (from `batches`), `TestBatchSummary.isActive/endedAt`,
@@ -1160,12 +1160,12 @@ passed through to every case.
   case or proof-count change), `TestCaseMediaPanelView` (in `TestCaseDetailView`), `AnnotationCanvasView`,
   `AnnotationToolbarView`, `ImageAnnotation` (tool, colour, stroke in 0…1 coordinates), `AnnotationRenderer` (CGContext
   at pixel size; JPEG or PNG by extension), `AnnotatedImageStore` (`-annotated[-N]` copy names, atomic writes),
-  `TestCaseMediaList` (decoder). Reuses `ProofImageView`, `ProofVideoView`, `ProofThumbnailStripView`. IDs `QAW_Tests_Media_*`.
+  `TestCaseMediaList` (decoder). Reuses `ProofImageView`, `ProofVideoView`, `ProofThumbnailStripView`. IDs `TestForge_Tests_Media_*`.
 
 ## Proof indicators (D-182)
 
 - `lib/case-proof.js`: `caseProof(folder, caseIds)` → `{ [caseId]: {screenshots, videos} }` from
-  `QA_MEDIA_ROOT/<id>/` and `QA_MEDIA_ROOT/<PREFIX>-0<id>[-x]/`; skips `demos`, `failures`, probe shots.
+  `TEST_FORGE_MEDIA_ROOT/<id>/` and `TEST_FORGE_MEDIA_ROOT/<PREFIX>-0<id>[-x]/`; skips `demos`, `failures`, probe shots.
 - `testcases` slice passes `proof` to `testcaseView` → each case `proof`. Mac: `TestCaseProof`, `TestCaseProofBadge`
   (mapper `proofBadges`), `TestCaseProofBadgeView` in `TestCaseRowView`.
 
@@ -1185,15 +1185,15 @@ passed through to every case.
   `separateCarriedOverrides` before `separateCarriedEdits` and merges carried history.
 - `PUT /api/testcases/:id/result {verdict, reason, leniency?, expected?, rerun?, model?}` → 400 without a reason or a
   known verdict; `expected` that differs is saved through `mergeCaseEdit`; `rerun` (guarded like a Claude run) calls
-  `enqueueQaRun` and returns `{jobId, taskId}`.
-- `enqueueQaRun` adds `reviewerNotesText(testCase.resultOverrides)` after the case row.
+  `enqueueTestForgeRun` and returns `{jobId, taskId}`.
+- `enqueueTestForgeRun` adds `reviewerNotesText(testCase.resultOverrides)` after the case row.
 - `testcaseView`: `effectiveResult(history, lastRun)` — the newest override wins when at least as new as the run;
   `lastRun.override` + `resultOverrides` go to the Mac. `buildSession` does the same and adds `summary.overridden`;
   `session-report.js` prints "Result changes".
 - Mac: `State/TestCaseResultOverride.swift`, `Tests/ResultOverrideDraft.swift` (`CaseResultOverride*`),
   `OverrideResultSheetView`, `ResultOverrideHistoryRowView`; `TestsSectionViewModel.beginOverrideSelected /
-  saveOverride(draft:shouldRerun:)`; `TestCaseService.overrideResult`; IDs `QAW_Tests_OverrideSheet_*`,
-  `QAW_Tests_OverrideResultButton`, `QAW_Tests_OverrideNote`.
+  saveOverride(draft:shouldRerun:)`; `TestCaseService.overrideResult`; IDs `TestForge_Tests_OverrideSheet_*`,
+  `TestForge_Tests_OverrideResultButton`, `TestForge_Tests_OverrideNote`.
 
 ## Demo library (D-177)
 

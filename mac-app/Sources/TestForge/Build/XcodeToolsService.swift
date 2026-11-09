@@ -3,7 +3,7 @@ import Foundation
 
 /// Folders the Build screen may delete; nothing outside them is ever removed.
 enum CleanTarget: String, CaseIterable, Identifiable {
-	case qaBuildOutput
+	case testForgeBuildOutput
 	case xcodeDerivedData
 	case swiftPackageCache
 	case swiftPackageData
@@ -13,8 +13,8 @@ enum CleanTarget: String, CaseIterable, Identifiable {
 	var url: URL {
 		let home = FileManager.default.homeDirectoryForCurrentUser
 		switch self {
-			case .qaBuildOutput:
-				return home.appendingPathComponent(".testforge/derived", isDirectory: true)
+			case .testForgeBuildOutput:
+				return home.appendingPathComponent(".test-forge/derived", isDirectory: true)
 			case .xcodeDerivedData:
 				return home.appendingPathComponent("Library/Developer/Xcode/DerivedData", isDirectory: true)
 			case .swiftPackageCache:

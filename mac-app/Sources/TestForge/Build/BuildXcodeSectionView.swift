@@ -22,7 +22,7 @@ struct BuildXcodeSectionView: View {
 			}
 			HStack {
 				Picker("Last build", selection: $viewModel.launchSource) {
-					Text("QA build").tag(LaunchSource.qaBuild)
+					Text("QA build").tag(LaunchSource.testForgeBuild)
 					Text("My Xcode build").tag(LaunchSource.xcodeBuild)
 				}
 				.fixedSize()

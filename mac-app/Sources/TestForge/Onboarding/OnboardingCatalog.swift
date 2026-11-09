@@ -11,9 +11,9 @@ enum OnboardingCatalog {
 			case .howItWorks:
 				return howItWorks
 			case .workflow:
-				return role == .qa ? qaWorkflow : developerWorkflow
+				return role == .qa ? testForgeWorkflow : developerWorkflow
 			case .advantages:
-				return role == .qa ? qaAdvantages : developerAdvantages
+				return role == .qa ? testForgeAdvantages : developerAdvantages
 			case .safety:
 				return safety
 			case .start:
@@ -77,11 +77,11 @@ enum OnboardingCatalog {
 			OnboardingCard(
 				symbolName: "iphone.gen3",
 				title: String(localized: "Test simulator + QA build"),
-				text: String(localized: "A QA copy of the code is built in ~/.testforge for the test simulator. Your own project and simulator stay put.")
+				text: String(localized: "A QA copy of the code is built in ~/.test-forge for the test simulator. Your own project and simulator stay put.")
 			),
 			OnboardingCard(
 				symbolName: "hand.tap",
-				title: String(localized: "QADriver"),
+				title: String(localized: "TestForgeDriver"),
 				text: String(localized: "A test runner on the phone that taps, types and checks — it replays recordings and does Claude's clicking.")
 			),
 			OnboardingCard(

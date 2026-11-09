@@ -1,7 +1,7 @@
-// The QADriver command queue (127.0.0.1:8789), hosted by the dashboard so a macro replay works with
+// The TestForgeDriver command queue (127.0.0.1:8789), hosted by the dashboard so a macro replay works with
 // no Claude session open (feasibility-macros.md G1, D-040).
 //
-// Same wire protocol as qa-driver-mcp's src/queue.ts — the XCUITest runner cannot tell the two
+// Same wire protocol as test-forge-driver-mcp's src/queue.ts — the XCUITest runner cannot tell the two
 // apart. Ownership is first-come: whichever process binds the port hosts, the other is a client.
 // The MCP's own listen() already falls back to client mode when the port is taken, so an MCP started
 // after the dashboard simply talks to this queue. When the MCP got there first and later exits, the
@@ -15,7 +15,7 @@ const MAX_BODY_BYTES = 4 * 1_048_576;
 const REHOST_INTERVAL_MS = 2_000;
 
 export class DriverHost {
-	constructor({ port = Number(process.env.QA_DRIVER_PORT || 8789), host = "127.0.0.1" } = {}) {
+	constructor({ port = Number(process.env.TEST_FORGE_DRIVER_PORT || 8789), host = "127.0.0.1" } = {}) {
 		this.port = port;
 		this.host = host;
 		this.commands = [];
@@ -95,10 +95,10 @@ export class DriverHost {
 		this.server = null;
 	}
 
-	/** Who serves the queue right now: this process, another one (the qa-driver MCP), or nobody. */
+	/** Who serves the queue right now: this process, another one (the test-forge-driver MCP), or nobody. */
 	async status() {
 		if (this.isHosting) {
-			return { reachable: true, hostedBy: "testforge", queued: this.commands.length, lastPolledSecondsAgo: this.lastPolledSecondsAgo };
+			return { reachable: true, hostedBy: "test-forge", queued: this.commands.length, lastPolledSecondsAgo: this.lastPolledSecondsAgo };
 		}
 		try {
 			const response = await fetch(`${this.endpoint}/health`, { signal: AbortSignal.timeout(2_000) });
@@ -122,7 +122,7 @@ export class DriverHost {
 		};
 		if (request.method === "OPTIONS") return reply(204, {});
 		if (request.method === "GET" && url.pathname === "/health") {
-			return reply(200, { ok: true, hostedBy: "testforge", queued: this.commands.length, lastPolledSecondsAgo: this.lastPolledSecondsAgo });
+			return reply(200, { ok: true, hostedBy: "test-forge", queued: this.commands.length, lastPolledSecondsAgo: this.lastPolledSecondsAgo });
 		}
 		if (request.method === "GET" && url.pathname === "/commands") return reply(200, { ok: true, commands: this.drain() });
 		if (request.method === "GET" && url.pathname === "/result") {

@@ -17,7 +17,7 @@ struct BuildStateRowView: View {
 			icon
 		}
 		.accessibilityElement(children: .combine)
-		.accessibilityIdentifier(TestForgeConstants.Accessibility.buildQAState)
+		.accessibilityIdentifier(TestForgeConstants.Accessibility.buildTestForgeState)
 	}
 
 	@ViewBuilder

@@ -19,15 +19,15 @@ test("matching rules merge; others and bad patterns are ignored", () => {
 	assert.deepEqual(requirementsFor(undefined, rules), {});
 });
 
-test("rules load from QAMacros/case-requirements.json; missing file means none", async () => {
+test("rules load from TestForgeMacros/case-requirements.json; missing file means none", async () => {
 	const root = await mkdtemp(join(tmpdir(), "case-req-"));
 	assert.deepEqual(await loadCaseRules(root), []);
-	await mkdir(join(root, "QAMacros"));
-	await writeFile(join(root, "QAMacros", "case-requirements.json"), JSON.stringify({ rules }));
+	await mkdir(join(root, "TestForgeMacros"));
+	await writeFile(join(root, "TestForgeMacros", "case-requirements.json"), JSON.stringify({ rules }));
 	assert.equal((await loadCaseRules(root)).length, 3);
 });
 
-// Reads the app repo's rule file, so it only runs where the app repo sits beside this one (the app repo's tools/qa-dashboard).
+// Reads the app repo's rule file, so it only runs where the app repo sits beside this one (the app repo's tools/test-forge-server).
 const appRulesRoot = new URL("../../../BlibliMobile-iOS/BlibliMobile_XCUITest", import.meta.url).pathname;
 test("the repo's rule file makes every SF case log in and reload Home", { skip: !existsSync(appRulesRoot) && "app repo not beside the server" }, async () => {
 	const repoRules = await loadCaseRules(appRulesRoot);

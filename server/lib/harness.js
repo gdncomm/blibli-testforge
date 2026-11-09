@@ -1,4 +1,4 @@
-// Thin wrapper around test-flow-recorder's own harness.py — the same script /qa-harness already
+// Thin wrapper around test-flow-recorder's own harness.py — the same script /test-forge-harness already
 // drives. This file never reimplements its lifecycle logic (build detection, wedged-process
 // recovery, log tailing); it only finds the script and shells out to it.
 import { execFile } from "node:child_process";
@@ -15,17 +15,17 @@ export function setHarnessTarget(provider) {
 }
 
 async function call(action, extraArgs = []) {
-	const script = resolvePluginScript("QA_HARNESS_SCRIPT", "harness.py");
+	const script = resolvePluginScript("TEST_FORGE_HARNESS_SCRIPT", "harness.py");
 	if (!script) {
 		return {
 			ok: false,
 			error:
-				"harness.py not found. Set QA_HARNESS_SCRIPT to its path (the script /qa-harness and /qa-init install).",
+				"harness.py not found. Set TEST_FORGE_HARNESS_SCRIPT to its path (the script /test-forge-harness and /test-forge-init install).",
 		};
 	}
 	const env = {
 		...process.env,
-		QA_PROJECT_DIR: process.env.QA_PROJECT_DIR || process.env.QA_DASHBOARD_PROJECT_DIR,
+		TEST_FORGE_PROJECT_DIR: process.env.TEST_FORGE_PROJECT_DIR || process.env.TEST_FORGE_SERVER_PROJECT_DIR,
 		...(await harnessTarget()),
 	};
 	try {

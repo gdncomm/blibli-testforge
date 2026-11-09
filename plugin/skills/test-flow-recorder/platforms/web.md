@@ -13,7 +13,7 @@ report generator, the fixture scripts.
 
 No requirement declared — this driver isn't built yet (see above). `scripts/audit_platform_skills.py
 --platform web` still runs and reports what it finds in the host project, for visibility, but nothing
-here blocks `/qa-init` or a run. The moment a driver and an actual dependency land for this platform,
+here blocks `/test-forge-init` or a run. The moment a driver and an actual dependency land for this platform,
 the same mechanism ios.md already uses picks it up unchanged — no script change needed, only this
 section.
 

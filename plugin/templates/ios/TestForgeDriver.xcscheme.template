@@ -2,7 +2,7 @@
 <Scheme
    LastUpgradeVersion = "1320"
    version = "1.7">
-   <!-- Builds and runs only the qa-driver harness (QADriverSession.testLiveSession).
+   <!-- Builds and runs only the test-forge-driver harness (TestForgeDriverSession.testLiveSession).
         Deliberately excludes every other test target: the harness is shared QA infrastructure and
         must not be blocked by an unrelated test target failing to compile. Debug, because a
         shipping configuration is where an app defines NETWORKLENS_DISABLED, and that leaves
@@ -34,7 +34,7 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:QADriver.xctestplan"
+            reference = "container:TestForgeDriver.xctestplan"
             default = "YES">
          </TestPlanReference>
       </TestPlans>

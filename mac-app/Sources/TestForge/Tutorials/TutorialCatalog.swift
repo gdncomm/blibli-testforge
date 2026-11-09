@@ -463,7 +463,7 @@ enum TutorialCatalog {
 
 	private static let build = [
 		TutorialStep(
-			anchor: .buildQASection,
+			anchor: .buildTestForgeSection,
 			title: "Is the app built?",
 			message: "Tests need the app built from the code you prepared. Green means it is; orange says what is missing."
 		),

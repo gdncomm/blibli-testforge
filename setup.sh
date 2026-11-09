@@ -78,6 +78,6 @@ Done. Next:
      First launch asks for two folders: this checkout and your clone of the Blibli iOS app.
   2. Add the Claude Code plugin (once):
        claude plugin marketplace add "$ROOT"
-       claude plugin install test-flow-recorder@testforge
+       claude plugin install test-flow-recorder@test-forge
      then restart Claude Code.
 DONE

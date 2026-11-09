@@ -70,7 +70,7 @@ _TRAILING_PUNCTUATION = ".,;:)]"
 
 def resolve_trace(explicit: str | None, bundle_id: str) -> Path:
     """Same seam as `extract_trackers.py`'s `resolve_trace` — `--trace` escape hatch, else the
-    active `QA_DATA_PLANE`'s resolved directory."""
+    active `TEST_FORGE_DATA_PLANE`'s resolved directory."""
     return Path(explicit) if explicit else trace_dir(bundle_id)
 
 
@@ -229,7 +229,7 @@ def main() -> int:
     parser.add_argument("cases", type=Path)
     parser.add_argument("results", type=Path, help="mutated in place — each checked case gains a `networkTrail` field")
     parser.add_argument("--trace", help="directory holding trace*.ndjson; defaults to the active "
-                        "QA_DATA_PLANE's resolved trace dir")
+                        "TEST_FORGE_DATA_PLANE's resolved trace dir")
     parser.add_argument("--bundle-id", default=BUNDLE_ID,
                         help="app bundle id, when the data plane needs one to resolve a trace dir "
                         "(default: %(default)s, or $NETWORKLENS_BUNDLE_ID)")

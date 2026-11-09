@@ -550,7 +550,7 @@ def detect_platform(scope: Path, flag: str | None = None) -> tuple[str, str]:
     """
     if flag and flag != "auto":
         return flag, "flag"
-    from_env = os.environ.get("QA_PLATFORM", "").strip()
+    from_env = os.environ.get("TEST_FORGE_PLATFORM", "").strip()
     if from_env:
         return from_env, "env"
 

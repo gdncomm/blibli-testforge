@@ -16,13 +16,13 @@ enum RemoteControlConstants {
 	}
 
 	enum Accessibility {
-		static let button = "QAW_RemoteControl_Button"
-		static let panel = "QAW_RemoteControl_Panel"
-		static let qrCode = "QAW_RemoteControl_QR"
-		static let openButton = "QAW_RemoteControl_Open"
-		static let copyButton = "QAW_RemoteControl_Copy"
-		static let spawnModePicker = "QAW_RemoteControl_SpawnMode"
-		static let startButton = "QAW_RemoteControl_Start"
-		static let stopButton = "QAW_RemoteControl_Stop"
+		static let button = "TestForge_RemoteControl_Button"
+		static let panel = "TestForge_RemoteControl_Panel"
+		static let qrCode = "TestForge_RemoteControl_QR"
+		static let openButton = "TestForge_RemoteControl_Open"
+		static let copyButton = "TestForge_RemoteControl_Copy"
+		static let spawnModePicker = "TestForge_RemoteControl_SpawnMode"
+		static let startButton = "TestForge_RemoteControl_Start"
+		static let stopButton = "TestForge_RemoteControl_Stop"
 	}
 }

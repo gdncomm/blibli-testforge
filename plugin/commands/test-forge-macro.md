@@ -9,12 +9,12 @@ instead of re-describing every tap — reaching a config-reset screen ("Reset Ap
 language") is the case this is for.
 
 **This records tool calls, not taps.** There is no touch-injection capture anywhere in this
-architecture — a macro is built from the real `mcp__qa-driver__*` calls Claude issues while the
+architecture — a macro is built from the real `mcp__test-forge-driver__*` calls Claude issues while the
 operator narrates the path in plain English, exactly the way Stage 3b already drives a case. Nothing
 here is recorded from the operator's own hands on the simulator.
 
-The harness must already be collecting — `/qa-harness ensure` — before recording, same requirement
-as `/qa-scan`.
+The harness must already be collecting — `/test-forge-harness ensure` — before recording, same requirement
+as `/test-forge-scan`.
 
 ## `record <name>`
 
@@ -23,7 +23,7 @@ as `/qa-scan`.
 2. `python3 "${CLAUDE_PLUGIN_ROOT}/skills/test-flow-recorder/scripts/macro_cli.py" record-start "<name>" --root <root> --narration "<what the operator described>"`
 3. Ask the operator to narrate the path, one step at a time, in plain English ("tap Settings", "tap
    Debug Menu", "tap Reset Cache", "confirm the alert").
-4. For each step: issue the real `mcp__qa-driver__*` call it describes, then immediately
+4. For each step: issue the real `mcp__test-forge-driver__*` call it describes, then immediately
    `macro_cli.py record-step "<name>" --root <root> '<the command you sent, as JSON>' '<the outcome
    it returned, as JSON>'`.
 5. **If a step's outcome looks like a failure** — not found, not hittable, an error — stop narrating

@@ -7,7 +7,7 @@ This is the native SwiftUI front end for the QA dashboard in `../server`. It sta
 ```bash
 cd mac-app
 ./scripts/make-app.sh          # → build/TestForge.app (release, ad-hoc signed)
-# Signs with the identity in TESTFORGE_SIGN_IDENTITY or ~/.testforge/sign-identity (here: a local
+# Signs with the identity in TEST_FORGE_SIGN_IDENTITY or ~/.test-forge/sign-identity (here: a local
 # self-signed certificate), else ad-hoc. A stable identity keeps the Accessibility grant
 # across rebuilds; an ad-hoc build needs it granted again after every rebuild. Don't use a revoked Apple
 # certificate: macOS blocks the app as malware.
@@ -51,21 +51,21 @@ You can also open `Package.swift` in Xcode and run the `TestForge` scheme, or us
 ## Troubleshooting
 
 - **Columns clipped or the sidebar squeezed:** the window remembers its split sizes. Quit the app and run
-  `defaults delete com.blibli.testforge "NSSplitView Subview Frames main, SidebarNavigationSplitView"`.
+  `defaults delete com.blibli.test-forge "NSSplitView Subview Frames main, SidebarNavigationSplitView"`.
   The window needs at least 1 240 pt (macOS 26 insets the content by the sidebar).
 
 ## Configuration
 
 | Variable | Default | Use |
 |---|---|---|
-| `QA_DASHBOARD_DIR` | found by searching the folders above the app | The `server/` folder to run |
-| `QA_PROJECT_DIR` | the app clone chosen in Setup | The app under test: the `BlibliMobile-iOS` folder with the `.xcworkspace`. Passed to the server |
-| `QA_DASHBOARD_PORT` | `4545` | The port to look for, or to start the server on |
+| `TEST_FORGE_SERVER_DIR` | found by searching the folders above the app | The `server/` folder to run |
+| `TEST_FORGE_PROJECT_DIR` | the app clone chosen in Setup | The app under test: the `BlibliMobile-iOS` folder with the `.xcworkspace`. Passed to the server |
+| `TEST_FORGE_SERVER_PORT` | `4545` | The port to look for, or to start the server on |
 
 To try the app without touching the live server, run a copy of the dashboard on another port:
 
 ```bash
-QA_DASHBOARD_DIR=/path/to/copy QA_DASHBOARD_PORT=4646 "build/TestForge.app/Contents/MacOS/TestForge"
+TEST_FORGE_SERVER_DIR=/path/to/copy TEST_FORGE_SERVER_PORT=4646 "build/TestForge.app/Contents/MacOS/TestForge"
 ```
 
 ## Code layout

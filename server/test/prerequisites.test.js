@@ -5,12 +5,12 @@ import { checkPrerequisites, parseMcpList, parsePluginList, prerequisiteChecks }
 const MCP = `Checking MCP server health…
 
 claude.ai Atlassian Rovo: https://mcp.atlassian.com/v1/mcp/authv2 - ! Needs authentication
-plugin:test-flow-recorder:qa-driver: /x/start.sh  - ✔ Connected
+plugin:test-flow-recorder:test-forge-driver: /x/start.sh  - ✔ Connected
 networklens: \${CLAUDE_PROJECT_DIR}/scripts/networklens/mcp-server.sh  - ✘ Failed to connect`;
 
 const PLUGINS = `Installed plugins:
 
-  ❯ test-flow-recorder@qa-tools
+  ❯ test-flow-recorder@test-forge-tools
     Version: 0.9.1
     Scope: user
     Status: ✔ enabled
@@ -22,11 +22,11 @@ const PLUGINS = `Installed plugins:
 test("D-190: parses claude mcp list and plugin list", () => {
 	assert.deepEqual(parseMcpList(MCP).map((server) => [server.name, server.status]), [
 		["claude.ai Atlassian Rovo", "needs-auth"],
-		["plugin:test-flow-recorder:qa-driver", "connected"],
+		["plugin:test-flow-recorder:test-forge-driver", "connected"],
 		["networklens", "failed"],
 	]);
 	assert.deepEqual(parsePluginList(PLUGINS), [
-		{ name: "test-flow-recorder", marketplace: "qa-tools", version: "0.9.1", isEnabled: true },
+		{ name: "test-flow-recorder", marketplace: "test-forge-tools", version: "0.9.1", isEnabled: true },
 		{ name: "blue-design-system", marketplace: "agent-plugins", version: "1.4.0", isEnabled: false },
 	]);
 });

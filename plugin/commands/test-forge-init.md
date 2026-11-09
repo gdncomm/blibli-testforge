@@ -1,10 +1,10 @@
 ---
-description: Wire this Xcode project to the QADriverKit harness — package product, scheme, test plan, shim and per-project config
+description: Wire this Xcode project to the TestForgeDriverKit harness — package product, scheme, test plan, shim and per-project config
 argument-hint: "[--bundle-id <id>] [--ui-test-target <name>]"
 allowed-tools: Bash, Read, Glob, AskUserQuestion
 ---
 
-Wire the current Xcode project to the qa-driver harness. One-time, per project.
+Wire the current Xcode project to the test-forge-driver harness. One-time, per project.
 
 Everything this touches is additive. The final gate is that `git diff --numstat` on the pbxproj
 shows **zero deleted lines** — a tool that reserialises the project file reorders every object and
@@ -34,20 +34,20 @@ the rest to the user in a single `AskUserQuestion` batch before running anything
   local SPM overrides via a `SwiftPackageList.txt` + `spm_cache.py`-shaped tool (check for
   `SwiftPackageList.txt` at the project root and any `spm_cache.py` under it)? If so, and the given
   `--package-path` is an *unmanaged* checkout of a repo that tool already governs at a different
-  path/tag, `qa_init.py` now catches this itself (see `check_local_package_governance` /
+  path/tag, `test_forge_init.py` now catches this itself (see `check_local_package_governance` /
   `--package-pin-tag`) and fails early with exact fix commands rather than a late, generic build
   error — but flag it to the user before Step 4 if you can already see the collision coming (e.g.
   the package path's `git remote get-url origin` matches a repo already listed there), since
   `--package-pin-tag` creates and pushes a real git tag, which the user should approve rather than
   discover after the fact.
-- **Unrelated test targets already in the host project's own schemes.** `QADriver.xcscheme` (Step 4)
+- **Unrelated test targets already in the host project's own schemes.** `TestForgeDriver.xcscheme` (Step 4)
   is generated to include *only* the UI test target by construction, so this is reassurance rather
   than a blocker — but if the developer has been driving anything through the app's own existing
-  scheme instead (a quick manual check before `/qa-init` has run), mention that an unrelated
+  scheme instead (a quick manual check before `/test-forge-init` has run), mention that an unrelated
   unit-test target there can fail the whole build even when marked `skipped="YES"` in the scheme
   (that flag only filters execution, not what gets built) — only removing its `TestableReference`
-  entirely stops it from being built. Not something `/qa-init` needs to fix; just don't let it read
-  as a QADriverKit problem if the developer hits it going a different route.
+  entirely stops it from being built. Not something `/test-forge-init` needs to fix; just don't let it read
+  as a TestForgeDriverKit problem if the developer hits it going a different route.
 
 Ask the batch, wait for answers, then proceed to Step 1.
 
@@ -59,7 +59,7 @@ Ask the batch, wait for answers, then proceed to Step 1.
    `PRODUCT_BUNDLE_IDENTIFIER`, and confirm it before writing anything. A bundle id that is right
    for some other app makes every tool look healthy while pointing at the wrong process.
 
-3. **Decide where QADriverKit comes from.** Ask if unclear:
+3. **Decide where TestForgeDriverKit comes from.** Ask if unclear:
    - a local checkout → `--package-path <relative dir>`
    - a remote repository → `--package-url <url> --package-ref <branch or 40-char revision>`.
      Prefer a revision over a branch when the source is an unmerged branch: a revision survives a
@@ -68,7 +68,7 @@ Ask the batch, wait for answers, then proceed to Step 1.
 4. **Run it.**
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/skills/test-flow-recorder/scripts/qa_init.py" \
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/test-flow-recorder/scripts/test_forge_init.py" \
        --project <App>.xcodeproj --bundle-id <id> \
        [--ui-test-target <name>] [--package-path <dir> | --package-url <url> --package-ref <ref>]
    ```
@@ -84,7 +84,7 @@ Ask the batch, wait for answers, then proceed to Step 1.
    ```bash
    plutil -lint <App>.xcodeproj/project.pbxproj
    git diff --numstat -- <App>.xcodeproj/project.pbxproj    # deletions MUST be 0
-   xcodebuild -project <App>.xcodeproj -scheme QADriver -showTestPlans
+   xcodebuild -project <App>.xcodeproj -scheme TestForgeDriver -showTestPlans
    ```
 
    `-showTestPlans` is the real gate: it fails when a pinned target identifier does not resolve.
@@ -94,7 +94,7 @@ Ask the batch, wait for answers, then proceed to Step 1.
 
    ```bash
    SIM=$(xcrun simctl list devices booted -j | python3 -c 'import json,sys; print(next(d["udid"] for v in json.load(sys.stdin)["devices"].values() for d in v))')
-   xcodebuild build-for-testing -workspace <App>.xcworkspace -scheme QADriver \
+   xcodebuild build-for-testing -workspace <App>.xcworkspace -scheme TestForgeDriver \
        -configuration Debug -destination "platform=iOS Simulator,id=$SIM"
    ```
 
@@ -120,7 +120,7 @@ Ask the batch, wait for answers, then proceed to Step 1.
    linker has no members to leave behind and dead-stripping never gets the chance to run.
 
    *A `NETWORKLENS_DISABLED` compile flag existed before this and still works, but only for a
-   project pinning `BlibliLogger` at or before revision `4dcfdd04`* — `qa-sample-app` is the one
+   project pinning `BlibliLogger` at or before revision `4dcfdd04`* — `test-forge-sample-app` is the one
    project on that pin, and its own guard is correct as-is. It is **not** forward guidance: a new
    project should link the product, not reach for the flag.
 
@@ -139,7 +139,7 @@ Ask the batch, wait for answers, then proceed to Step 1.
      next step already uses); declining is fine, it is not blocking, continue either way.
    - **Nothing found at all** → this platform requires it (`platforms/ios.md`'s "Host-project skills
      required"), so it is a hard blocker: the script writes a labelled scaffold (never a finished
-     skill, never written into `.claude/skills/`) and exits non-zero. **Stop `/qa-init` here** — the
+     skill, never written into `.claude/skills/`) and exits non-zero. **Stop `/test-forge-init` here** — the
      same "do not proceed past a failed gate" rule as every other step below. Tell the developer
      where the scaffold landed and that applying it (then re-running this step) is what clears the
      blocker; writing the scaffold does not clear it on its own.
@@ -157,6 +157,6 @@ Ask the batch, wait for answers, then proceed to Step 1.
 
 - Do not open Xcode to make the project edit. Its "Add Package Product" UI rewrites and reorders
   the whole pbxproj on save.
-- Do not attach `QADriverKit` to the app target. It imports XCTest; in an app binary that fails at
+- Do not attach `TestForgeDriverKit` to the app target. It imports XCTest; in an app binary that fails at
   launch, not at build.
 - Do not proceed past a failed gate. Restore the pbxproj and report what failed.

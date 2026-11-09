@@ -4,9 +4,9 @@ import { mkdtemp, mkdir, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-process.env.TESTFORGE_HOME = await mkdtemp(join(tmpdir(), "wb-"));
-const { buildArgs, firstProblem } = await import("../lib/qa-build.js");
-const { freeDiskSpace } = await import("../lib/qa-copy.js");
+process.env.TEST_FORGE_HOME = await mkdtemp(join(tmpdir(), "wb-"));
+const { buildArgs, firstProblem } = await import("../lib/test-forge-build.js");
+const { freeDiskSpace } = await import("../lib/test-forge-copy.js");
 
 test("build args keep the QA copy's own DerivedData and the QA simulator", () => {
 	const args = buildArgs({ workspace: "App.xcworkspace", scheme: "S", configuration: "C" }, { udid: "U", derivedData: "/wb/derived/app" });
@@ -20,7 +20,7 @@ test("first problem is the line a person should read", () => {
 });
 
 test("free disk space removes only old entries under the testforge", async () => {
-	const home = process.env.TESTFORGE_HOME;
+	const home = process.env.TEST_FORGE_HOME;
 	const old = join(home, "checkouts", "old-repo");
 	const fresh = join(home, "derived", "fresh-repo");
 	await mkdir(old, { recursive: true });
@@ -37,7 +37,7 @@ test("cache noise is never the first problem", () => {
 });
 
 test("a cached package checkout on another revision than Package.resolved is reported stale (D-066)", async () => {
-	const { stalePackageCheckouts } = await import("../lib/qa-build.js");
+	const { stalePackageCheckouts } = await import("../lib/test-forge-build.js");
 	const root = await mkdtemp(join(tmpdir(), "spm-"));
 	const resolvedPath = join(root, "Package.resolved");
 	const derivedData = join(root, "derived");

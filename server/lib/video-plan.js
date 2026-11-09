@@ -63,11 +63,11 @@ export function planVideo({ testCase, steps = [] }) {
 /** The rule a Claude run follows when it films a case itself (the server only films replays). */
 export function videoGuidance(testCase) {
 	const need = needsVideo(testCase);
-	if (!need.needed) return `Video: not needed for this case (${need.reason}); prove it with screenshots and do not call qa_start_recording.`;
+	if (!need.needed) return `Video: not needed for this case (${need.reason}); prove it with screenshots and do not call test_forge_start_recording.`;
 	return [
 		`Video: needed (${need.reason}).`,
-		need.fromLaunch ? "Start qa_start_recording right before the launch/entry the case describes." : "Navigate and arm mocks first; start qa_start_recording only right before the case's own action (one quick check before it is fine) — never from app launch.",
-		`Stop qa_stop_recording right after the last check. Keep it under ${MAX_VIDEO_SECONDS} s; arm time-based mocks so a transition lands within ~20 s of starting, and diagnose with recording stopped.`,
+		need.fromLaunch ? "Start test_forge_start_recording right before the launch/entry the case describes." : "Navigate and arm mocks first; start test_forge_start_recording only right before the case's own action (one quick check before it is fine) — never from app launch.",
+		`Stop test_forge_stop_recording right after the last check. Keep it under ${MAX_VIDEO_SECONDS} s; arm time-based mocks so a transition lands within ~20 s of starting, and diagnose with recording stopped.`,
 	].join(" ");
 }
 

@@ -44,7 +44,7 @@ test("R3d: frames are read only under a live lease, only for on-screen action st
 test("R3d: runner answers that are errors or empty give no frame or screen", () => {
 	assert.equal(frameOf({ error: "no element 'X' after 0.5s" }), null);
 	assert.equal(frameOf({ value: { x: 0, y: 0, width: 0, height: 0 } }), null);
-	assert.deepEqual(screenOf({ value: { deviceName: "QA · iPhone 12 Pro Max", udid: "U", screenPoints: "428x926" } }), { deviceName: "QA · iPhone 12 Pro Max", udid: "U", width: 428, height: 926 });
+	assert.deepEqual(screenOf({ value: { deviceName: "TestForge · iPhone 12 Pro Max", udid: "U", screenPoints: "428x926" } }), { deviceName: "TestForge · iPhone 12 Pro Max", udid: "U", width: 428, height: 926 });
 	assert.equal(screenOf({ error: "timeout" }), null);
 });
 

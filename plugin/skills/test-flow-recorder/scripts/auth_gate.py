@@ -3,14 +3,14 @@
 
 Two questions, both of which cost the user a hand sign-in when guessed wrong.
 
-**Is the harness already collecting?** `QADriverRunner.runLiveSession()` calls `app.launch()` at the
+**Is the harness already collecting?** `TestForgeDriverRunner.runLiveSession()` calls `app.launch()` at the
 top, and `XCUIApplication.launch()` terminates any running instance first — so starting or restarting
 the harness relaunches the app under test. Asking someone to sign in and *then* bringing the harness
 up spends that sign-in on a process that no longer exists. This exits non-zero until the harness
 answers a real command, so the pause cannot be raised early.
 
 **Does the session survive a relaunch?** In a normal production app the token is in the Keychain or
-`UserDefaults`, a relaunch keeps it, and `qa_relaunch_app` stays available to the gated batch like any
+`UserDefaults`, a relaunch keeps it, and `test_forge_relaunch_app` stays available to the gated batch like any
 other. An app that holds the token only in memory loses it every relaunch, and the batch has to reach
 each case's state by navigation instead. The answer comes from reading the auth source, because
 finding out by experiment costs the sign-in this script exists to protect.
@@ -63,7 +63,7 @@ def probe(base: str, timeout: float) -> tuple[bool, str]:
             return (True, f"harness collecting — {path}") if path else (False, f"answered without a path: {value}")
         time.sleep(1.0)
     return False, (f"queued but nothing collected it within {timeout:.0f}s. Start the harness "
-                   "(QADriver scheme, Debug) and wait for it before raising the pause.")
+                   "(TestForgeDriver scheme, Debug) and wait for it before raising the pause.")
 
 
 def sources(paths: list[Path]) -> list[Path]:
@@ -122,11 +122,11 @@ def main() -> int:
         print(f"        {line}")
 
     if state == "persistent":
-        print("\n  Raise the pause. The token outlives a relaunch, so `qa_relaunch_app` stays "
+        print("\n  Raise the pause. The token outlives a relaunch, so `test_forge_relaunch_app` stays "
               "available to the gated batch and one sign-in covers the run.")
     elif state == "in-memory":
         print("\n  Raise the pause, and say in it that a relaunch will cost the session. "
-              "Plan every gated case to reach its state by navigation — no `qa_relaunch_app` "
+              "Plan every gated case to reach its state by navigation — no `test_forge_relaunch_app` "
               "anywhere in the batch, and a harness restart means asking again.")
     else:
         print("\n  Pass --auth-source, or read the session type by hand, before raising the pause: "

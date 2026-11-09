@@ -1,5 +1,5 @@
 // In-memory job registry backing the SSE console. A job is any long-running, line-oriented
-// process (a headless /qa-run, a macro replay, a tailed command) that the UI wants to watch live
+// process (a headless /test-forge-run, a macro replay, a tailed command) that the UI wants to watch live
 // without blocking the HTTP request that started it.
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";

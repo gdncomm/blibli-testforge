@@ -1,14 +1,14 @@
 //
-//  QADriverSession.swift
+//  TestForgeDriverSession.swift
 //  {APP_NAME}
 //
 //  Created by test-flow-recorder.
 //
 
-import QADriverKit
+import TestForgeDriverKit
 
 /// Declared here rather than in the package: XCTest enumerates test classes from the .xctest bundle's own image.
-final class QADriverSession: QADriverRunner {
+final class TestForgeDriverSession: TestForgeDriverRunner {
 
 	func testLiveSession() {
 		runLiveSession()

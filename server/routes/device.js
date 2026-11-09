@@ -1,4 +1,4 @@
-// Device rail: the booted simulator, who is driving it, and the QADriver queue. No screen mirror
+// Device rail: the booted simulator, who is driving it, and the TestForgeDriver queue. No screen mirror
 // (D-033) — the Simulator window itself is the live view; "Show Simulator window" brings it forward.
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";

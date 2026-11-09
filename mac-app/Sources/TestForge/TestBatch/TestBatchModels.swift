@@ -4,7 +4,7 @@ import Foundation
 struct TestBatchSnapshot: Decodable, Equatable {
 	let proofRoot: String?
 
-	/// The folder configured before R4j (`QA_MEDIA_ROOT`); offered in the picker until one is chosen.
+	/// The folder configured before R4j (`TEST_FORGE_MEDIA_ROOT`); offered in the picker until one is chosen.
 	let suggestedRoot: String?
 
 	let active: TestBatchSummary?

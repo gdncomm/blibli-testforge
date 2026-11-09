@@ -71,9 +71,9 @@ test("not linked → null, so the replay falls back to the popup", async () => {
 
 test("no matching mail before the deadline → null", async () => {
 	const store = memoryStore();
-	await store.write("testforge.graph", "mail", JSON.stringify({ refreshToken: "rt" }));
+	await store.write("test-forge.graph", "mail", JSON.stringify({ refreshToken: "rt" }));
 	const fetcher = async (url) => (url.endsWith("/token") ? json({ access_token: "at", refresh_token: "rt2", expires_in: 3600 }) : json({ value: [] }));
 	const reader = new MailOtp({ fetcher, store, sleep: async () => new Promise((resolve) => setTimeout(resolve, 5)) });
 	assert.equal(await reader.fetchOtp({ timeoutS: 0.05, pollS: 0 }), null);
-	assert.equal(JSON.parse(await store.read("testforge.graph", "mail")).refreshToken, "rt2", "rotated refresh token is kept");
+	assert.equal(JSON.parse(await store.read("test-forge.graph", "mail")).refreshToken, "rt2", "rotated refresh token is kept");
 });

@@ -10,7 +10,7 @@ const macros = [
 ];
 
 test("D-196: a diff picks the cases whose recordings cover the changed app code", () => {
-	const plan = affectedCases({ changed: [`${promo}/Tabs.swift`, "tools/qa-dashboard/x.js", "BlibliMobile-iOS/BlibliMobile-iOS/Payment/P.swift"], macros, caseIds: ["4", "L1"] });
+	const plan = affectedCases({ changed: [`${promo}/Tabs.swift`, "tools/test-forge-server/x.js", "BlibliMobile-iOS/BlibliMobile-iOS/Payment/P.swift"], macros, caseIds: ["4", "L1"] });
 	assert.deepEqual(plan.cases, [{ caseId: "4", macroId: "mc_1", macroName: "MT-004", files: [`${promo}/Tabs.swift`] }]);
 	assert.deepEqual(plan.uncoveredFiles, ["BlibliMobile-iOS/BlibliMobile-iOS/Payment/P.swift"]);
 	assert.equal(plan.unknownCoverage, 1);

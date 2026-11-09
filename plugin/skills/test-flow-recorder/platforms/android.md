@@ -13,7 +13,7 @@ classes and bounds), the report generator, and the fixture scripts. An Android r
 
 No requirement declared — this driver isn't built yet (see above). `scripts/audit_platform_skills.py
 --platform android` still runs and reports what it finds in the host project, for visibility, but
-nothing here blocks `/qa-init` or a run. The moment a driver and an actual dependency land for this
+nothing here blocks `/test-forge-init` or a run. The moment a driver and an actual dependency land for this
 platform, the same mechanism ios.md already uses picks it up unchanged — no script change needed,
 only this section.
 
@@ -21,7 +21,7 @@ only this section.
 
 | Piece | iOS equivalent | Android approach |
 |---|---|---|
-| Collector | `QADriverSession.testLiveSession`, a persistent XCUITest case polling the queue | an instrumented UiAutomator test doing the same, launched by `gradle connectedAndroidTest` |
+| Collector | `TestForgeDriverSession.testLiveSession`, a persistent XCUITest case polling the queue | an instrumented UiAutomator test doing the same, launched by `gradle connectedAndroidTest` |
 | Element addressing | accessibility identifier + element type | `resource-id` / `content-desc` + class name |
 | Tree dump | `debugDescription` of the app snapshot | `UiDevice.dumpWindowHierarchy` |
 | Frames | `XCUIElement.frame`, in points | `Rect` in pixels — **must be divided by density** before it leaves the driver, so an assertion compares against a design spec unchanged |

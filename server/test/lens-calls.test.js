@@ -1,4 +1,4 @@
-// D-127: captured calls as rows, detail and curl — what the console and qaw-lens show.
+// D-127: captured calls as rows, detail and curl — what the console and test-forge-lens show.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { callDetail, callRows, curlCommand, responseOf } from "../lib/lens-calls.js";

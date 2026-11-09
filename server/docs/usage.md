@@ -13,7 +13,7 @@
 
 The TestForge is a web page on your own Mac that lets you test the Blibli iOS app on a simulator
 with Claude doing the clicking. You pick **which code** to test, the TestForge builds it, Claude
-follows your test cases on the simulator using **QADriver**, and you review and sign off the
+follows your test cases on the simulator using **TestForgeDriver**, and you review and sign off the
 results.
 
 Every result is tied to exactly the code it tested:
@@ -44,7 +44,7 @@ Tick each item. Ask a developer to help the first time if any is ✗.
 | **Atlassian connected in Claude** | claude.ai → Settings → Connectors → Atlassian shows *Connected* | Click *Connect* and sign in (needed to read Confluence test cases) |
 | **VPN** | Company VPN connected | Connect before building (dependency downloads need it) |
 
-**Start the TestForge:** double-click **`QA Dashboard.app`** (in `tools/qa-dashboard/` of the repo).
+**Start the TestForge:** double-click **`TestForge server.app`** (in `tools/test-forge-server/` of the repo).
 A small window tells you what is ready, then your browser opens `http://127.0.0.1:4545`. ✅
 
 Keep the browser tab open while you work. The page reconnects on its own if the TestForge restarts.
@@ -94,7 +94,7 @@ Pick one of the two tabs:
 
 1. Click **A GitHub branch** or **A local repository (git working copy)**.
 2. **Repository** — the repositories found under `~/Projects` (two folders deep; set
-   `QA_PROJECT_ROOTS` for other places). *Another local repository…* is 🚧.
+   `TEST_FORGE_PROJECT_ROOTS` for other places). *Another local repository…* is 🚧.
 3. GitHub branch: type in **Branch** and pick from the list (each line shows the commit, its title
    and how old it is). The list comes from your repository's last fetch; **↻ Check GitHub** asks
    GitHub directly (VPN needed) and adds branches you don't have yet. A branch only on your Mac says
@@ -243,7 +243,7 @@ TestForge replays that macro once on the driver, and keeps it only if that repla
 
 From then on the case is **replayed by the driver**: no Claude, no credits, usually under 30 s.
 Anyone who pulls the branch gets the macro, the elements it uses and the mock responses it needs
-(`BlibliMobile_XCUITest/QAMacros/mocks/`).
+(`BlibliMobile_XCUITest/TestForgeMacros/mocks/`).
 
 When a replay fails, Claude looks at it before you do:
 
@@ -316,13 +316,13 @@ on automatically. 🚧
 | Wrong columns in the preview | The page uses unusual column names | Fix the column dropdowns in the preview |
 | Case **BLOCKED** — app crashed | The app crashed during the case | Open the crash log; **Relaunch & continue**; report the crash |
 | "Device busy — … is using it" | Another run or chat is using the simulator | Wait, or open **Queue** to see / cancel it |
-| Red bar "Dashboard server is not responding" | The TestForge stopped | Double-click **QA Dashboard.app** again |
+| Red bar "Dashboard server is not responding" | The TestForge stopped | Double-click **TestForge server.app** again |
 
 ---
 
 ## 10. Safety — what the TestForge will never do
 
-- **Never touch your project.** All testing happens in its own QA copy in `~/.testforge` — your
+- **Never touch your project.** All testing happens in its own QA copy in `~/.test-forge` — your
   project folder, branches, unsaved work, Xcode build cache and your own simulator are never changed.
 - **Never commit, push or rebase** anything in git.
 - **Never edit or comment on the team's production test-case page** in Confluence — this is enforced,
@@ -340,12 +340,12 @@ on automatically. 🚧
 | **Repo** | A project's code (e.g. BlibliIOSApp). |
 | **Branch** | A line of work in the repo (e.g. `develop`, `release/v14.9.0`). |
 | **Commit** | One exact version of the code, shown as a short code like `a1b2c3d`. |
-| **QA copy** | The TestForge's own separate copy of a repo, in `~/.testforge`. Tests always run there. |
+| **QA copy** | The TestForge's own separate copy of a repo, in `~/.test-forge`. Tests always run there. |
 | **QA simulator** | The TestForge's own simulator, so your own simulator's app is never replaced. |
 | **Prepare** | Get the QA copy onto the chosen branch and install what it needs. |
 | **Build** | Turn the code into an app the simulator can run. |
 | **Harness** | The test runner on the simulator that carries out Claude's taps and swipes. |
-| **QADriver** | The set of tools Claude uses to see and control the app on the simulator. |
+| **TestForgeDriver** | The set of tools Claude uses to see and control the app on the simulator. |
 | **Check** | The readiness checklist before a run. |
 | **Verdict** | Claude's result for a case (PASS, FAIL, BLOCKED, EVIDENCE_ONLY, UNDECIDED). |
 | **Validate** | Your sign-off on each verdict (Agree / Change the verdict / Run it again). |
@@ -359,7 +359,7 @@ on automatically. 🚧
   spend. ⚡ Replay of a recorded case and all the Mocking / Driver buttons are free.
 - **Can I keep coding while a test runs?** Yes. Tests use the TestForge's own QA copy and QA
   simulator; your project and your simulator aren't touched.
-- **Where does the QA copy live, and how big is it?** In `~/.testforge` (a few GB per repo with
+- **Where does the QA copy live, and how big is it?** In `~/.test-forge` (a few GB per repo with
   dependencies and build files). **Free disk space** removes copies unused for 14 days.
 - **Can it test on several simulators at once?** Not yet — the TestForge is being stabilised on one
   simulator first.

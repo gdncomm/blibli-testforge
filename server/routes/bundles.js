@@ -12,7 +12,7 @@ const expandHome = (path) => resolvePath(String(path).replace(/^~(?=\/|$)/, home
 
 async function readBundleFile(path) {
 	const full = expandHome(path);
-	if (!full.endsWith(".json")) throw new Error("pick a .qawbundle.json file");
+	if (!full.endsWith(".json")) throw new Error("pick a .test-forge-bundle.json file");
 	const info = await stat(full);
 	if (info.size > MAX_BUNDLE_BYTES) throw new Error("that file is too big to be a bundle");
 	return validateBundle(JSON.parse(await readFile(full, "utf8")));

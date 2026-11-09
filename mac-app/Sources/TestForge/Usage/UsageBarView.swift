@@ -22,7 +22,7 @@ struct UsageBarView<ViewModel: UsageBarPresenting>: View {
 				viewModel.isConnectConfirmationPresented = false
 			}
 		} message: {
-			Text("One marked line is added to your status-line script so it also copies its figures to ~/.testforge/usage.json. Remove that line to undo.")
+			Text("One marked line is added to your status-line script so it also copies its figures to ~/.test-forge/usage.json. Remove that line to undo.")
 		}
 		.accessibilityElement(children: .contain)
 		.accessibilityIdentifier(UsageBarConstants.Accessibility.bar)

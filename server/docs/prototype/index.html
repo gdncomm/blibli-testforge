@@ -229,7 +229,7 @@ const BRANCHES = [
 	{ name: "master", when: "9 d ago", sha: "51c2d08", title: "Release 14.8.0" },
 ];
 const LOCALS = [
-	{ id: "poc", name: "BlibliIOSApp-POC", path: "~/Projects/Live/BlibliIOSApp-POC", branch: "darshan/innovation/qa-mocker", sha: "1107d7f", changes: 4, unpushed: 2 },
+	{ id: "poc", name: "BlibliIOSApp-POC", path: "~/Projects/Live/BlibliIOSApp-POC", branch: "darshan/innovation/test-forge", sha: "1107d7f", changes: 4, unpushed: 2 },
 	{ id: "live", name: "BlibliIOSApp", path: "~/Projects/Live/BlibliIOSApp", branch: "develop", sha: "a1b2c3d", changes: 0, unpushed: 0 },
 	{ id: "fs", name: "BlibliIOSApp-FS", path: "~/Projects/BlibliIOSApp-FS", branch: "feature/flashsale-revamp-2026", sha: "e5d0a12", changes: 12, unpushed: 0 },
 ];
@@ -388,7 +388,7 @@ function homeView() {
 		? `<div class="needs"><span>📝</span><span class="grow"><b>${pendingReview} results to review</b> — your current run<div class="note">Claude's verdicts count only after your sign-off.</div></span><button data-act="goto-cases">Review</button></div>`
 		: `<div class="needs"><span>📝</span><span class="grow"><b>4 results to review</b> — Flash Sale regression on develop, today 12:41<div class="note">Claude's verdicts count only after your sign-off.</div></span><button data-act="open-run" data-scenario="results">Review</button></div>`);
 	return `
-	<div class="intro"><h2>What do you want to do?</h2><p>Everything runs on the QA simulator with Claude and QADriver. Your own repository, Xcode and simulator are never touched.</p></div>
+	<div class="intro"><h2>What do you want to do?</h2><p>Everything runs on the QA simulator with Claude and TestForgeDriver. Your own repository, Xcode and simulator are never touched.</p></div>
 	<div class="start-grid">
 		<button class="start-card" data-act="start-cases"><span class="big">🧪</span><b>Run test cases</b><span class="note">Pick a branch or local repository and the test cases from a Confluence page.</span></button>
 		<button class="start-card" data-act="start-prompt"><span class="big">💬</span><b>Describe a check</b><span class="note">Say in your own words what to check or which bug fix to verify. Claude does it and records the steps.</span></button>
@@ -525,7 +525,7 @@ function runView() {
 	const busy = S.phase === "pipeline";
 	const summary = `<div class="summary-line">
 		<span><b>Testing</b> <span class="mono">${esc(codeBranch())}</span>${S.sha ? ` @ <span class="mono">${S.sha}</span>` : ""}${isLocal() ? ` <span class="chip warn">local changes</span>` : ""}</span>
-		<span class="muted">· ${S.runKind === "prompt" ? `${KIND_LABEL[S.promptKind]}: “${esc(S.promptText.slice(0, 60))}${S.promptText.length > 60 ? "…" : ""}”` : S.runKind === "replay" ? `Macro: ${esc(S.replayMacro.name)}` : `${S.selected.size} test(s)`} · QA · iPhone 17 Pro Max</span>
+		<span class="muted">· ${S.runKind === "prompt" ? `${KIND_LABEL[S.promptKind]}: “${esc(S.promptText.slice(0, 60))}${S.promptText.length > 60 ? "…" : ""}”` : S.runKind === "replay" ? `Macro: ${esc(S.replayMacro.name)}` : `${S.selected.size} test(s)`} · TestForge · iPhone 17 Pro Max</span>
 		<span class="grow"></span>
 		${busy ? `<button class="ghost small" data-act="cancel-all">Stop</button>` : `<button class="ghost small" data-act="edit">Change setup</button>`}
 	</div>`;
@@ -691,7 +691,7 @@ function renderOverlay() {
 			<div class="report"># QA run — Sub Flashsale &amp; Special Placement
 Code     ${isLocal() ? esc(localInfo().path) + " (local repository)" : "gdncomm/" + esc(S.repo)}
 Branch   ${esc(codeBranch())} @ ${S.sha}${isLocal() ? "   ⚠ LOCAL CHANGES — not reproducible from GitHub" : ""}${S.skipBuild ? "   ⚠ UNVERIFIED BUILD" : ""}
-Device   QA · iPhone 17 Pro Max · iOS 26.1
+Device   TestForge · iPhone 17 Pro Max · iOS 26.1
 Tests    Confluence 2396520535 · ${Object.keys(S.runResults).length} tests
 Mocks    ${S.mocks === "fs" ? "Flash Sale pilot set" : "none"}
 
@@ -727,7 +727,7 @@ ${esc(lines)}</div>
 			<label class="field"><span>Kind</span><select id="macroKind">${Object.entries(KIND_LABEL).map(([k, v]) => `<option value="${k}" ${k === S.promptKind ? "selected" : ""}>${v}</option>`).join("")}</select></label>
 			<div class="panel-title">Map of the macro — check it at a glance</div>
 			${macroMap(S.recorded)}
-			<div class="note">📁 Saved in the repository: <code>${macroPath(defaultName)}</code> — next to the UI tests, <b>never added to the app</b> or any build target. New element IDs go into <code>BlibliMobile_XCUITest/QAMacros/elements.json</code>.</div>
+			<div class="note">📁 Saved in the repository: <code>${macroPath(defaultName)}</code> — next to the UI tests, <b>never added to the app</b> or any build target. New element IDs go into <code>BlibliMobile_XCUITest/TestForgeMacros/elements.json</code>.</div>
 			<label class="row"><input type="checkbox" id="macroReviewed" data-act="macro-reviewed" /> I've checked the map — these steps do what I asked</label>
 			<div class="row"><button data-act="confirm-macro" id="confirmMacro" disabled>Save macro</button><button class="ghost" data-act="close-overlay">Cancel</button></div></div></div>`;
 		return;
@@ -866,7 +866,7 @@ const SCENARIOS = {
 	promptresult: { label: "Check result → save macro", apply: () => { SCENARIOS.promptform.apply(); Object.assign(S, { runKind: "prompt", phase: "results", sha: "a1b2c3d", recorded: [...PROMPT_STEPS], promptResult: { verdict: "PASS", summary: "The Tomorrow tab opened in 0.8 s, the product list appeared with 12 products and the app stayed responsive. “Remind me” is shown on each product." } }); S.stages = doneStages(); S.stages[4].label = "Claude checks it"; S.stages[4].note = "6 steps recorded"; } },
 	replay: { label: "Replay a macro", apply: () => { ready(); Object.assign(S, { runKind: "replay", replayMacro: S.macros[1] }); startPipeline(); } },
 	heal: { label: "Replay needs repair", apply: () => { ready(); Object.assign(S, { scenario: "heal", runKind: "replay", replayMacro: S.macros[1] }); startPipeline(); } },
-	localdrift: { label: "Local repository changed", apply: () => { SCENARIOS.results.apply(); Object.assign(S, { mode: "local", localId: "poc", localDrift: true, sha: "1107d7f+e41a" }); S.stages[0].label = "Snapshot your local repository"; S.stages[0].note = "darshan/innovation/qa-mocker @ 1107d7f+e41a"; } },
+	localdrift: { label: "Local repository changed", apply: () => { SCENARIOS.results.apply(); Object.assign(S, { mode: "local", localId: "poc", localDrift: true, sha: "1107d7f+e41a" }); S.stages[0].label = "Snapshot your local repository"; S.stages[0].note = "darshan/innovation/test-forge @ 1107d7f+e41a"; } },
 };
 function applyScenario(key) {
 	clearTimers(); S = fresh();
@@ -940,7 +940,7 @@ document.addEventListener("click", (e) => {
 		case "run-again": S.localDrift = false; startPipeline(); return;
 		case "run-saved": { const x = SETUPS[Number(t.dataset.i)]; const env = { preparedSha: S.preparedSha, builtSha: S.builtSha, installedSha: S.installedSha, simState: S.simState, harness: S.harness, macros: S.macros }; TAB = "cases"; clearTimers(); S = fresh(); ready(); if (env.builtSha) Object.assign(S, env); Object.assign(S, { mode: x.mode, branch: x.branch, localId: x.localId, selected: new Set(x.selected) }); toast(`Loaded “${x.name}” — with the latest code`); startPipeline(); return; }
 		case "report": S.dialog = "report"; break;
-		case "export": toast("Downloaded qa-run-develop-a1b2c3d.md"); break;
+		case "export": toast("Downloaded test-forge-run-develop-a1b2c3d.md"); break;
 		case "publish": toast("Published to your personal Confluence page"); S.dialog = null; break;
 		case "save-setup": S.dialog = "save-setup"; break;
 		case "confirm-save": { const name = document.getElementById("setupName").value.trim() || "My setup"; SETUPS.push({ name, note: "saved just now", mode: S.mode, branch: S.branch, localId: S.localId, selected: [...S.selected] }); toast(`Saved “${name}” — find it under Saved setups`); S.dialog = null; break; }

@@ -13,12 +13,12 @@ build state.
 ## Architecture, in one pass
 
 - **Data plane** (`contracts/dataplane.md`) — 7 verbs (state/arm/disarm/variant/scenario/edit/export)
-  behind one driver registry. NetworkLens is the only mock channel: `QA_DATA_PLANE` is `simctl`
+  behind one driver registry. NetworkLens is the only mock channel: `TEST_FORGE_DATA_PLANE` is `simctl`
   (default) or its alias `networklens` in `scripts/dataplane.py` — an in-process interceptor whose
   MCP server is **never vendored here**; it depends on the host project registering its own, same
   external prerequisite the screen channel already has. `proxy` is declared in the contract but not
   built.
-- **Screen plane** — `mcp/qa-driver-mcp`, a resident XCUITest session (`QADriverKit`, consumed from
+- **Screen plane** — `mcp/test-forge-driver-mcp`, a resident XCUITest session (`TestForgeDriverKit`, consumed from
   the host project, not shipped here) polling a command queue. Unchanged by any data-plane choice.
 - **Pipeline** (`SKILL.md`) — Stage 1 Preflight (fails closed, 9 gates) → Stage 2 resolve inputs →
   Stage 3a accessibility chain / 3b construct commands → Stage 4 execute + validate (network trail,
@@ -52,8 +52,8 @@ build state.
    never presented with the same confidence as something verified against a real trace or a real
    file.
 6. **The real target application is read-only.** This tool never edits the app repo it's configured
-   against — only `.claude/settings.json` (env + `qaSkillAudit` bookkeeping, kept in separate
-   namespaces) and, during `/qa-init`, the app's own `.xcodeproj`/`.xcworkspace` additively (new
+   against — only `.claude/settings.json` (env + `testForgeSkillAudit` bookkeeping, kept in separate
+   namespaces) and, during `/test-forge-init`, the app's own `.xcodeproj`/`.xcworkspace` additively (new
    targets/files, never an existing one rewritten).
 
 ## Open items — genuinely not done, not silently assumed
@@ -75,10 +75,10 @@ build state.
 
 ## Decision log
 
-- **2026-10-13 — `qa-mock` data plane removed entirely.** The out-of-process responder
-  (`mcp/qa-mock-server` + `mcp/qa-mock-mcp`, its `.mcp.json` entry, the `qa-mock` choice of
-  `QA_DATA_PLANE`, and every script/doc path for it) is deleted; NetworkLens is the only mock
-  channel. Why: it was never used on iOS here, and its unresolved `QA_MOCK_SERVER_URL` /
-  `QA_MOCK_TRACE_DIR` env placeholders confused QA runs — Claude reported "qa-mock unusable" and
+- **2026-10-13 — `test-forge-mock` data plane removed entirely.** The out-of-process responder
+  (`mcp/test-forge-mock-server` + `mcp/test-forge-mock-mcp`, its `.mcp.json` entry, the `test-forge-mock` choice of
+  `TEST_FORGE_DATA_PLANE`, and every script/doc path for it) is deleted; NetworkLens is the only mock
+  channel. Why: it was never used on iOS here, and its unresolved `TEST_FORGE_MOCK_SERVER_URL` /
+  `TEST_FORGE_MOCK_TRACE_DIR` env placeholders confused QA runs — Claude reported "test-forge-mock unusable" and
   sometimes refused to arm mocks at all. (Dated by explicit request, an exception to the no-dates
   convention above.)

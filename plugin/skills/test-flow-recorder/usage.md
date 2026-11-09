@@ -5,7 +5,7 @@ minutes: arrange the data, reach the screen, read the result, decide whether the
 wrong, screenshot it, write it up. This skill does that loop against a running app, one case at a
 time, and leaves behind evidence a reviewer can check without rerunning anything.
 
-It is **not** a test-code generator. Nothing is compiled, and no `<Screen>QATest.swift` is emitted. A
+It is **not** a test-code generator. Nothing is compiled, and no `<Screen>TestForgeTest.swift` is emitted. A
 run is a live conversation with the app: arm the data, drive the screen, read what actually came
 back, adjudicate, record. That distinction is the whole design — a generated test asserts what its
 author believed; a live run reports what the app did.
@@ -114,7 +114,7 @@ flowchart TB
     end
 
     subgraph SIM["Booted simulator"]
-        HARN["QADriver harness<br/>persistent XCUITest session"]
+        HARN["TestForgeDriver harness<br/>persistent XCUITest session"]
         APP["App under test"]
         LENS["NetworkLens<br/>mock rules + traffic trace"]
     end
@@ -322,8 +322,8 @@ from a case nobody ran.
 
 | | |
 |---|---|
-| Screenshot | `qa_screenshot` with `caseId` → `~/Documents/<Team>-Test/<caseId>/<step-n>-<label>.png`. Pass `caseId` every time — one harness session serves every case, so without it a whole suite's screenshots pile into one folder named after the harness's test method. |
-| Recording | `qa_start_recording` / `qa_stop_recording` bracket a case → `<caseId>.mov`, host-side `simctl io recordVideo` (hevc). Needs no harness and **survives an app relaunch mid-case**, which is what makes a fixture-swap sequence recordable end to end. Stopping is mandatory; a recording never stopped leaves an unplayable file. |
+| Screenshot | `test_forge_screenshot` with `caseId` → `~/Documents/<Team>-Test/<caseId>/<step-n>-<label>.png`. Pass `caseId` every time — one harness session serves every case, so without it a whole suite's screenshots pile into one folder named after the harness's test method. |
+| Recording | `test_forge_start_recording` / `test_forge_stop_recording` bracket a case → `<caseId>.mov`, host-side `simctl io recordVideo` (hevc). Needs no harness and **survives an app relaunch mid-case**, which is what makes a fixture-swap sequence recordable end to end. Stopping is mandatory; a recording never stopped leaves an unplayable file. |
 | Per attempt | Recording is per **attempt**, not per case: `<caseId>-attempt<N>-<verdict>.mp4`. A case that passed only after a locator heal is a different result from one that passed first time, and only the attempt sequence shows which. |
 | Cost | ~0.4 MB/s — roughly 140 MB for six minutes. A case that spends minutes hunting an element should be diagnosed with a tree dump *outside* a recording, then re-run. |
 
@@ -390,7 +390,7 @@ Reliability properties worth knowing:
 - **The generator is the only author.** Hand-editing a generated report is how the numbers and the
   documents drift apart.
 
-The apply-fixes mode (`/qa-fix`) requires **80% of adjudicated cases passing**, a floor of 10, and a
+The apply-fixes mode (`/test-forge-fix`) requires **80% of adjudicated cases passing**, a floor of 10, and a
 `documented` posture. A first pass over a feature under active development will usually sit below
 that line — which is the gate working, not a number to tune away. Until the surface is stable, fixes
 stay proposals reviewed by hand, and that is the expected state rather than a limitation.

@@ -40,7 +40,7 @@ VIEW_DECLARATION = re.compile(
 # The path prefix an app's API routes share, e.g. "backend" or "api". Without one, any quoted string
 # that looks like a multi-segment absolute path counts — noisier, but a hardcoded prefix that belongs
 # to some other app finds nothing at all and reports a scope as having no endpoints.
-_API_PREFIX = os.environ.get("QA_API_PATH_PREFIX", "").strip("/")
+_API_PREFIX = os.environ.get("TEST_FORGE_API_PATH_PREFIX", "").strip("/")
 ENDPOINT_LITERAL = re.compile(
     rf"\"(/?{re.escape(_API_PREFIX)}/[A-Za-z0-9_\-./{{}}]+)\"" if _API_PREFIX
     else r"\"(/[A-Za-z0-9_\-.{}]+(?:/[A-Za-z0-9_\-.{}]+)+)\"")

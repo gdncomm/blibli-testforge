@@ -1,12 +1,12 @@
 {
   "mcpServers": {
-    "qa-driver": {
-      "command": "${CLAUDE_PLUGIN_ROOT}/mcp/qa-driver-mcp/bin/start.sh",
+    "test-forge-driver": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/mcp/test-forge-driver-mcp/bin/start.sh",
       "args": [],
       "env": {
-        "QA_BUNDLE_ID": "${QA_BUNDLE_ID}",
-        "QA_MEDIA_ROOT": "${QA_MEDIA_ROOT}",
-        "QA_DEVICE_UDID": "${QA_DEVICE_UDID}"
+        "TEST_FORGE_BUNDLE_ID": "${TEST_FORGE_BUNDLE_ID}",
+        "TEST_FORGE_MEDIA_ROOT": "${TEST_FORGE_MEDIA_ROOT}",
+        "TEST_FORGE_DEVICE_UDID": "${TEST_FORGE_DEVICE_UDID}"
       }
     }
   }
