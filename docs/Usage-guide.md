@@ -86,6 +86,8 @@ A how-to for each feature of the Mac app. For the list of everything the app doe
 - Build the app: "A first build takes 10–25 min and may need the VPN."
 - Free disk space: "Only ~/.test-forge/ is touched" (removes QA copies and build output unused for 14 days).
 
+After a fix starts, its line shows a spinner and, for example, "Build started — this row updates when it finishes". A green tick appears only when the check passes. A refused fix shows its reason in orange on the line. A fix that changed nothing goes back to the red line after 90 seconds, with its Fix button.
+
 **Prepare code**
 
 1. Click **Prepare code…**.

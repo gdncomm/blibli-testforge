@@ -4456,3 +4456,17 @@ transcript, terminal turns included. A run session's env (device, build) is not 
 talking, not runs. A process the session ends itself (close, hand-off) no longer records an error. **Rejected:** an
 embedded terminal (SwiftTerm): a new dependency and PTY handling, and its output can't feed the status line or the
 activity strip; AppleScript to drive Terminal: needs an Automation permission prompt and works only with Terminal.
+
+## D-223 — A started fix is progress, not a pass (2026-11-09)
+
+A Get Ready fix that the server accepted used to show a green "Started — this check updates when it finishes" under a
+red line: two green ticks, one meaning "passed" and one meaning "started", and the build row kept saying "isn't built
+yet" until the 30 s readiness poll. Now the line itself shows progress. **Server:** the build check returns
+`isWorking: true` (no fix) while a build runs, and `readinessGate.invalidate()` calls an `onInvalidate` hook that pokes
+the `readiness` slice, so every fix route that invalidates also pushes the new state at once; the build route
+invalidates when the build starts, not only when it ends. **App:** an accepted fix puts the row in a recheck: spinner
+icon, an hourglass line ("Build started — this row updates when it finishes"), no Fix button. The recheck ends when the
+check passes, reports `isWorking`, or changes its detail; after 90 s with no change the row shows the check as it is
+again, so a fix that did nothing can't spin forever. Refused fixes still show their reason in orange; there is no
+success line any more, since only the check can say the fix worked. **Rejected:** keeping the success line with a
+neutral icon: still two messages on one row that disagree until the poll.

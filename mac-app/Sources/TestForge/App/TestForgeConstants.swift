@@ -27,6 +27,8 @@ enum TestForgeConstants {
 	enum GetReady {
 		static let rowIconSize: CGFloat = 18
 		static let contentMaxWidth: CGFloat = 720
+		/// D-223: how long a row waits for its check to report back after a fix before it shows the check as it is.
+		static let fixRecheckTimeoutSeconds: TimeInterval = 90
 	}
 
 	enum Console {

@@ -1172,6 +1172,7 @@ const readiness = readinessGate({
 	buildState: testForgeBuildState,
 	legacyBundle: () => findTestBundle({ projectDir: process.env.TEST_FORGE_PROJECT_DIR || process.cwd(), configuration: process.env.TEST_FORGE_CONFIGURATION || "PerformanceTest", runnerTarget: process.env.TEST_FORGE_UITEST_TARGET }),
 	isBuilding: () => activeBuildJob?.status === "running" || isTestForgeBuilding(),
+	onInvalidate: () => stateHub.poke("readiness"),
 	codeState: testForgeCodeState,
 	installedMatch: () => testForgeInstalledMatch(BUNDLE_ID),
 	diskFreeGb: testForgeFreeGb,

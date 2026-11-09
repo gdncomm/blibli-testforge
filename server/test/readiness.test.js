@@ -297,3 +297,24 @@ test("D-198: run notes beside macros aren't app code; drift names the changed ap
 	const state = await checkReadiness(codeOnly({ manifest: preparedHoursAgo(1), drift: app }));
 	assert.match(state.checks.find((check) => check.id === "code").detail, /app code changed since: App\.swift/);
 });
+
+test("D-223: a running build is shown as in progress, and invalidate tells listeners", async () => {
+	const { checkReadiness, readinessGate } = await import("../lib/readiness.js");
+	const options = {
+		bundleId: "x", configuration: "PerformanceTest",
+		simulatorState: async () => ({ qa: { name: "QA", state: "Booted" }, booted: [], others: [] }),
+		buildState: async () => ({ state: "unbuilt", codeId: "bbbbbbb" }),
+		legacyBundle: async () => null,
+		probeHarness: async () => false,
+		appInstalled: async () => true,
+	};
+	const idle = (await checkReadiness(options)).checks.find((check) => check.id === "bundle");
+	assert.equal(idle.isWorking, undefined);
+	assert.equal(idle.fix, "build-qa");
+	const building = (await checkReadiness({ ...options, isBuilding: () => true })).checks.find((check) => check.id === "bundle");
+	assert.equal(building.isWorking, true);
+	assert.equal(building.fix, undefined);
+	let told = 0;
+	readinessGate({ ...options, onInvalidate: () => told++ }).invalidate();
+	assert.equal(told, 1);
+});

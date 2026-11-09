@@ -480,3 +480,10 @@ Tour: QA step 14 "Re-check results after a new build".
   with `claude --resume`; a message in the app later picks it up again.
 - Onboarding: QA workflow step 25 and developer workflow step 17 "Fix an MCP server, or take the chat to Terminal"
   (Claude · ⌘0 › MCP · Open in Terminal). Both need Claude.
+
+### Revision R43 (D-223, 2026-11-09) — Get Ready fixes show progress until their check reports back
+
+- Tour line **Every check says why** (anchor `getReadyChecks`) now says a line spins until its check reports back and
+  a tick means it passed.
+- Onboarding: QA workflow step 1 "Get ready" says a line spins while its fix runs and only a tick is done; developer
+  workflow step 1 "Point it at your code" says the App + tests built line spins until the build finishes.

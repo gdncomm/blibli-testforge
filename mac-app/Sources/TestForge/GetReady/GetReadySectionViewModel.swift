@@ -56,12 +56,14 @@ struct TestBatchFixActions {
 struct ReadinessFixState: Equatable {
 	/// The "…ing" text while this row's fix runs; nil when idle.
 	let busyTitle: String?
+	/// D-223: the server accepted the fix and the row waits for its check to report back.
+	let recheckMessage: String?
 	let outcome: ReadinessFixOutcome?
 }
 
+/// A fix the server refused. An accepted one is shown as a recheck instead (D-223).
 struct ReadinessFixOutcome: Equatable {
 	let message: String
-	let isSuccess: Bool
 }
 
 struct PendingFix: Identifiable, Equatable {
@@ -75,6 +77,7 @@ final class GetReadySectionViewModel: ObservableObject {
 	@MainActor @Published var pendingFix: PendingFix?
 	@MainActor @Published private var runningFixTitles: [String: String] = [:]
 	@MainActor @Published private var fixOutcomes: [String: ReadinessFixOutcome] = [:]
+	@MainActor @Published private var rechecks: [String: ReadinessRecheck] = [:]
 
 	/// Readiness checks the server reports today; keeps the bar from reading full before the first report.
 	private let expectedCheckCount = 12
@@ -89,12 +92,18 @@ final class GetReadySectionViewModel: ObservableObject {
 		"api/claude-env/configure": String(localized: "Setting up…")
 	]
 
+	private static let recheckMessagesByPath = [
+		"api/build/qa": String(localized: "Build started — this row updates when it finishes"),
+		"api/harness/ensure": String(localized: "Harness starting — this row updates when it answers")
+	]
+
 	private let store: StateStore
 	private let fixService: ReadinessFixing
 	private let actions: GetReadyActions
 	@MainActor private var serverPhase: ServerPhase = .idle
 	private var cancellables = Set<AnyCancellable>()
 	private var fixTasks: [String: Task<Void, Never>] = [:]
+	private var recheckTimers: [String: Task<Void, Never>] = [:]
 
 	@MainActor
 	init(store: StateStore, fixService: ReadinessFixing, actions: GetReadyActions) {
@@ -109,6 +118,7 @@ final class GetReadySectionViewModel: ObservableObject {
 
 	deinit {
 		fixTasks.values.forEach { $0.cancel() }
+		recheckTimers.values.forEach { $0.cancel() }
 		cancellables.forEach { $0.cancel() }
 	}
 
@@ -120,13 +130,14 @@ final class GetReadySectionViewModel: ObservableObject {
 
 	@MainActor
 	func fixState(forRowId rowId: String) -> ReadinessFixState {
-		ReadinessFixState(busyTitle: runningFixTitles[rowId], outcome: fixOutcomes[rowId])
+		ReadinessFixState(busyTitle: runningFixTitles[rowId], recheckMessage: rechecks[rowId]?.message, outcome: fixOutcomes[rowId])
 	}
 
 	@MainActor
 	func requestFix(for row: ReadinessRowModel) {
 		guard let action = row.fixAction,
-			runningFixTitles[row.id] == nil
+			runningFixTitles[row.id] == nil,
+			rechecks[row.id] == nil
 		else {
 			return
 		}
@@ -181,21 +192,66 @@ final class GetReadySectionViewModel: ObservableObject {
 		fixTasks[rowId] = Task { [weak self, fixService] in
 			let errorMessage = await fixService.run(action: action)
 			await MainActor.run {
-				self?.finishFix(rowId: rowId, errorMessage: errorMessage)
+				self?.finishFix(rowId: rowId, action: action, errorMessage: errorMessage)
 			}
 		}
 	}
 
+	/// An accepted fix is not a result: the row keeps its spinner until the check reports back (D-223).
 	@MainActor
-	private func finishFix(rowId: String, errorMessage: String?) {
+	private func finishFix(rowId: String, action: FixAction, errorMessage: String?) {
 		runningFixTitles[rowId] = nil
 		fixTasks[rowId] = nil
 		if let errorMessage {
-			fixOutcomes[rowId] = ReadinessFixOutcome(message: errorMessage, isSuccess: false)
-		} else {
-			let message = String(localized: "Started — this check updates when it finishes.")
-			fixOutcomes[rowId] = ReadinessFixOutcome(message: message, isSuccess: true)
+			fixOutcomes[rowId] = ReadinessFixOutcome(message: errorMessage)
+			return
 		}
+		let check = currentCheck(id: rowId)
+		guard let check, !check.isPassing else {
+			refresh()
+			return
+		}
+		rechecks[rowId] = ReadinessRecheck(message: Self.recheckMessage(for: action), detailWhenStarted: check.detail, startedAt: Date())
+		recheckTimers[rowId]?.cancel()
+		let timeout = TestForgeConstants.GetReady.fixRecheckTimeoutSeconds
+		recheckTimers[rowId] = Task { [weak self] in
+			try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+			guard !Task.isCancelled else {
+				return
+			}
+			await MainActor.run {
+				self?.refresh()
+			}
+		}
+		refresh()
+	}
+
+	@MainActor
+	private func currentCheck(id: String) -> ReadinessCheck? {
+		store.value(of: .readiness, as: ReadinessReport.self)?.checks.first { $0.id == id }
+	}
+
+	/// Drops the waits whose check has reported back; a fix that changed nothing shows the check as it is again.
+	@MainActor
+	private func settleRechecks(report: ReadinessReport?) {
+		let now = Date()
+		let timeout = TestForgeConstants.GetReady.fixRecheckTimeoutSeconds
+		for (rowId, recheck) in rechecks {
+			let check = report?.checks.first { $0.id == rowId }
+			if recheck.isSettled(by: check, now: now, timeout: timeout) {
+				rechecks[rowId] = nil
+				recheckTimers.removeValue(forKey: rowId)?.cancel()
+			}
+		}
+	}
+
+	private static func recheckMessage(for action: FixAction) -> String {
+		guard case .post(let path, _) = action.route,
+			let message = recheckMessagesByPath[path]
+		else {
+			return String(localized: "Done — checking again…")
+		}
+		return message
 	}
 
 	private static func busyTitle(for action: FixAction) -> String {
@@ -221,6 +277,7 @@ final class GetReadySectionViewModel: ObservableObject {
 	@MainActor
 	private func refresh() {
 		let report = store.value(of: .readiness, as: ReadinessReport.self)
+		settleRechecks(report: report)
 		let content = makeContent(connection: store.connection, report: report)
 		guard let report,
 			store.connection == .live,
@@ -315,14 +372,19 @@ final class GetReadySectionViewModel: ObservableObject {
 		}
 	}
 
+	/// A check the server is working on, or one waiting to report back after a fix, shows progress (D-223).
+	@MainActor
 	private func makeCheckRow(check: ReadinessCheck) -> ReadinessRowModel {
+		let isInProgress = !check.isPassing && (check.isWorking || rechecks[check.id] != nil)
 		let status: ReadinessRowStatus
 		if check.isPassing {
 			status = .passed
+		} else if isInProgress {
+			status = .working
 		} else {
 			status = check.level == "warn" ? .warning : .blocking
 		}
-		let fixAction = check.isPassing ? nil : check.fixId.flatMap { fixService.action(forFixId: $0) }
+		let fixAction = check.isPassing || isInProgress ? nil : check.fixId.flatMap { fixService.action(forFixId: $0) }
 		let detail = makeCheckDetail(check: check)
 		return ReadinessRowModel(id: check.id, title: check.label, detail: detail, status: status, fixAction: fixAction)
 	}

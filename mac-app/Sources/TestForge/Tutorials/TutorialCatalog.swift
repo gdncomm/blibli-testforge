@@ -59,7 +59,7 @@ enum TutorialCatalog {
 		TutorialStep(
 			anchor: .getReadyChecks,
 			title: "Every check says why",
-			message: "Each line says what was checked and what was found. When something needs you, its Fix button does the work."
+			message: "Each line says what was checked and what was found. When something needs you, its Fix button does the work; the line spins until its check reports back, and a tick means it passed."
 		),
 		TutorialStep(
 			anchor: .testBatchToolbar,

@@ -8,6 +8,7 @@ Format: [Keep a Changelog](https://keepachangelog.com). Versions follow [CONTRIB
 - Mac app: Claude section **MCP** button (and `/mcp`): lists the MCP servers Claude sees, why one failed, and Reconnect (D-222).
 - Mac app: Claude section **Open in Terminal**: continues the conversation with `claude --resume` for every terminal command; the app picks it up again on the next message (D-222).
 - Mac app: the MCP list updates itself while any server is still connecting.
+- Mac app: Get Ready lines show a spinner while their fix runs ("Build started — this row updates when it finishes") instead of a green tick, and update as soon as the server rechecks (D-223).
 - Mac app: the usage bar offers **Reconnect status line…** when its figures are out of date, for a status-line script that lost its TestForge line.
 - Mac app: each test case shows whether it replays without Claude: ⚡ free replay, ⚡ not confirmed, ⚠ recording needs repair, ✨ needs Claude. Free replay and Needs Claude filters; the header counts both (D-220).
 - Mac app: one Replay button. Click to replay; press and hold for Replay with explanations, Record demo video and Write explanations with Claude (D-220).

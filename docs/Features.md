@@ -55,7 +55,7 @@ One checklist that says whether tests can run. Green means ready. Only checks th
 | Feature | What it does |
 |---|---|
 | Readiness checklist | One row per check with what was found and a Fix button. Includes the QA server, the live connection, the QA simulator, the QA build and the harness. |
-| Fix buttons | Create QA simulator, Boot QA simulator, Shut down the others, Build the app, Start harness, Free disk space, Set up Claude Code. The ones that change things ask first. |
+| Fix buttons | Create QA simulator, Boot QA simulator, Shut down the others, Build the app, Start harness, Free disk space, Set up Claude Code. The ones that change things ask first. A started fix spins on its line until the check reports back. |
 | Prepare code… | Pick a GitHub branch or your working copy; it is copied to a separate QA folder. Your own folder is only read. |
 | Git… | Fetch, fast-forward update or switch the branch of your own repo. Stops before touching unsaved work, or stashes it when you say so. |
 | Run queue… | Who holds the simulator, who waits and what just finished. Move up, move down, cancel, retry, clear finished. |
