@@ -4470,3 +4470,10 @@ check passes, reports `isWorking`, or changes its detail; after 90 s with no cha
 again, so a fix that did nothing can't spin forever. Refused fixes still show their reason in orange; there is no
 success line any more, since only the check can say the fix worked. **Rejected:** keeping the success line with a
 neutral icon: still two messages on one row that disagree until the poll.
+
+## D-224 — A Test Batch change invalidates readiness, not only pokes it (2026-11-13)
+
+Starting, pausing or ending a Test Batch emitted `change`, which poked the `readiness` slice. The poke re-read
+`/api/readiness` without `fresh`, so within the gate's 8 s cache it pushed the report from before the change, and the
+Get Ready row stayed "start one" until the 30 s poll. The listener now calls `readiness.invalidate()`, which drops the
+cache and pokes (D-223), so the row changes as soon as the batch does, from any screen.

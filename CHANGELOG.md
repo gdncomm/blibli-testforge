@@ -25,6 +25,7 @@ Format: [Keep a Changelog](https://keepachangelog.com). Versions follow [CONTRIB
 - Mac app test target with `RepoFolderResolver` tests (`swift test` in `mac-app/`).
 
 ### Fixed
+- Get Ready shows a Test Batch started from another screen at once, not up to 30 s later (D-224).
 - A Claude pass now shows UNCONFIRMED until a replay of its saved recording passes, so a case whose recording was never saved no longer looks passed and quietly goes back to Claude. A single Run with Claude saves and replays the recording too (D-220).
 - The Claude usage limit during saving a recording or triaging a failure now pauses the batch instead of leaving the case unrecorded. Re-run failed replays cases that have a recording now (D-220).
 - Replay is off, and the server refuses it, for a recording whose routine or element is missing.
