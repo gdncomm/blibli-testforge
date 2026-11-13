@@ -1172,6 +1172,7 @@ const readiness = readinessGate({
 	buildState: testForgeBuildState,
 	legacyBundle: () => findTestBundle({ projectDir: process.env.TEST_FORGE_PROJECT_DIR || process.cwd(), configuration: process.env.TEST_FORGE_CONFIGURATION || "PerformanceTest", runnerTarget: process.env.TEST_FORGE_UITEST_TARGET }),
 	isBuilding: () => activeBuildJob?.status === "running" || isTestForgeBuilding(),
+	onInvalidate: () => stateHub.poke("readiness"),
 	codeState: testForgeCodeState,
 	installedMatch: () => testForgeInstalledMatch(BUNDLE_ID),
 	diskFreeGb: testForgeFreeGb,
@@ -1360,8 +1361,9 @@ app.post("/api/test-device", async (req, res) => {
 	res.json({ ok: true, device: testDeviceView(device) });
 });
 findTestForgeSimulator().catch(() => null);
-// The two Test Batch checks change with the batch, not with the 30 s readiness poll.
-testBatches.on("change", () => stateHub.poke("readiness"));
+// The two Test Batch checks change with the batch, not with the 30 s readiness poll. A poke alone re-read the
+// 8 s cached report from before the change (D-224); invalidating drops it, and invalidate pokes (D-223).
+testBatches.on("change", () => readiness.invalidate());
 scanSession.on("change", (scan) => {
 	if (scan?.isActive && scan.out) testBatches.attach({ kind: "scan", refId: scan.out, title: `Scan ${new Date(scan.startedAt).toLocaleTimeString("en-GB")}` });
 });

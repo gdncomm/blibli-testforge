@@ -297,3 +297,46 @@ test("D-198: run notes beside macros aren't app code; drift names the changed ap
 	const state = await checkReadiness(codeOnly({ manifest: preparedHoursAgo(1), drift: app }));
 	assert.match(state.checks.find((check) => check.id === "code").detail, /app code changed since: App\.swift/);
 });
+
+test("D-223: a running build is shown as in progress, and invalidate tells listeners", async () => {
+	const { checkReadiness, readinessGate } = await import("../lib/readiness.js");
+	const options = {
+		bundleId: "x", configuration: "PerformanceTest",
+		simulatorState: async () => ({ qa: { name: "QA", state: "Booted" }, booted: [], others: [] }),
+		buildState: async () => ({ state: "unbuilt", codeId: "bbbbbbb" }),
+		legacyBundle: async () => null,
+		probeHarness: async () => false,
+		appInstalled: async () => true,
+	};
+	const idle = (await checkReadiness(options)).checks.find((check) => check.id === "bundle");
+	assert.equal(idle.isWorking, undefined);
+	assert.equal(idle.fix, "build-qa");
+	const building = (await checkReadiness({ ...options, isBuilding: () => true })).checks.find((check) => check.id === "bundle");
+	assert.equal(building.isWorking, true);
+	assert.equal(building.fix, undefined);
+	let told = 0;
+	readinessGate({ ...options, onInvalidate: () => told++ }).invalidate();
+	assert.equal(told, 1);
+});
+
+test("D-224: after invalidate, the next read is a new report, not the cached one", async () => {
+	const { readinessGate } = await import("../lib/readiness.js");
+	let batch = null;
+	let told = 0;
+	const gate = readinessGate({
+		bundleId: "x", configuration: "PerformanceTest",
+		simulatorState: async () => ({ qa: null, booted: [], others: [] }),
+		buildState: async () => ({ state: "unbuilt", codeId: "b" }),
+		legacyBundle: async () => null,
+		probeHarness: async () => false,
+		testBatchState: () => ({ proofRoot: "/proof", active: batch, paused: [] }),
+		onInvalidate: () => told++,
+	});
+	const batchCheck = (report) => report.checks.find((check) => check.id === "test-batch");
+	assert.equal(batchCheck(await gate.get()).ok, false);
+	batch = { name: "IOS-1", folder: "/proof/IOS-1" };
+	assert.equal(batchCheck(await gate.get()).ok, false, "cached within 8 s");
+	gate.invalidate();
+	assert.equal(told, 1);
+	assert.equal(batchCheck(await gate.get()).ok, true);
+});

@@ -97,5 +97,7 @@ enum TutorialAnchor: String {
 	case claudeSessionMenu
 	case claudeDetailsToggle
 	case claudeComposer
+	case claudeOpenInTerminal
+	case claudeMcp
 	case remoteControlButton
 }

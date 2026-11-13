@@ -9,6 +9,8 @@ struct ReadinessRowView: View {
 		HStack(alignment: .firstTextBaseline, spacing: TestForgeConstants.Spacing.medium) {
 			statusIcon
 				.frame(width: TestForgeConstants.GetReady.rowIconSize)
+				.accessibilityLabel(statusLabel)
+				.accessibilityIdentifier(TestForgeConstants.Accessibility.readinessStatusIconPrefix + row.id)
 			VStack(alignment: .leading, spacing: TestForgeConstants.Spacing.small) {
 				Text(row.title)
 					.font(.body.weight(.medium))
@@ -18,10 +20,16 @@ struct ReadinessRowView: View {
 						.foregroundStyle(.secondary)
 						.textSelection(.enabled)
 				}
-				if let outcome = fixState.outcome {
-					Label(outcome.message, systemImage: outcome.isSuccess ? "checkmark.circle" : "exclamationmark.triangle")
+				if let recheckMessage = fixState.recheckMessage {
+					Label(recheckMessage, systemImage: "hourglass")
 						.font(.callout)
-						.foregroundStyle(outcome.isSuccess ? Color.green : Color.orange)
+						.foregroundStyle(.secondary)
+						.accessibilityIdentifier(TestForgeConstants.Accessibility.readinessRecheckPrefix + row.id)
+				}
+				if let outcome = fixState.outcome {
+					Label(outcome.message, systemImage: "exclamationmark.triangle")
+						.font(.callout)
+						.foregroundStyle(.orange)
 						.textSelection(.enabled)
 						.accessibilityIdentifier(TestForgeConstants.Accessibility.readinessFixOutcomePrefix + row.id)
 				}
@@ -44,6 +52,21 @@ struct ReadinessRowView: View {
 
 	private var isFixing: Bool {
 		fixState.busyTitle != nil
+	}
+
+	private var statusLabel: String {
+		switch row.status {
+			case .waiting:
+				return String(localized: "Waiting")
+			case .working:
+				return String(localized: "In progress")
+			case .passed:
+				return String(localized: "Passed")
+			case .warning:
+				return String(localized: "Warning")
+			case .blocking:
+				return String(localized: "Needs you")
+		}
 	}
 
 	@ViewBuilder

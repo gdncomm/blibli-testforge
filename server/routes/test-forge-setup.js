@@ -202,6 +202,8 @@ export function registerTestForgeSetupRoutes(app, { readiness, isTestInFlight, h
 		if (!qa || qa.state !== "Booted") return res.status(409).json({ error: "the QA simulator isn't booted — set it up first" });
 		const job = createJob({ kind: "build", codeId: manifest.snapshotId });
 		activeTestForgeBuild = job;
+		// D-223: the build row turns to "running" now, not on the next poll.
+		readiness.invalidate();
 		const controller = new AbortController();
 		job.onCancel = () => controller.abort();
 		const say = (line) => appendLine(job, line);

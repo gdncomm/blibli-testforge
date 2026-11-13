@@ -3,6 +3,8 @@ import Foundation
 /// D-213: identifiers for inline progress and failure lines in Get Ready, Settings › Logins and the menu bar.
 extension TestForgeConstants.Accessibility {
 		static let readinessFixOutcomePrefix = "TestForge_GetReady_FixOutcome_"
+		static let readinessRecheckPrefix = "TestForge_GetReady_Recheck_"
+		static let readinessStatusIconPrefix = "TestForge_GetReady_StatusIcon_"
 		static let prepareCodeCancelFailure = "TestForge_PrepareCode_CancelFailure"
 		static let gitBranchesLoading = "TestForge_Git_BranchesLoading"
 		static let gitBranchesFailure = "TestForge_Git_BranchesFailure"

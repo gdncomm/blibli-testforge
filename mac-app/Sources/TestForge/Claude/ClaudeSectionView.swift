@@ -26,6 +26,11 @@ struct ClaudeSectionView<ViewModel: ClaudeSectionPresenting, RemoteControl: Remo
 			ClaudeComposerView(viewModel: viewModel)
 		}
 		.onAppear(perform: viewModel.open)
+		.sheet(isPresented: $viewModel.isShowingMcp) {
+			ClaudeMcpSheetView(viewModel: viewModel.mcp) {
+				viewModel.isShowingMcp = false
+			}
+		}
 		.accessibilityElement(children: .contain)
 		.accessibilityIdentifier(ClaudeConstants.Accessibility.section)
 	}
@@ -44,6 +49,27 @@ struct ClaudeSectionView<ViewModel: ClaudeSectionPresenting, RemoteControl: Remo
 					.truncationMode(.head)
 			}
 			Spacer()
+			if let terminalError = viewModel.terminalErrorMessage {
+				Label(terminalError, systemImage: "exclamationmark.triangle")
+					.font(.caption)
+					.foregroundStyle(.red)
+					.lineLimit(1)
+					.truncationMode(.tail)
+					.help(terminalError)
+					.accessibilityIdentifier(ClaudeConstants.Accessibility.terminalFailure)
+			}
+			Button(action: viewModel.openInTerminal) {
+				ActionProgressLabel(title: String(localized: "Open in Terminal"), busyTitle: String(localized: "Opening…"), isBusy: viewModel.isOpeningTerminal)
+			}
+			.disabled(!viewModel.canOpenInTerminal)
+			.help("Continue this conversation in a terminal (claude --resume) for /mcp, /plugin and every other terminal command. Send a message here later to pick it up again, terminal turns included.")
+			.accessibilityIdentifier(ClaudeConstants.Accessibility.openInTerminalButton)
+			.tutorialAnchor(.claudeOpenInTerminal)
+			Button("MCP", systemImage: "server.rack", action: viewModel.showMcp)
+				.disabled(!isReady)
+				.help("MCP servers this conversation's Claude sees, with Reconnect. Typing /mcp does the same.")
+				.accessibilityIdentifier(ClaudeConstants.Accessibility.mcpButton)
+				.tutorialAnchor(.claudeMcp)
 			RemoteControlButtonView(viewModel: remoteControl)
 			Toggle("Details", isOn: $viewModel.showsDetails)
 				.toggleStyle(.switch)
@@ -122,6 +148,13 @@ struct ClaudeSectionView<ViewModel: ClaudeSectionPresenting, RemoteControl: Remo
 			}
 			.accessibilityIdentifier(ClaudeConstants.Accessibility.transcript)
 		}
+	}
+
+	private var isReady: Bool {
+		guard case .ready = viewModel.state else {
+			return false
+		}
+		return true
 	}
 
 	private var requestActions: ClaudeRequestActions {

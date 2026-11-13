@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com). Versions follow [CONTRIB
 ## [Unreleased]
 
 ### Added
+- Mac app: Claude section **MCP** button (and `/mcp`): lists the MCP servers Claude sees, why one failed, and Reconnect (D-222).
+- Mac app: Claude section **Open in Terminal**: continues the conversation with `claude --resume` for every terminal command; the app picks it up again on the next message (D-222).
+- Mac app: the MCP list updates itself while any server is still connecting.
+- Mac app: Get Ready lines show a spinner while their fix runs ("Build started — this row updates when it finishes") instead of a green tick, and update as soon as the server rechecks (D-223).
+- Mac app: the usage bar offers **Reconnect status line…** when its figures are out of date, for a status-line script that lost its TestForge line.
 - Mac app: each test case shows whether it replays without Claude: ⚡ free replay, ⚡ not confirmed, ⚠ recording needs repair, ✨ needs Claude. Free replay and Needs Claude filters; the header counts both (D-220).
 - Mac app: one Replay button. Click to replay; press and hold for Replay with explanations, Record demo video and Write explanations with Claude (D-220).
 - Mac app: Docs section (⌘D) that lists the README, the usage guide and the feature list and shows them in place, with Half and Full layouts, an outline, links that open in place, and a separate Docs window for the left or right half of the screen or full screen. Drop Markdown files or folders, or use File › Open Markdown… (⌘O), to read your own (D-218).
@@ -20,6 +25,7 @@ Format: [Keep a Changelog](https://keepachangelog.com). Versions follow [CONTRIB
 - Mac app test target with `RepoFolderResolver` tests (`swift test` in `mac-app/`).
 
 ### Fixed
+- Get Ready shows a Test Batch started from another screen at once, not up to 30 s later (D-224).
 - A Claude pass now shows UNCONFIRMED until a replay of its saved recording passes, so a case whose recording was never saved no longer looks passed and quietly goes back to Claude. A single Run with Claude saves and replays the recording too (D-220).
 - The Claude usage limit during saving a recording or triaging a failure now pauses the batch instead of leaving the case unrecorded. Re-run failed replays cases that have a recording now (D-220).
 - Replay is off, and the server refuses it, for a recording whose routine or element is missing.

@@ -55,7 +55,7 @@ One checklist that says whether tests can run. Green means ready. Only checks th
 | Feature | What it does |
 |---|---|
 | Readiness checklist | One row per check with what was found and a Fix button. Includes the QA server, the live connection, the QA simulator, the QA build and the harness. |
-| Fix buttons | Create QA simulator, Boot QA simulator, Shut down the others, Build the app, Start harness, Free disk space, Set up Claude Code. The ones that change things ask first. |
+| Fix buttons | Create QA simulator, Boot QA simulator, Shut down the others, Build the app, Start harness, Free disk space, Set up Claude Code. The ones that change things ask first. A started fix spins on its line until the check reports back. |
 | Prepare code… | Pick a GitHub branch or your working copy; it is copied to a separate QA folder. Your own folder is only read. |
 | Git… | Fetch, fast-forward update or switch the branch of your own repo. Stops before touching unsaved work, or stashes it when you say so. |
 | Run queue… | Who holds the simulator, who waits and what just finished. Move up, move down, cancel, retry, clear finished. |
@@ -74,6 +74,8 @@ One checklist that says whether tests can run. Green means ready. Only checks th
 | Composer | Message the session (⌘↩). A Screenshot toggle attaches the test phone's screen. |
 | Details | Opens every tool call and result in full. |
 | Stop, New conversation | Stop the current turn, or start a fresh conversation in the same repo. |
+| MCP | The MCP servers Claude sees, connected or not and why, with Reconnect for each. Typing /mcp does the same. |
+| Open in Terminal | Continues the conversation in Terminal with `claude --resume`, for /plugin, /login and every other terminal command. Your next message in the app picks it up again, terminal turns included. |
 | Remote Control | Run QA here from the Claude app's Code tab or claude.ai/code. Turn it on, then scan the QR code. Same folder or own worktree per session. |
 
 ### Tests (⌘2) · QA mostly · Claude: Partly

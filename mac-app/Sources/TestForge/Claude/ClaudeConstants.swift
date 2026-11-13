@@ -33,6 +33,17 @@ enum ClaudeConstants {
 		]
 	}
 
+	/// Terminal slash commands the app answers itself (D-222).
+	enum Commands {
+		static let mcp = "/mcp"
+	}
+
+	enum Mcp {
+		static let sheetMinWidth: CGFloat = 520
+		static let sheetMinHeight: CGFloat = 360
+		static let pollIntervalNanoseconds: UInt64 = 2_000_000_000
+	}
+
 	enum Sessions {
 		static let listLimit = 15
 	}
@@ -63,5 +74,24 @@ enum ClaudeConstants {
 		static let sendAnswerButton = "TestForge_Claude_SendAnswer"
 		static let skipQuestionButton = "TestForge_Claude_SkipQuestion"
 		static let otherAnswerField = "TestForge_Claude_OtherAnswer"
+		static let openInTerminalButton = "TestForge_Claude_OpenInTerminal"
+		static let terminalFailure = "TestForge_Claude_TerminalFailure"
+		static let mcpButton = "TestForge_Claude_McpButton"
+		static let mcpSheet = "TestForge_Claude_McpSheet"
+		static let mcpTitle = "TestForge_Claude_McpTitle"
+		static let mcpSummary = "TestForge_Claude_McpSummary"
+		static let mcpLoading = "TestForge_Claude_McpLoading"
+		static let mcpLoadFailure = "TestForge_Claude_McpLoadFailure"
+		static let mcpList = "TestForge_Claude_McpList"
+		static let mcpRefreshButton = "TestForge_Claude_McpRefresh"
+		static let mcpDoneButton = "TestForge_Claude_McpDone"
+		static let mcpRowPrefix = "TestForge_Claude_McpRow_"
+		static let mcpRowNamePrefix = "TestForge_Claude_McpName_"
+		static let mcpRowStatusPrefix = "TestForge_Claude_McpStatus_"
+		static let mcpRowIconPrefix = "TestForge_Claude_McpIcon_"
+		static let mcpRowErrorPrefix = "TestForge_Claude_McpError_"
+		static let mcpRowScopePrefix = "TestForge_Claude_McpScope_"
+		static let mcpReconnectPrefix = "TestForge_Claude_McpReconnect_"
+		static let mcpReconnectFailurePrefix = "TestForge_Claude_McpReconnectFailure_"
 	}
 }

@@ -48,6 +48,13 @@ protocol ClaudeSectionPresenting: ObservableObject {
 	var isAwaitingReply: Bool { get }
 	var activity: ClaudeActivityModel? { get }
 
+	/// D-222: `/mcp` in the app, shown as a sheet.
+	var mcp: ClaudeMcpViewModel { get }
+	var isShowingMcp: Bool { get set }
+	var isOpeningTerminal: Bool { get }
+	var terminalErrorMessage: String? { get }
+	var canOpenInTerminal: Bool { get }
+
 	func open()
 	func send()
 
@@ -62,6 +69,12 @@ protocol ClaudeSectionPresenting: ObservableObject {
 
 	/// `picks`: each question's chosen labels plus any typed answer; nil skips the question.
 	func answer(requestId: String, picks: [String: [String]]?)
+
+	/// Lists the session's MCP servers; typing `/mcp` in the message box does the same.
+	func showMcp()
+
+	/// Continues this conversation in a terminal `claude --resume` (D-222).
+	func openInTerminal()
 }
 
 /// The TestForge's own Claude session in the selected repo (D-133), and any other session the server hosts — a run's,
@@ -82,8 +95,14 @@ final class ClaudeSectionViewModel: ClaudeSectionPresenting {
 	@Published private(set) var requestErrors: [String: String] = [:]
 	@Published private(set) var sessions: [ClaudeSessionRow] = []
 	@Published var showsDetails = false
+	@Published var isShowingMcp = false
+	@Published private(set) var isOpeningTerminal = false
+	@Published private(set) var terminalErrorMessage: String?
+
+	let mcp: ClaudeMcpViewModel
 
 	private let service: ClaudeSessionServing
+	private let terminal: TerminalLaunching
 	private var streamTask: Task<Void, Never>?
 	private var lastSeq = 0
 
@@ -177,8 +196,47 @@ final class ClaudeSectionViewModel: ClaudeSectionPresenting {
 		}
 	}
 
-	init(service: ClaudeSessionServing) {
+	init(service: ClaudeSessionServing, terminal: TerminalLaunching = ClaudeTerminalLauncher()) {
 		self.service = service
+		self.terminal = terminal
+		mcp = ClaudeMcpViewModel(service: service)
+	}
+
+	/// A terminal takes over only between turns, so the two never write the conversation at once.
+	var canOpenInTerminal: Bool {
+		guard case .ready = state else {
+			return false
+		}
+		return !canStop && !isOpeningTerminal
+	}
+
+	func showMcp() {
+		guard let sessionId else {
+			return
+		}
+		mcp.load(sessionId: sessionId)
+		isShowingMcp = true
+	}
+
+	func openInTerminal() {
+		guard let sessionId,
+			canOpenInTerminal
+		else {
+			return
+		}
+		isOpeningTerminal = true
+		terminalErrorMessage = nil
+		let service = service
+		let terminal = terminal
+		Task { [weak self] in
+			do {
+				let handoff = try await service.handOffToTerminal(sessionId: sessionId)
+				try terminal.run(command: handoff.command, name: "claude-\(handoff.claudeSessionId)")
+			} catch {
+				self?.terminalErrorMessage = String(localized: "Couldn't open Terminal: \(error.localizedDescription)")
+			}
+			self?.isOpeningTerminal = false
+		}
 	}
 
 	deinit {
@@ -220,6 +278,11 @@ final class ClaudeSectionViewModel: ClaudeSectionPresenting {
 			return
 		}
 		let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+		if text == ClaudeConstants.Commands.mcp {
+			draft = ""
+			showMcp()
+			return
+		}
 		deliver(text)
 	}
 

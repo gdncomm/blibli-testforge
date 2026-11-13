@@ -58,7 +58,7 @@ struct UsageBarView<ViewModel: UsageBarPresenting>: View {
 			.accessibilityElement(children: .combine)
 			.accessibilityIdentifier(UsageBarConstants.Accessibility.connecting)
 		} else {
-			Button("Connect Claude Code status line…", action: viewModel.askToConnect)
+			Button(isShowingFigures ? "Reconnect status line…" : "Connect Claude Code status line…", action: viewModel.askToConnect)
 				.buttonStyle(.link)
 				.accessibilityIdentifier(UsageBarConstants.Accessibility.connectButton)
 			if let connectError = viewModel.connectError {
@@ -71,6 +71,13 @@ struct UsageBarView<ViewModel: UsageBarPresenting>: View {
 		}
 	}
 
+	private var isShowingFigures: Bool {
+		if case .showing = viewModel.state {
+			return true
+		}
+		return false
+	}
+
 	@ViewBuilder
 	private var content: some View {
 		switch viewModel.state {
@@ -81,10 +88,11 @@ struct UsageBarView<ViewModel: UsageBarPresenting>: View {
 				if viewModel.message == nil {
 					connectControl
 				}
-			case .showing(let segments, let model, let freshness):
+			case .showing(let segments, let model, let freshness, let isStale):
 				if let model {
 					Text(model)
 						.foregroundStyle(.teal)
+						.accessibilityIdentifier(UsageBarConstants.Accessibility.model)
 				}
 				ForEach(segments) { segment in
 					UsageSegmentView(segment: segment)
@@ -92,6 +100,11 @@ struct UsageBarView<ViewModel: UsageBarPresenting>: View {
 				if let freshness {
 					Text(freshness)
 						.foregroundStyle(.secondary)
+						.help("Figures come from Claude Code's status line. They stop updating when no terminal Claude is open, or when the status-line script was replaced and lost its TestForge line.")
+						.accessibilityIdentifier(UsageBarConstants.Accessibility.freshness)
+				}
+				if isStale {
+					connectControl
 				}
 		}
 	}

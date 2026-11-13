@@ -38,6 +38,8 @@ struct ReadinessCheck: Decodable, Equatable, Identifiable {
 	let level: String
 
 	let fixId: String?
+	/// D-223: the server is doing this check's work now (a build); the row shows progress, not a failure.
+	let isWorking: Bool
 	/// Set when the server reused an earlier pass because the check's fingerprint didn't change (D-082).
 	let reusedSince: Date?
 
@@ -48,6 +50,7 @@ struct ReadinessCheck: Decodable, Equatable, Identifiable {
 		case isPassing = "ok"
 		case level
 		case fixId = "fix"
+		case isWorking
 		case isReused
 		case checkedAt
 	}
@@ -60,6 +63,7 @@ struct ReadinessCheck: Decodable, Equatable, Identifiable {
 		isPassing = (try? container.decodeIfPresent(Bool.self, forKey: .isPassing)) ?? false
 		level = (try? container.decodeIfPresent(String.self, forKey: .level)) ?? "block"
 		fixId = try? container.decodeIfPresent(String.self, forKey: .fixId)
+		isWorking = (try? container.decodeIfPresent(Bool.self, forKey: .isWorking)) ?? false
 		let isReused = (try? container.decodeIfPresent(Bool.self, forKey: .isReused)) ?? false
 		let checkedAt = try? container.decodeIfPresent(String.self, forKey: .checkedAt)
 		reusedSince = isReused ? checkedAt.flatMap { ServerDate.parse(text: $0) } : nil

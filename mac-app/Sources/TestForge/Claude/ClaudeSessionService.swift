@@ -16,6 +16,15 @@ protocol ClaudeSessionServing {
 
 	/// Every event after `afterSeq`, then live ones; ends when the server closes the stream.
 	func messages(sessionId: String, afterSeq: Int) -> AsyncThrowingStream<ClaudeStreamMessage, Error>
+
+	/// The MCP servers the session's Claude sees (D-222); starts its Claude process if needed.
+	func mcpServers(sessionId: String) async throws -> [ClaudeMcpServer]
+
+	/// Reconnects one MCP server, then lists them all again; throws with Claude's reason.
+	func reconnectMcpServer(name: String, sessionId: String) async throws -> [ClaudeMcpServer]
+
+	/// Ends the app's Claude process for the session and returns the `claude --resume` line (D-222).
+	func handOffToTerminal(sessionId: String) async throws -> ClaudeTerminalHandoff
 }
 
 /// `/api/sessions/*` (D-133): the dashboard hosts the Claude process; the app only talks to it.
@@ -67,6 +76,21 @@ struct ClaudeSessionService: ClaudeSessionServing {
 	func reopen(sessionId: String) async throws -> ClaudeSessionSummary {
 		let data = try await client.post(path: "api/sessions/\(sessionId)/reopen")
 		return try JSONDecoder().decode(ClaudeSessionAnswer.self, from: data).session
+	}
+
+	func mcpServers(sessionId: String) async throws -> [ClaudeMcpServer] {
+		let data = try await client.get(path: "api/sessions/\(sessionId)/mcp")
+		return try JSONDecoder().decode(ClaudeMcpAnswer.self, from: data).servers
+	}
+
+	func reconnectMcpServer(name: String, sessionId: String) async throws -> [ClaudeMcpServer] {
+		let data = try await client.post(path: "api/sessions/\(sessionId)/mcp/reconnect", json: ["name": .string(name)])
+		return try JSONDecoder().decode(ClaudeMcpAnswer.self, from: data).servers
+	}
+
+	func handOffToTerminal(sessionId: String) async throws -> ClaudeTerminalHandoff {
+		let data = try await client.post(path: "api/sessions/\(sessionId)/terminal")
+		return try JSONDecoder().decode(ClaudeTerminalHandoff.self, from: data)
 	}
 
 	func messages(sessionId: String, afterSeq: Int) -> AsyncThrowingStream<ClaudeStreamMessage, Error> {

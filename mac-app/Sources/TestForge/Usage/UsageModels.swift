@@ -74,7 +74,8 @@ struct UsageSegment: Identifiable, Equatable {
 enum UsageBarState: Equatable {
 	/// Nothing reported yet: no Claude run here and no status-line tap.
 	case noData
-	case showing(segments: [UsageSegment], model: String?, freshness: String?)
+	/// `isStale`: no new figures for a while; the status-line tap may be gone (a rewritten script), so Connect shows again.
+	case showing(segments: [UsageSegment], model: String?, freshness: String?, isStale: Bool)
 }
 
 /// From the `identity` slice: who Claude Code is signed in as.

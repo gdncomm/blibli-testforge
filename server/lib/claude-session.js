@@ -74,6 +74,17 @@ function toolResultText(part) {
 	return (part.content ?? []).map((piece) => piece.text ?? "").join("");
 }
 
+const shellQuote = (value) => `'${String(value).replaceAll("'", `'\\''`)}'`;
+
+/**
+ * D-222: the shell line a terminal runs to continue this conversation: `cd` to its folder, then `claude --resume`.
+ * A session's own model is kept; its run env (device, build) is not, since a terminal is for talking, not runs.
+ */
+export function terminalCommand({ projectDir, claudeSessionId, model }) {
+	const modelFlag = model ? ` --model ${shellQuote(model)}` : "";
+	return `cd ${shellQuote(projectDir)} && claude --resume ${shellQuote(claudeSessionId)}${modelFlag}`;
+}
+
 export class ClaudeSession extends EventEmitter {
 	/**
 	 * `record` is the persisted index entry; `options` are per-session engine settings that are not
@@ -178,6 +189,47 @@ export class ClaudeSession extends EventEmitter {
 		this.#setStatus("idle");
 	}
 
+	/**
+	 * D-222: the MCP servers this session's Claude sees, as `/mcp` lists them in a terminal. Starts the Claude process
+	 * when it is not running (no message is sent), since only a running process can report them.
+	 */
+	async mcpServers() {
+		this.#assertOpen();
+		this.#ensureStarted();
+		const servers = await this.query.mcpServerStatus();
+		return servers.map(({ name, status, error, scope }) => ({ name, status, error: error || undefined, scope: scope || undefined }));
+	}
+
+	/** D-222: reconnects one MCP server by name, then reports every server again. Throws with Claude's own reason. */
+	async reconnectMcpServer(name) {
+		this.#assertOpen();
+		this.#ensureStarted();
+		this.#record({ type: "dashboard", kind: "mcp-reconnect", name });
+		await this.query.reconnectMcpServer(name);
+		return this.mcpServers();
+	}
+
+	/**
+	 * D-222: hands the conversation to a terminal `claude --resume`. The app's Claude process ends first, so the two
+	 * never write the same transcript at once; the next message from the app resumes it, terminal turns included.
+	 */
+	handOffToTerminal() {
+		if (!this.record.claudeSessionId) throw new Error("Send a message first: this conversation hasn't started Claude yet");
+		const { status } = this.record;
+		if (status === "running" || status.startsWith("waiting")) throw new Error("Claude is working: stop it or wait for the turn to end");
+		if (this.query) {
+			this.input?.end();
+			this.query.close?.();
+			this.#endProcess(status === "closed" ? "closed" : "idle");
+		}
+		this.#record({ type: "dashboard", kind: "terminal" });
+		return { claudeSessionId: this.record.claudeSessionId, projectDir: this.record.projectDir, command: terminalCommand(this.record) };
+	}
+
+	#assertOpen() {
+		if (this.record.status === "closed") throw new Error("this conversation is closed: send it a message to reopen it");
+	}
+
 	close() {
 		for (const [requestId] of this.pending) this.answer(requestId, { behavior: "deny", message: "Session closed" }).catch(() => {});
 		this.input?.end();
@@ -220,8 +272,10 @@ export class ClaudeSession extends EventEmitter {
 			for await (const message of activeQuery) this.#handle(message);
 			if (this.query === activeQuery && this.record.status !== "closed") this.#endProcess("idle");
 		} catch (error) {
+			// A process this session ended itself (close, Open in Terminal) is not an error.
+			if (this.query !== activeQuery) return;
 			this.#record({ type: "dashboard", kind: "error", text: error.message });
-			if (this.query === activeQuery) this.#endProcess("error");
+			this.#endProcess("error");
 		}
 	}
 

@@ -126,7 +126,8 @@ function simulatorCheck(sims) {
 
 async function buildCheck({ buildState, legacyBundle, configuration, isBuilding }) {
 	const check = { id: "bundle", label: "App + tests built" };
-	if (isBuilding) return { ...check, ok: false, detail: "a build is running" };
+	// D-223: `isWorking` tells the app to show this row as in progress, not as a failure.
+	if (isBuilding) return { ...check, ok: false, isWorking: true, detail: "a build is running — this row updates when it finishes" };
 	const { state, build, codeId, override } = buildState;
 	if (state === "no-code") {
 		// Nothing prepared in Question 1 yet: the developer's own build, as before P2.
@@ -292,8 +293,10 @@ export function readinessGate(options) {
 			}).finally(() => (pending = null));
 			return pending;
 		},
+		/** Drops the cached result and tells listeners (D-223: the app's rows update at once, not on the 30 s poll). */
 		invalidate() {
 			cached = null;
+			options.onInvalidate?.();
 		},
 	};
 }

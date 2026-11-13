@@ -9,5 +9,7 @@ enum UsageBarConstants {
 		static let segmentPrefix = "TestForge_UsageBar_Segment_"
 		static let account = "TestForge_UsageBar_Account"
 		static let remoteControl = "TestForge_UsageBar_RemoteControl"
+		static let freshness = "TestForge_UsageBar_Freshness"
+		static let model = "TestForge_UsageBar_Model"
 	}
 }

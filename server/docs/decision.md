@@ -4440,3 +4440,40 @@ The plugin skill is `test-flow-recorder`. **Kept:** "QA" as English for the role
 session `meta.testforge` flag, the repo name `blibli-testforge`, the "QA Workbench Local" keychain label, and history
 entries in this log and the progress files. **Rejected:** keeping old names as aliases; nobody else uses the app yet,
 so a clean break costs one local migration (folders, keychain, defaults, simulator name, plugin reinstall).
+
+## D-222 — /mcp and Open in Terminal for the app's Claude sessions (2026-11-09)
+
+The app's Claude chat runs on the Agent SDK, which has no terminal-only commands (`/mcp`, `/plugin`, `/login`). Two
+additions close the gap without embedding a terminal. **MCP:** `GET /api/sessions/:id/mcp` and
+`POST /api/sessions/:id/mcp/reconnect` use the SDK's `mcpServerStatus()` and `reconnectMcpServer()`; listing starts the
+session's Claude process when it is not running (no message is sent), since only a running process can report. The
+Mac app shows them in a sheet from an MCP button, and a sent `/mcp` opens the sheet instead of reaching Claude.
+**Open in Terminal:** `POST /api/sessions/:id/terminal` ends the app's Claude process for the session and returns
+`cd <folder> && claude --resume <id>` (plus `--model` when the session has one); the app writes a self-deleting
+`.command` script and opens it, so the default terminal app runs it in a login shell. It is refused while a turn is
+running or waiting, and for a conversation that never started Claude. The next app message resumes the same
+transcript, terminal turns included. A run session's env (device, build) is not carried to the terminal: it is for
+talking, not runs. A process the session ends itself (close, hand-off) no longer records an error. **Rejected:** an
+embedded terminal (SwiftTerm): a new dependency and PTY handling, and its output can't feed the status line or the
+activity strip; AppleScript to drive Terminal: needs an Automation permission prompt and works only with Terminal.
+
+## D-223 — A started fix is progress, not a pass (2026-11-09)
+
+A Get Ready fix that the server accepted used to show a green "Started — this check updates when it finishes" under a
+red line: two green ticks, one meaning "passed" and one meaning "started", and the build row kept saying "isn't built
+yet" until the 30 s readiness poll. Now the line itself shows progress. **Server:** the build check returns
+`isWorking: true` (no fix) while a build runs, and `readinessGate.invalidate()` calls an `onInvalidate` hook that pokes
+the `readiness` slice, so every fix route that invalidates also pushes the new state at once; the build route
+invalidates when the build starts, not only when it ends. **App:** an accepted fix puts the row in a recheck: spinner
+icon, an hourglass line ("Build started — this row updates when it finishes"), no Fix button. The recheck ends when the
+check passes, reports `isWorking`, or changes its detail; after 90 s with no change the row shows the check as it is
+again, so a fix that did nothing can't spin forever. Refused fixes still show their reason in orange; there is no
+success line any more, since only the check can say the fix worked. **Rejected:** keeping the success line with a
+neutral icon: still two messages on one row that disagree until the poll.
+
+## D-224 — A Test Batch change invalidates readiness, not only pokes it (2026-11-13)
+
+Starting, pausing or ending a Test Batch emitted `change`, which poked the `readiness` slice. The poke re-read
+`/api/readiness` without `fresh`, so within the gate's 8 s cache it pushed the report from before the change, and the
+Get Ready row stayed "start one" until the 30 s poll. The listener now calls `readiness.invalidate()`, which drops the
+cache and pokes (D-223), so the row changes as soon as the batch does, from any screen.

@@ -11,7 +11,7 @@ extension OnboardingCatalog {
 				title: String(localized: "Get ready"),
 				place: String(localized: "Get ready · ⌘1"),
 				text: String(
-					localized: "Follow it until green: server, proof folder and Test Batch, code, simulator, QA build. Test logins: Settings › Logins."
+					localized: "Follow it until green: server, proof folder and Test Batch, code, simulator, QA build. A line spins while its fix (a build) runs; only a tick is done. Test logins: Settings › Logins."
 				),
 				claudeNote: String(localized: "Its Claude sign-in check only matters for Claude runs")
 			),
@@ -218,6 +218,16 @@ extension OnboardingCatalog {
 					"""),
 				needsClaude: false
 			),
+			OnboardingFlowStep(
+				number: 25,
+				title: String(localized: "Fix an MCP server, or take the chat to Terminal"),
+				place: String(localized: "Claude · ⌘0 › MCP · Open in Terminal"),
+				text: String(localized: """
+					MCP (or typing /mcp) lists the servers Claude sees, why one failed, and Reconnect. Open in Terminal continues \
+					the same conversation with claude --resume for every terminal command; your next message here picks it up again.
+					"""),
+				needsClaude: true
+			),
 		]
 	)
 
@@ -231,7 +241,7 @@ extension OnboardingCatalog {
 				title: String(localized: "Point it at your code"),
 				place: String(localized: "Get ready · ⌘1 · Build · ⌘8"),
 				text: String(
-					localized: "Prepare code… picks your branch or working copy in the iOS clone you chose at setup; Install for testing builds the QA copy and installs it with the test runner."
+					localized: "Prepare code… picks your branch or working copy in the iOS clone you chose at setup; Install for testing builds the QA copy and installs it with the test runner. The App + tests built line spins until the build finishes."
 				)
 			),
 			OnboardingFlowStep(
@@ -347,6 +357,16 @@ extension OnboardingCatalog {
 					Links between docs open in place; open one in its own window on half the screen next to Xcode.
 					"""),
 				needsClaude: false
+			),
+			OnboardingFlowStep(
+				number: 17,
+				title: String(localized: "Fix an MCP server, or take the chat to Terminal"),
+				place: String(localized: "Claude · ⌘0 › MCP · Open in Terminal"),
+				text: String(localized: """
+					MCP (or typing /mcp) lists the servers Claude sees, why one failed, and Reconnect. Open in Terminal continues \
+					the same conversation with claude --resume for every terminal command; your next message here picks it up again.
+					"""),
+				needsClaude: true
 			),
 		]
 	)

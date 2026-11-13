@@ -59,7 +59,7 @@ enum TutorialCatalog {
 		TutorialStep(
 			anchor: .getReadyChecks,
 			title: "Every check says why",
-			message: "Each line says what was checked and what was found. When something needs you, its Fix button does the work."
+			message: "Each line says what was checked and what was found. When something needs you, its Fix button does the work; the line spins until its check reports back, and a tick means it passed."
 		),
 		TutorialStep(
 			anchor: .testBatchToolbar,
@@ -515,6 +515,16 @@ enum TutorialCatalog {
 			anchor: .claudeDetailsToggle,
 			title: "See everything",
 			message: "Details opens every tool call and result in full — what Claude sent and what came back."
+		),
+		TutorialStep(
+			anchor: .claudeMcp,
+			title: "MCP servers",
+			message: "MCP, or typing /mcp, lists the servers Claude sees and why one failed. Reconnect starts one again once its setup is fixed."
+		),
+		TutorialStep(
+			anchor: .claudeOpenInTerminal,
+			title: "Take it to Terminal",
+			message: "Open in Terminal continues this conversation with claude --resume, for /plugin and every other terminal command. Send a message here later to pick it up again."
 		),
 		TutorialStep(
 			anchor: .claudeComposer,
