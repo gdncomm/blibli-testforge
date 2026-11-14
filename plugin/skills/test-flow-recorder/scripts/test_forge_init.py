@@ -133,12 +133,8 @@ def check_local_package_governance(root: Path, package_path: Path, pin_tag: str 
     name = match[0].rstrip("/").split("/")[-1].removesuffix(".git")
     current_tag = match[1]
     head_ref = run(["git", "-C", str(resolved), "rev-parse", "--abbrev-ref", "HEAD"]).strip()
-    # A project's own `make download` target (typically wrapping this same script with
-    # retention/env setup) is the documented, developer-facing entry point when it exists — prefer
-    # pointing at that over the raw script underneath it.
-    makefile = root / "Makefile"
-    has_make_target = makefile.exists() and re.search(r"(?m)^download:", makefile.read_text())
-    download_cmd = "make download" if has_make_target else "bash SwiftPackages.sh download"
+    # The Blibli app downloads its governed packages with SwiftPackages.sh itself; it dropped its make targets.
+    download_cmd = "bash SwiftPackages.sh download"
 
     if pin_tag:
         # Auto-reconcile: create+push the tag, rewrite the SwiftPackageList.txt line, and hand
