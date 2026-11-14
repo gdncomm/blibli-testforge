@@ -60,6 +60,10 @@ Ask the batch, wait for answers, then proceed to Step 1.
    for some other app makes every tool look healthy while pointing at the wrong process.
 
 3. **Decide where TestForgeDriverKit comes from.** Ask if unclear:
+   - its sources, compiled straight into the UI test target → `--kit-sources <dir>` (the folder holding
+     `TestForgeDriverRunner.swift` and the rest). No package, no tag, nothing for a package-governance tool to
+     reject. This is how the Blibli app carries it until testing there is done and the kit gets its own
+     package (D-225); copy from that app's `BlibliMobile_XCUITest/TestForgeDriver/`.
    - a local checkout → `--package-path <relative dir>`
    - a remote repository → `--package-url <url> --package-ref <branch or 40-char revision>`.
      Prefer a revision over a branch when the source is an unmerged branch: a revision survives a
@@ -70,7 +74,7 @@ Ask the batch, wait for answers, then proceed to Step 1.
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/test-flow-recorder/scripts/test_forge_init.py" \
        --project <App>.xcodeproj --bundle-id <id> \
-       [--ui-test-target <name>] [--package-path <dir> | --package-url <url> --package-ref <ref>]
+       [--ui-test-target <name>] [--kit-sources <dir> | --package-path <dir> | --package-url <url> --package-ref <ref>]
    ```
 
    It hard-fails rather than guessing when a project has more than one UI test target — a scheme

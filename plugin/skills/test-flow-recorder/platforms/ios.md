@@ -19,8 +19,10 @@ replaced by this skill.
 
 > **Infrastructure — nothing to bootstrap per run.**
 >
-> The harness ships as an SPM product, `TestForgeDriverKit`, so a project consumes it rather than pasting
-> sources into its own UI test target. `/test-forge-init` does the wiring.
+> The harness is `TestForgeDriverKit`: five Swift files. Today the Blibli app compiles them straight into its UI test
+> target (`BlibliMobile_XCUITest/TestForgeDriver/`, D-225); once testing there is done they become their own SPM
+> package again. `/test-forge-init` wires either form (`--kit-sources`, or `--package-path` / `--package-url`).
+> In the sources form the shim below imports `XCTest`, not `TestForgeDriverKit`: it is the same module.
 >
 > - `TestForgeDriverKit/TestForgeDriverRunner.swift` — the persistent harness. Built **once**, then serves every
 >   flow. Extended only by adding a command case, which costs that one-time rebuild again.

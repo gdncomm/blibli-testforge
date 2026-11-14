@@ -7,8 +7,10 @@ rewrites it reorders every object and silently drops what it cannot round-trip, 
 final gate is that the diff shows zero deleted lines.
 
 What it changes, all additive:
-  * a Swift package reference (local path or remote URL), if the project has none for TestForgeDriverKit
-  * the `TestForgeDriverKit` product attached to the UI test target, and nothing else
+  * either the kit's sources copied into the UI test target (`--kit-sources`, D-225: how the Blibli app carries it
+    until testing there is done and the kit gets its own package), or
+  * a Swift package reference (local path or remote URL), if the project has none for TestForgeDriverKit, and
+    the `TestForgeDriverKit` product attached to the UI test target, and nothing else
   * a 4-line subclass declaring the test method, in that target
   * `TestForgeDriver.xcscheme` and `TestForgeDriver.xctestplan`, generated with this project's own identifiers
   * `.claude/settings.json` env, so the MCP servers know which app they are driving,
@@ -20,7 +22,7 @@ Never edits app source.
 Usage:
     test_forge_init.py --project <path/to/App.xcodeproj> --bundle-id <id>
         [--ui-test-target NAME] [--app-target NAME]
-        [--package-path <dir> | --package-url <url> --package-ref <branch-or-revision>]
+        [--kit-sources <dir> | --package-path <dir> | --package-url <url> --package-ref <branch-or-revision>]
         [--media-root NAME] [--taxonomy <file.json>]
         [--data-plane simctl|networklens] [--dry-run]
 """
@@ -326,6 +328,10 @@ def definition_at(text: str, object_uuid: str) -> int:
 
 
 def add_shim_to_target(text: str, objects: dict, ui_uuid: str, ui_target: dict, group_path: str) -> str:
+    return add_source_to_target(text, objects, ui_target, SHIM_NAME, group_path)
+
+
+def add_source_to_target(text: str, objects: dict, ui_target: dict, file_name: str, group_path: str) -> str:
     """Compiles the shim by registering it, rather than only writing it to disk.
 
     A file on disk that no target compiles is the failure this whole arrangement exists to avoid:
@@ -333,19 +339,19 @@ def add_shim_to_target(text: str, objects: dict, ui_uuid: str, ui_target: dict, 
     enumerates classes that made it into the .xctest image. A project whose sources are globbed by a
     generator hides this until the first run.
     """
-    if f"/* {SHIM_NAME} in Sources */" in text:
+    if f"/* {file_name} in Sources */" in text:
         return text
 
     file_uuid = fresh_uuid(text)
     build_uuid = fresh_uuid(text + file_uuid)
 
     text = insert_after(text, "/* Begin PBXFileReference section */\n",
-                        f"\t\t{file_uuid} /* {SHIM_NAME} */ = {{isa = PBXFileReference; "
+                        f"\t\t{file_uuid} /* {file_name} */ = {{isa = PBXFileReference; "
                         f"lastKnownFileType = sourcecode.swift; path = {group_path}; "
                         f"sourceTree = \"<group>\"; }};\n")
     text = insert_after(text, "/* Begin PBXBuildFile section */\n",
-                        f"\t\t{build_uuid} /* {SHIM_NAME} in Sources */ = {{isa = PBXBuildFile; "
-                        f"fileRef = {file_uuid} /* {SHIM_NAME} */; }};\n")
+                        f"\t\t{build_uuid} /* {file_name} in Sources */ = {{isa = PBXBuildFile; "
+                        f"fileRef = {file_uuid} /* {file_name} */; }};\n")
 
     sources_uuid = next((phase for phase in ui_target.get("buildPhases", [])
                          if objects[phase].get("isa") == "PBXSourcesBuildPhase"), None)
@@ -353,7 +359,7 @@ def add_shim_to_target(text: str, objects: dict, ui_uuid: str, ui_target: dict, 
         raise SystemExit(f"{ui_target['name']} has no Sources build phase — it cannot compile anything")
     start = definition_at(text, sources_uuid)
     files_at = text.index("files = (\n", start) + len("files = (\n")
-    text = text[:files_at] + f"\t\t\t\t{build_uuid} /* {SHIM_NAME} in Sources */,\n" + text[files_at:]
+    text = text[:files_at] + f"\t\t\t\t{build_uuid} /* {file_name} in Sources */,\n" + text[files_at:]
 
     group_uuid = next((uuid for uuid, obj in objects.items()
                        if obj.get("isa") == "PBXGroup"
@@ -361,9 +367,36 @@ def add_shim_to_target(text: str, objects: dict, ui_uuid: str, ui_target: dict, 
     if group_uuid is not None:
         start = definition_at(text, group_uuid)
         children_at = text.index("children = (\n", start) + len("children = (\n")
-        text = text[:children_at] + f"\t\t\t\t{file_uuid} /* {SHIM_NAME} */,\n" + text[children_at:]
+        text = text[:children_at] + f"\t\t\t\t{file_uuid} /* {file_name} */,\n" + text[children_at:]
 
     return text
+
+
+def copy_kit_sources(source_dir: Path, shim_dir: Path) -> list[str]:
+    """D-225: the kit as plain sources of the UI test target, no package. Copies every `.swift` file but the
+    shim (a project's own session file is never overwritten) and returns their names."""
+    names = sorted(path.name for path in source_dir.glob("*.swift") if path.name != SHIM_NAME)
+    if "TestForgeDriverRunner.swift" not in names:
+        raise SystemExit(f"{source_dir} has no TestForgeDriverRunner.swift — point --kit-sources at the kit's folder")
+    for name in names:
+        (shim_dir / name).write_text((source_dir / name).read_text())
+    return names
+
+
+def wire_kit_sources(pbxproj: Path, objects: dict, ui_target: dict, names: list[str]) -> None:
+    """Registers the shim and each kit file in the UI test target's Sources phase; never the app target,
+    since the kit imports XCTest."""
+    text = pbxproj.read_text()
+    if f"productName = {PRODUCT_NAME};" in text:
+        raise SystemExit(f"this project already links the {PRODUCT_NAME} package; remove that link before "
+                         "switching to --kit-sources, or the kit's types are declared twice")
+    for name in [SHIM_NAME, *names]:
+        if f"/* {name} in Sources */" in text:
+            print(f"  · {name} already compiled by {ui_target['name']} — leaving it alone")
+            continue
+        text = add_source_to_target(text, objects, ui_target, name, f"TestForgeDriver/{name}")
+        print(f"  · added {name} to {ui_target['name']}'s Sources phase")
+    pbxproj.write_text(text)
 
 
 def wire_pbxproj(pbxproj: Path, objects: dict, ui_uuid: str, ui_target: dict, arguments,
@@ -436,6 +469,9 @@ def main() -> int:
     parser.add_argument("--bundle-id", required=True)
     parser.add_argument("--ui-test-target")
     parser.add_argument("--app-target")
+    parser.add_argument("--kit-sources", type=Path,
+                        help="Folder holding the kit's .swift files (TestForgeDriverRunner.swift and the rest): "
+                             "copies them into the UI test target and compiles them there, with no package (D-225)")
     parser.add_argument("--package-path", help="Relative path to a local TestForgeDriverKit package")
     parser.add_argument("--package-url", help="Remote package URL, when not using --package-path")
     parser.add_argument("--package-ref", help="Branch name or 40-char revision for --package-url")
@@ -460,8 +496,12 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     arguments = parser.parse_args()
 
-    if not arguments.package_path and not (arguments.package_url and arguments.package_ref):
-        raise SystemExit("pass --package-path, or --package-url together with --package-ref")
+    if arguments.kit_sources and (arguments.package_path or arguments.package_url):
+        raise SystemExit("pass either --kit-sources or a package (--package-path / --package-url), not both")
+    if arguments.kit_sources and not arguments.kit_sources.is_dir():
+        raise SystemExit(f"--kit-sources {arguments.kit_sources} is not a folder")
+    if not arguments.kit_sources and not arguments.package_path and not (arguments.package_url and arguments.package_ref):
+        raise SystemExit("pass --kit-sources, --package-path, or --package-url together with --package-ref")
 
     project = arguments.project.resolve()
     pbxproj = project / "project.pbxproj"
@@ -521,10 +561,19 @@ def main() -> int:
     if shim.exists():
         print(f"  · {shim.relative_to(root)} already exists — leaving it alone")
     else:
-        shim.write_text(render(arguments.templates / "TestForgeDriverSession.swift.template", values))
+        shim_text = render(arguments.templates / "TestForgeDriverSession.swift.template", values)
+        if arguments.kit_sources:
+            # Same module as the kit now: importing it would name a package that doesn't exist.
+            shim_text = shim_text.replace(f"import {PRODUCT_NAME}\n", "import XCTest\n")
+        shim.write_text(shim_text)
         print(f"  · wrote {shim.relative_to(root)}")
 
-    wire_pbxproj(pbxproj, objects, ui_uuid, ui_target, arguments, f"TestForgeDriver/{SHIM_NAME}")
+    if arguments.kit_sources:
+        names = copy_kit_sources(arguments.kit_sources.resolve(), shim_dir)
+        print(f"  · copied {len(names)} kit files into {shim_dir.relative_to(root)}")
+        wire_kit_sources(pbxproj, objects, ui_target, names)
+    else:
+        wire_pbxproj(pbxproj, objects, ui_uuid, ui_target, arguments, f"TestForgeDriver/{SHIM_NAME}")
 
     settings_path = root / ".claude" / "settings.json"
     settings_path.parent.mkdir(parents=True, exist_ok=True)

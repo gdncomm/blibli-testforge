@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com). Versions follow [CONTRIB
 ## [Unreleased]
 
 ### Added
+- `/test-forge-init --kit-sources <dir>`: compiles the driver kit straight into the UI test target, with no package; the Blibli app now carries it this way, and its Utility pin is back on the release (D-225).
 - Mac app: Claude section **MCP** button (and `/mcp`): lists the MCP servers Claude sees, why one failed, and Reconnect (D-222).
 - Mac app: Claude section **Open in Terminal**: continues the conversation with `claude --resume` for every terminal command; the app picks it up again on the next message (D-222).
 - Mac app: the MCP list updates itself while any server is still connecting.

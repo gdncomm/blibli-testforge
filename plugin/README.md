@@ -40,7 +40,8 @@ Then, once per project:
 /test-forge-init --bundle-id <your app's bundle id>
 ```
 
-That attaches the `TestForgeDriverKit` product to your UI test target, writes a four-line subclass, and
+That attaches the `TestForgeDriverKit` product to your UI test target (or, with `--kit-sources`, copies the kit's
+five files into that target, as the Blibli app does for now: D-225), writes a four-line subclass, and
 generates `TestForgeDriver.xcscheme` and `TestForgeDriver.xctestplan` using your project's own identifiers. It is
 additive only, and it verifies that the pbxproj diff has zero deleted lines before it finishes.
 

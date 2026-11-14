@@ -4477,3 +4477,19 @@ Starting, pausing or ending a Test Batch emitted `change`, which poked the `read
 `/api/readiness` without `fresh`, so within the gate's 8 s cache it pushed the report from before the change, and the
 Get Ready row stayed "start one" until the 30 s poll. The listener now calls `readiness.invalidate()`, which drops the
 cache and pokes (D-223), so the row changes as soon as the batch does, from any screen.
+
+## D-225 — The driver kit lives in the Blibli app's UI-test target until testing there is done (2026-11-14)
+
+`TestForgeDriverKit` was a second product on a branch of Blibli-Utility (`darshan/innovation/test-forge-driver`,
+tags `test-forge-driver-N`). The app's own `Utility` comes from the same package, so the POC had to pin Utility to a
+driver tag instead of the release, and every `release/v15.0.0` merge conflicted in `SwiftPackageList.txt`; a Utility
+release also needed a merge, a new tag and a pin change before the app picked it up. The five kit files
+(`TestForgeDriverRunner`, `TestForgeDriverConfiguration`, `TestForgeWait`, `ScreenChain`, `ArtifactRecorder`) now
+sit in `BlibliMobile_XCUITest/TestForgeDriver/` beside the session shim and are compiled by that target only (they
+import XCTest, which crashes an app binary). Utility is back on the release pin. `/test-forge-init` gains
+`--kit-sources <dir>`: copies the files, registers them in the UI test target's Sources phase, and writes the shim
+with `import XCTest`; it refuses a project that still links the package, since the types would be declared twice.
+**Not** an in-repo local Swift package: the app's `SwiftPackages.sh` governance rejects any local package that
+`SwiftPackageList.txt` does not list. **Later:** once testing on the Blibli app is done, the kit and the other
+reusable pieces move to their own package, and `--package-url` is the path again. The Utility branch and its tags
+stay until the moved copy has built.
